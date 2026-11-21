@@ -34,10 +34,15 @@ to load three.js). Pick a pattern, then:
 - Between its own throws and catches a hand drifts along its path but is kept on
   whichever side the other hand's letter says.
 - Elbows hang low, so forearms angle up from the elbow to the hand (level only
-  briefly). When the arms cross, the top arm sits higher and further forward and
-  its elbow aims for a spot by the ribs; the bottom arm's elbow aims out and back.
-- An under-the-arm throw or catch (a crossed hand whose arm is not on top) reaches
-  further over, past the top arm's elbow, so the ball goes up clear of the top arm.
+  briefly). When the arms cross, the top hand works in a higher band (up to chest
+  height) and further forward, and the bottom hand in a lower band just above its
+  elbow, so the top forearm passes over the other. The top arm's elbow aims for a
+  spot by its ribs; the bottom arm's elbow aims out and back.
+- An under-the-arm throw is made just below and slightly in front of the top arm's
+  elbow (and a little outside it, clear of the top forearm), so the ball goes up in
+  front of the top upper arm. A catch out wide under the arm, as in the TR messes,
+  is made in the same place, because a catch is the time reverse of a throw. Under
+  throws and catches near the middle stay under the top forearm.
 - The slash is worked out from where the first throw actually peaks, and must
   match the one written (the tests check this).
 - Siteswap digits before the slash set the throw heights, rotated to line up

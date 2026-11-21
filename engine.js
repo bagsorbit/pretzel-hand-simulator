@@ -24,9 +24,9 @@
     outU: 23, outX: 16, outUnder: 30, inner: 4,   // throw/catch distance from the middle
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 119, catchY: 127, scoopY: 113,
-    topZ: 12, topY: 8.5, botZ: -14, botY: 0,    // how far the top arm sits over the other
-    topElbow: [19.4, 119.6, 26], botElbow: [29.3, 99, 8.1], elbowEarly: 0.9, elbowOut: 0.4, elbowFwd: -0.05,
-    handR: 4.6, foreR: 4.0, upperR: 4.8, ballR: 3.6,
+    topZ: 13.7, topY: 0, botZ: -18, botY: 0,    // how far the top arm sits over the other
+    topElbow: [16.8, 125.1, 26], botElbow: [20.1, 101.1, 14.4], elbowEarly: 0.5, topFloor: 132.9, botCap: 109.8, underDrop: 9.7, underFwd: 6.3, underOut: 8.3, underWin: 0.3, elbowOut: 0.4, elbowFwd: -0.05,
+    handR: 4.3, foreR: 3.4, upperR: 4.2, ballR: 3.6,
     bps: 2.8,                       // beats per second at full speed
     g: 980
   };
@@ -180,35 +180,75 @@
       return pa + (pb - pa) * smooth(0, 1, f);
     }
 
+    // under-the-arm throws and catches: made by a crossed hand whose arm is not on top.
+    // A catch is the time reverse of a throw, so both are made in the same place.
+    var underThrows = [[], []];
+    for (j = 0; j < P; j++) {
+      var tt = tok(j).t, tc = tok(j).c.toUpperCase(), hh = handOf(j), mine = hh === 0 ? 'R' : 'L';
+      // only the ones made out wide: an outside throw, or a catch of an inside throw
+      if (tt !== 'U' && tt !== mine && flies(j) && dirOf(j) === 'o') underThrows[hh].push(j);
+      if (tc !== 'U' && tc !== mine && incoming[j] !== null && dirOf(incoming[j]) === 'i') underThrows[hh].push(j + 0.5);
+    }
+    // how strongly hand h is reaching under the other arm's elbow at beat tb (1 at the throw or catch)
+    function underPull(h, tb) {
+      var best = 0, list = underThrows[h];
+      for (var i = 0; i < list.length; i++) {
+        var d = Math.abs(mod(tb - list[i] + P / 2, P) - P / 2);
+        best = Math.max(best, 1 - smooth(0, G.underWin, d));
+      }
+      return best;
+    }
+
+    function arm(h, P0, top, bot) {
+      var own = OWN[h];
+      var across = smooth(-6, 12, P0[0] * -own);
+      var S = [own * (G.shoulderX - 2 * across), G.shoulderY, G.shoulderZ + 5 * across];
+      // elbows hang low by the body, so forearms angle up to the hands. When the
+      // arms cross, the top arm's elbow aims for a spot by the ribs, and the bottom
+      // arm's elbow sits further out and back
+      var pole = [own * G.elbowOut, -1, G.elbowFwd];
+      var k = Math.max(across, G.elbowEarly);
+      var aim = function (spot, wgt) {
+        if (wgt <= 0) return;
+        var d = [own * spot[0] - S[0], spot[1] - S[1], spot[2] - S[2]], l = Math.hypot(d[0], d[1], d[2]);
+        var pl = Math.hypot(pole[0], pole[1], pole[2]);
+        for (var c = 0; c < 3; c++) pole[c] = pole[c] / pl * (1 - wgt) + d[c] / l * wgt;
+      };
+      aim(G.topElbow, top * k);
+      aim(G.botElbow, bot * across);
+      var El = ik(S, P0, G.upper, G.fore, pole);
+      El.shoulder = S;
+      return El;
+    }
+
     function pose(tb) {
       var R = baseHand(0, tb), L = baseHand(1, tb);
       var overlap = smooth(-26, -6, R[0] - L[0]);
       var w = overSign(tb) * overlap;          // >0: right arm on top
-      var hands = [R, L], out = { w: w, hands: [], elbows: [], shoulders: [] };
-      for (var h = 0; h < 2; h++) {
+      var hands = [R, L], out = { w: w, hands: [], elbows: [], shoulders: [], reach: 0 };
+      // the top arm first, so the bottom hand can reach under its elbow
+      var order = w >= 0 ? [0, 1] : [1, 0];
+      var topEl = null;
+      order.forEach(function (h) {
         var top = Math.max(0, h === 0 ? w : -w), bot = Math.max(0, h === 0 ? -w : w);
         var P0 = hands[h].slice();
+        // when the arms cross, the top hand works in a high band and the bottom hand in a
+        // low band (just above its elbow), so the top forearm passes well over the other
+        P0[1] += top * (Math.max(P0[1], G.topFloor) - P0[1]) + bot * (Math.min(P0[1], G.botCap) - P0[1]);
         P0[1] += top * G.topY + bot * G.botY;
         P0[2] += top * G.topZ + bot * G.botZ;
-        var own = OWN[h];
-        var across = smooth(-6, 12, P0[0] * -own);
-        var S = [own * (G.shoulderX - 2 * across), G.shoulderY, G.shoulderZ + 5 * across];
-        // elbows hang low by the body, so forearms angle up to the hands. When the
-        // arms cross, the top arm's elbow stays tucked by the ribs (under-the-arm
-        // throws go up outside it) and the bottom arm's elbow sits further out and back
-        var pole = [own * G.elbowOut, -1, G.elbowFwd];
-        var k = Math.max(across, G.elbowEarly);
-        var aim = function (spot, wgt) {
-          if (wgt <= 0) return;
-          var d = [own * spot[0] - S[0], spot[1] - S[1], spot[2] - S[2]], l = Math.hypot(d[0], d[1], d[2]);
-          var pl = Math.hypot(pole[0], pole[1], pole[2]);
-          for (var c = 0; c < 3; c++) pole[c] = pole[c] / pl * (1 - wgt) + d[c] / l * wgt;
-        };
-        aim(G.topElbow, top * k);
-        aim(G.botElbow, bot * across);
-        var El = ik(S, P0, G.upper, G.fore, pole);
-        out.hands[h] = El.hand; out.elbows[h] = El.elbow; out.shoulders[h] = S; out.reach = Math.max(out.reach || 0, El.reach);
-      }
+        if (bot > 0 && topEl) {
+          // an under-the-arm throw is made just below and slightly in front of the top arm's elbow
+          var u = underPull(h, tb) * bot;
+          if (u > 0) {
+            var e = topEl.elbow, tgt = [e[0] + OWN[1 - h] * G.underOut, e[1] - G.underDrop, e[2] + G.underFwd];
+            for (var c = 0; c < 3; c++) P0[c] += (tgt[c] - P0[c]) * u;
+          }
+        }
+        var El = arm(h, P0, top, bot);
+        if (top > 0) topEl = El;
+        out.hands[h] = El.hand; out.elbows[h] = El.elbow; out.shoulders[h] = El.shoulder; out.reach = Math.max(out.reach, El.reach);
+      });
       return out;
     }
 

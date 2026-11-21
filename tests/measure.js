@@ -34,9 +34,11 @@ function measure(pt, perBeat) {
     var R = { s: p.shoulders[0], e: p.elbows[0], h: p.hands[0] }, L = { s: p.shoulders[1], e: p.elbows[1], h: p.hands[1] };
     var ff = segDist(R.e, R.h, L.e, L.h);
     if (ff.d < r.minFore) { r.minFore = ff.d; r.worstT = t; }
+    // where the forearms come close, the top one must be over the other (higher). Near
+    // the top arm's elbow the under hand is in front of it, which is right.
     if (ff.d < 16 && Math.abs(p.w) > 0.4) {
-      var rFront = ff.c1[2] + 0.5 * ff.c1[1] > ff.c2[2] + 0.5 * ff.c2[1];
-      if (rFront !== (p.w > 0)) r.wrongTop++;
+      var topP = p.w > 0 ? ff.c1 : ff.c2, botP = p.w > 0 ? ff.c2 : ff.c1;
+      if (topP[1] < botP[1] + 2) r.wrongTop++;
     }
     p.balls.forEach(function (b) {
       if (!b.fly) return;
