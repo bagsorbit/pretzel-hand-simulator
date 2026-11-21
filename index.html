@@ -84,6 +84,11 @@ select { padding-right: 10px; max-width: 100%; }
 .key { display: inline-block; width: 12px; height: 12px; border-radius: 4px; border: 2px solid var(--ink); vertical-align: -1px; }
 .key.R { background: var(--red); } .key.L { background: var(--blue); }
 .err { color: #c92a2a; font-weight: 600; }
+.problem {
+  position: absolute; inset: 70px 16px auto; padding: 12px 14px; border: 3px solid var(--ink); border-radius: 16px;
+  background: var(--card); font-size: 16px; line-height: 1.4; display: none;
+}
+.problem.on { display: block; }
 @media (max-width: 600px) {
   .app { padding: 8px 12px 12px; gap: 8px; }
   h1 { font-size: 18px; }
@@ -106,6 +111,7 @@ select { padding-right: 10px; max-width: 100%; }
   <div class="stage" id="stage">
     <div class="badge" id="badge">Arms uncrossed</div>
     <div class="hint">Drag to turn the juggler</div>
+    <div class="problem" id="problem"></div>
     <div class="views" id="views">
       <button data-view="front" aria-pressed="true">Front</button>
       <button data-view="above">Above</button>
@@ -124,18 +130,33 @@ select { padding-right: 10px; max-width: 100%; }
   <div class="info" id="info"></div>
 </div>
 
+<script>
+// if anything goes wrong, say so in the blue box rather than leaving it empty
+window.addEventListener('error', function (e) { showProblem('Something went wrong: ' + e.message); });
+function showProblem(msg) {
+  var el = document.getElementById('problem');
+  if (el && !el.classList.contains('on')) { el.textContent = msg; el.classList.add('on'); }
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="engine.js"></script>
 <script>
 (function () {
   'use strict';
+  if (!window.THREE) { showProblem('The 3D library (three.js) did not load. It needs an internet connection the first time.'); return; }
+  if (!window.PH) { showProblem('engine.js did not load. Keep it in the same folder as this page.'); return; }
   var PH = window.PH, G = PH.G;
   var INK = 0x2d2a4a, RED = 0xff7b6e, BLUE = 0x4ea8ff;
   var BALL_COLS = [0xffd43b, 0x69db7c, 0xb197fc, 0xffa94d, 0xf783ac, 0x66d9e8];
 
   // ---------- scene ----------
   var stage = document.getElementById('stage');
-  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
+  catch (e) {
+    showProblem('This browser could not start 3D graphics (WebGL). In Chrome, check Settings > System > "Use graphics acceleration when available" is on, then restart it. Firefox and Safari should work as they are.');
+    return;
+  }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
