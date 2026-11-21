@@ -33,6 +33,11 @@ to load three.js). Pick a pattern, then:
   throw near the middle and catch outside.
 - Between its own throws and catches a hand drifts along its path but is kept on
   whichever side the other hand's letter says.
+- Elbows hang low, so forearms angle up from the elbow to the hand (level only
+  briefly). When the arms cross, the top arm sits higher and further forward and
+  its elbow aims for a spot by the ribs; the bottom arm's elbow aims out and back.
+- An under-the-arm throw or catch (a crossed hand whose arm is not on top) reaches
+  further over, past the top arm's elbow, so the ball goes up clear of the top arm.
 - The slash is worked out from where the first throw actually peaks, and must
   match the one written (the tests check this).
 - Siteswap digits before the slash set the throw heights, rotated to line up
@@ -48,8 +53,14 @@ while crossed).
 
 For every pattern it checks that the notation reads, the siteswap works, the slash
 matches where the first throw peaks, no arm has to stretch straight, the elbows stay
-out of the body, the forearms never touch, and the arm on top is always the one in
-front where the arms cross.
+out of the body, forearms angle up, the forearms never touch, no hand touches the
+other forearm, no ball in the air passes through an arm, and the arm on top is always
+the one in front where the arms cross.
+
+`tests/search.js` searches the arm-crossing settings (elbow spots, how far the top
+arm sits over, how far under-the-arm throws reach) for values that pass all of the
+above; the current values in `engine.js` came from it. Trial values can be passed to
+the check: `jsc -e 'var OVERRIDES={outUnder:28}' tests/check.js`.
 
 `tests/phone.html` shows the page in a phone-sized frame. Adding `?p=4&t=1.5&view=above`
 to the page address opens pattern 4 paused at beat 1.5, seen from above.

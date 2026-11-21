@@ -249,12 +249,12 @@ function showProblem(msg) {
 
   // ---------- camera ----------
   var VIEWS = {
-    front: { az: 0, el: 0.2, dist: 185, ty: 122 },
+    front: { az: 0, el: 0.08, dist: 185, ty: 124 },
     above: { az: 0, el: 1.22, dist: 175, ty: 114 },
-    side: { az: -Math.PI / 2, el: 0.18, dist: 185, ty: 122 },
+    side: { az: -Math.PI / 2, el: 0.08, dist: 185, ty: 124 },
     eyes: { eyes: true }
   };
-  var cam = { az: 0, el: 0.2, dist: 185, ty: 122 }, camGoal = null;
+  var cam = { az: 0, el: 0.08, dist: 185, ty: 124 }, camGoal = null;
   var eyesOn = false, baseFov = 34;
   function placeCamera() {
     headGroup.visible = !eyesOn;

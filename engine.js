@@ -18,13 +18,14 @@
   'use strict';
 
   var G = {
-    shoulderX: 17, shoulderY: 138, shoulderZ: 0,
-    upper: 31, fore: 31,            // shoulder to elbow, elbow to hand centre
+    shoulderX: 19, shoulderY: 138, shoulderZ: 0,
+    upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
     handZ: 31,                      // how far in front of the body the hands work
-    outU: 23, outX: 16, inner: 4,   // throw/catch distance from the middle
+    outU: 23, outX: 16, outUnder: 30, inner: 4,   // throw/catch distance from the middle
     crossMin: 7,                    // a crossed hand is at least this far over
-    throwY: 112, catchY: 120, scoopY: 105,
-    topZ: 9, topY: 6, botZ: -7, botY: -9,   // how far the top arm sits over the other
+    throwY: 119, catchY: 127, scoopY: 113,
+    topZ: 12, topY: 8.5, botZ: -14, botY: 0,    // how far the top arm sits over the other
+    topElbow: [19.4, 119.6, 26], botElbow: [29.3, 99, 8.1], elbowEarly: 0.9, elbowOut: 0.4, elbowFwd: -0.05,
     handR: 4.6, foreR: 4.0, upperR: 4.8, ballR: 3.6,
     bps: 2.8,                       // beats per second at full speed
     g: 980
@@ -110,13 +111,17 @@
     // active key positions: where the hand that throws or catches must be
     function throwKey(j) {
       var h = handOf(j), s = tok(j).t, crossed = s !== 'U';
-      var far = crossed ? G.outX : G.outU;
+      // an under-the-arm throw reaches further out so the ball clears the top arm
+      var under = crossed && s !== (h === 0 ? 'R' : 'L');
+      var far = crossed ? (under ? G.outUnder : G.outX) : G.outU;
       var x = sideFor(h, s) * (dirOf(j) === 'o' ? far : G.inner);
       return [x, G.throwY, G.handZ];
     }
     function catchKey(j) {
       var h = handOf(j), s = tok(j).c.toUpperCase(), crossed = s !== 'U';
-      var far = crossed ? G.outX : G.outU;
+      // an under-the-arm catch out wide also reaches past the top arm's elbow
+      var under = crossed && s !== (h === 0 ? 'R' : 'L');
+      var far = crossed ? (under ? G.outUnder : G.outX) : G.outU;
       var inc = incoming[mod(j, P)];
       var d = dirOf(inc === null ? j - 1 : inc);
       var x = sideFor(h, s) * (d === 'o' ? G.inner : far);
@@ -188,10 +193,19 @@
         var own = OWN[h];
         var across = smooth(-6, 12, P0[0] * -own);
         var S = [own * (G.shoulderX - 2 * across), G.shoulderY, G.shoulderZ + 5 * across];
-        var pole = [own * 0.8, -0.6, 0.05];
-        pole[0] += -own * 0.2 * across;
-        pole[1] += across * (top * 0.75 - bot * 0.1);
-        pole[2] += across * (top * 0.5 + bot * 0.2);
+        // elbows hang low by the body, so forearms angle up to the hands. When the
+        // arms cross, the top arm's elbow stays tucked by the ribs (under-the-arm
+        // throws go up outside it) and the bottom arm's elbow sits further out and back
+        var pole = [own * G.elbowOut, -1, G.elbowFwd];
+        var k = Math.max(across, G.elbowEarly);
+        var aim = function (spot, wgt) {
+          if (wgt <= 0) return;
+          var d = [own * spot[0] - S[0], spot[1] - S[1], spot[2] - S[2]], l = Math.hypot(d[0], d[1], d[2]);
+          var pl = Math.hypot(pole[0], pole[1], pole[2]);
+          for (var c = 0; c < 3; c++) pole[c] = pole[c] / pl * (1 - wgt) + d[c] / l * wgt;
+        };
+        aim(G.topElbow, top * k);
+        aim(G.botElbow, bot * across);
         var El = ik(S, P0, G.upper, G.fore, pole);
         out.hands[h] = El.hand; out.elbows[h] = El.elbow; out.shoulders[h] = S; out.reach = Math.max(out.reach || 0, El.reach);
       }
@@ -237,6 +251,8 @@
             var F = (tc - j) / bps, tau = (tb - j) / bps;
             var vy = (bpt[1] - a[1]) / F + g * F / 2;
             pos = [a[0] + (bpt[0] - a[0]) * tau / F, a[1] + vy * tau - g * tau * tau / 2, a[2] + (bpt[2] - a[2]) * tau / F];
+            res.push({ pos: pos, col: colAt(j), fly: true, from: hand, to: handOf(k), t0: j, t1: tc });
+            continue;
           } else pos = ballOn(poseNow.hands[handOf(k)]);
         } else pos = ballOn(poseNow.hands[hand]);
         res.push({ pos: pos, col: colAt(j) });
