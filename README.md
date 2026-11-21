@@ -75,7 +75,13 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   before it has no catch letter of its own.
 - `O` throws go from the outside and are caught outside.
 - Patterns with more balls are juggled faster, so they stay compact: a 4-ball
-  pattern runs at about 1.5 times the tempo of a 3-ball one.
+  pattern runs at about 1.5 times the tempo of a 3-ball one. The base tempo is 3.5
+  beats a second, as in the article's Juggling Lab settings.
+- Throws higher than a pattern's basic throw are compressed, as jugglers do: a 4 or
+  5 goes only a little higher than a 3 (in Rubenstein's Revenge the 3s peak just
+  under the chin and the 5 about the middle of the head). Each ball still follows a
+  smooth arc; higher throws get the gravity that gives them that height (`compress`
+  in engine.js). Short throws (1s, thrown 2s) are not changed.
 
 Not in yet: multiplexes, empty hands, `I`, `-` direction changes, sebs (forward
 throws) and the hectic messes (an arm swapping from under to over while crossed).
@@ -83,7 +89,9 @@ throws) and the hectic messes (an arm swapping from under to over while crossed)
 Open questions: four `O` windmills (under throw windmill, under throw 4233 and 342T3
 windmills, 5223 alternating windmill) come out with the first throw peaking on the
 other side from the written slash, which suggests `O` is modelled wrongly. The 2T in
-the 342T33 mills mess brushes the top forearm by 1.5 cm.
+the 342T33 mills mess brushes the top forearm a little, and in the mills mess with
+windmill and the mills mess with shower, one uncrossed throw is brushed by its own
+forearm (2 cm) as that arm sweeps over on top.
 
 ## Tests
 

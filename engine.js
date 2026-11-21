@@ -25,11 +25,11 @@
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 119, catchY: 127, scoopY: 113,
     topZ: 0, topY: 0, botZ: -4.1, botY: 0,    // how far the top arm sits over the other
-    topElbow: [17.3, 127.7, 15.9], botElbow: [31.4, 109.6, 7], elbowEarly: 0.9, topFloor: 128, botCap: 113.2, underDrop: 8, underFwd: 6.6, underOut: 1, underWin: 0.4, nearIn: 21.8, nearOut: 33.7,
-    dipLead: 0.2, dipFrac: 0.35, underCatch: 0.1, minArc: 12, graze: 1, underZMax: 33, oneFlight: 0.25, tempoK: 0.8,   // the most a ball or arm may brush another arm, in cm
+    topElbow: [17.3, 127.7, 15.9], botElbow: [31.4, 109.6, 7], elbowEarly: 0.9, topFloor: 128, botCap: 113.2, underDrop: 8, underFwd: 6.6, underOut: 2, underWin: 0.4, nearIn: 21.8, nearOut: 33.7,
+    dipLead: 0.2, dipFrac: 0.35, underCatch: 0.1, minArc: 12, graze: 1, underZMax: 33, oneFlight: 0.25, tempoK: 0.8, compress: 0.71,   // the most a ball or arm may brush another arm, in cm
     drive: 0.22, follow: 0.1, settle: 0.18, give: 0.15, giveBack: 0.3, underStroke: 0.5, catchGive: 0.4, maxStroke: 110, elbowOut: 0.4, elbowFwd: -0.05,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
-    bps: 2.8,                       // beats per second at full speed
+    bps: 3.5,                       // beats per second at full speed (the article's Juggling Lab setting)
     g: 980
   };
   var OWN = [-1, 1];                // own side of hand 0 (right) and hand 1 (left)
@@ -108,6 +108,16 @@
 
     // more balls are juggled faster, so the pattern stays compact rather than towering
     var BPS = G.bps * (balls > 3 ? ((balls - 1.5) / 1.5) / Math.pow(balls / 3, G.tempoK / 2) : 1);
+
+    // Throws higher than the pattern's basic throw are compressed, as jugglers do: a 4 or 5
+    // goes only a little higher than a 3 (a 5 in Rubenstein's Revenge peaks about head height).
+    // Each ball still follows a smooth arc, with the gravity that gives it that height.
+    var F0 = (Math.max(3, balls) - 1.5) / BPS;
+    function gFor(F) {
+      if (F <= F0) return G.g;
+      var h = G.g * F0 * F0 / 8 * Math.pow(F / F0, G.compress);
+      return 8 * h / (F * F);
+    }
 
     // which throw lands at catch k (null for a held ball)
     var incoming = [];
@@ -285,8 +295,9 @@
         if (!flies(j)) continue;
         var h = handOf(j), k = j + nOf(j) - 2, tc = catchTime(k), F = (tc - j) / BPS;
         var a = pose(j, true).hands[h], b = pose(tc, true).hands[handOf(k)];
-        var v = [(b[0] - a[0]) / F, (b[1] - a[1]) / F + G.g * F / 2, (b[2] - a[2]) / F];   // cm/s at release
-        var vl = [v[0], v[1] - G.g * F, v[2]];                                              // cm/s at the catch
+        var gg = gFor(F);
+        var v = [(b[0] - a[0]) / F, (b[1] - a[1]) / F + gg * F / 2, (b[2] - a[2]) / F];   // cm/s at release
+        var vl = [v[0], v[1] - gg * F, v[2]];                                              // cm/s at the catch
         var sc = Math.min(1, G.maxStroke / Math.max(1, v[1] / BPS));
         var under = underThrows[h].some(function (u) { return u.t === j; }) ? G.underStroke : 1;
         strokes[h].push({ t: j, catch: false, v: v.map(function (x) { return x / BPS * sc * under; }) });
@@ -416,9 +427,9 @@
           var k = j + nj - 2, tc = catchTime(k);
           if (tb < tc) {
             var a = ballOn(pose(j).hands[hand]), bpt = ballOn(pose(tc).hands[handOf(k)]);
-            var F = (tc - j) / bps, tau = (tb - j) / bps;
-            var vy = (bpt[1] - a[1]) / F + g * F / 2;
-            pos = [a[0] + (bpt[0] - a[0]) * tau / F, a[1] + vy * tau - g * tau * tau / 2, a[2] + (bpt[2] - a[2]) * tau / F];
+            var F = (tc - j) / bps, tau = (tb - j) / bps, gg = gFor(F);
+            var vy = (bpt[1] - a[1]) / F + gg * F / 2;
+            pos = [a[0] + (bpt[0] - a[0]) * tau / F, a[1] + vy * tau - gg * tau * tau / 2, a[2] + (bpt[2] - a[2]) * tau / F];
             res.push({ pos: pos, col: colAt(j), fly: true, from: hand, to: handOf(k), t0: j, t1: tc });
             continue;
           } else pos = ballOn(poseNow.hands[handOf(k)]);
@@ -455,7 +466,7 @@
       if (!flies(j)) { slashSeen = sideFor(0, t0.t) < 0 ? '/' : '\\'; break; }
       var k = j + nOf(j) - 2, tc = catchTime(k);
       var a0 = pose(j).hands[0], b0 = pose(tc).hands[handOf(k)];
-      var F = (tc - j) / bps, vy = (b0[1] - a0[1]) / F + g * F / 2, tp = Math.min(F, vy / g);
+      var F = (tc - j) / bps, gs = gFor(F), vy = (b0[1] - a0[1]) / F + gs * F / 2, tp = Math.min(F, vy / gs);
       var xp = a0[0] + (b0[0] - a0[0]) * tp / F;
       slashSeen = xp < 0 ? '/' : '\\';
       break;
