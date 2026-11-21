@@ -43,6 +43,8 @@ to load three.js). Pick a pattern, then:
   front of the top upper arm. A catch out wide under the arm, as in the TR messes,
   is made in the same place, because a catch is the time reverse of a throw. Under
   throws and catches near the middle stay under the top forearm.
+- Near the top arm's elbow, the bottom hand always passes in front of it, never
+  behind.
 - The slash is worked out from where the first throw actually peaks, and must
   match the one written (the tests check this).
 - Siteswap digits before the slash set the throw heights, rotated to line up
@@ -58,7 +60,8 @@ while crossed).
 
 For every pattern it checks that the notation reads, the siteswap works, the slash
 matches where the first throw peaks, no arm has to stretch straight, the elbows stay
-out of the body, forearms angle up, the forearms never touch, no hand touches the
+out of the body, forearms angle up, the under hand never goes behind the top arm's
+elbow, the forearms never touch, no hand touches the
 other forearm, no ball in the air passes through an arm, and the arm on top is always
 the one in front where the arms cross.
 

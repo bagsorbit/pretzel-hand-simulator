@@ -7,13 +7,13 @@ var RANGES = {
   topElbow0: [12, 26], topElbow1: [110, 126], topElbow2: [8, 26],
   botElbow0: [18, 34], botElbow1: [96, 112], botElbow2: [0, 18],
   topFloor: [124, 133], botCap: [104, 116], topZ: [4, 14], botZ: [-18, -6],
-  underDrop: [8, 18], underFwd: [3, 12], underOut: [4, 14], underWin: [0.3, 0.6], elbowEarly: [0.5, 1]
+  underDrop: [8, 18], underFwd: [3, 12], underOut: [4, 14], underWin: [0.3, 0.6], elbowEarly: [0.5, 1], nearIn: [8, 22], nearOut: [18, 36]
 };
 var base = {}; for (var k in G) base[k] = Array.isArray(G[k]) ? G[k].slice() : G[k];
 function apply(x) {
   for (var k in base) G[k] = Array.isArray(base[k]) ? base[k].slice() : base[k];
   G.topElbow = [x.topElbow0, x.topElbow1, x.topElbow2]; G.botElbow = [x.botElbow0, x.botElbow1, x.botElbow2];
-  ['topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin'].forEach(function (k) { G[k] = x[k]; });
+  ['topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut'].forEach(function (k) { G[k] = x[k]; });
 }
 function score(x, perBeat) {
   apply(x);
@@ -23,7 +23,7 @@ function score(x, perBeat) {
     // the same limits as tests/check.js, with a small safety margin
     f += Math.max(0, 2 * G.foreR + 0.7 - r.minFore) * 3; f += Math.max(0, 0.8 - r.minBall) * 3;
     f += Math.max(0, 2 * G.handR + 0.5 - r.minHand) + Math.max(0, G.handR + G.foreR + 0.5 - r.minHandFore) * 2;
-    f += r.wrongTop * 0.2; f += Math.max(0, r.maxReach - 0.97) * 200;
+    f += r.wrongTop * 0.2; f += r.behind * 0.2; f += Math.max(0, r.maxReach - 0.97) * 200;
     f += Math.max(0, -r.minElbowBody) * 3; f += Math.max(0, r.down / r.samples - 0.05) * 100;
     if (f > 0) fails++;
     s += f;

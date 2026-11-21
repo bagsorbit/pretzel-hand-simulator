@@ -22,6 +22,7 @@ PH.PATTERNS.forEach(function (pt) {
   if (r.minBall < 0.5) msgs.push('ball goes through an arm: ' + f1(r.minBall) + ' cm at beat ' + f1(r.ballT));
   if (r.wrongTop) msgs.push('wrong arm in front at ' + r.wrongTop + ' samples');
   if (r.minElbowBody < 0) msgs.push('elbow inside body');
+  if (r.behind) msgs.push('under hand goes behind the top elbow at ' + r.behind + ' samples');
   if (r.down / r.samples > 0.1) msgs.push('forearm slopes down ' + Math.round(100 * r.down / r.samples) + '% of the time');
   print((msgs.length ? 'WARN ' : 'ok   ') + pt.name + '  balls ' + m.balls + ', forearm gap ' + f1(r.minFore) +
     ', ball clearance ' + f1(r.minBall) + ', hand gap ' + f1(r.minHand) + ', reach ' + f1(r.maxReach * 100) + '%, forearm down ' +

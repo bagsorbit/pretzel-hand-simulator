@@ -27,7 +27,7 @@ function measure(pt, perBeat) {
   var G = PH.G, m = PH.build(pt.src);
   if (!m.ok) return { error: m.error };
   var r = { m: m, minFore: 1e9, minHand: 1e9, minHandFore: 1e9, maxReach: 0, wrongTop: 0, minElbowBody: 1e9, worstT: 0,
-            minBall: 1e9, ballT: 0, down: 0, samples: 0, slashOk: m.slashSeen === m.parsed.slash };
+            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, slashOk: m.slashSeen === m.parsed.slash };
   var steps = m.period * perBeat;
   for (var i = 0; i < steps; i++) {
     var t = i / perBeat, p = m.at(t);
@@ -49,6 +49,11 @@ function measure(pt, perBeat) {
         if (d < r.minBall) { r.minBall = d; r.ballT = t; }
       });
     });
+    // the bottom hand never goes behind the top arm's elbow when it is close to it
+    if (Math.abs(p.w) > 0.4) {
+      var TA = p.w > 0 ? R : L, BA = p.w > 0 ? L : R;
+      if (Math.hypot(BA.h[0] - TA.e[0], BA.h[1] - TA.e[1]) < 18 && BA.h[2] < TA.e[2]) r.behind++;
+    }
     r.minHand = Math.min(r.minHand, len(sub(R.h, L.h)));
     r.minHandFore = Math.min(r.minHandFore, segDist(R.h, R.h, L.e, L.h).d, segDist(L.h, L.h, R.e, R.h).d);
     r.maxReach = Math.max(r.maxReach, p.reach);

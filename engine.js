@@ -24,8 +24,8 @@
     outU: 23, outX: 16, outUnder: 30, inner: 4,   // throw/catch distance from the middle
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 119, catchY: 127, scoopY: 113,
-    topZ: 13.7, topY: 0, botZ: -18, botY: 0,    // how far the top arm sits over the other
-    topElbow: [16.8, 125.1, 26], botElbow: [20.1, 101.1, 14.4], elbowEarly: 0.5, topFloor: 132.9, botCap: 109.8, underDrop: 9.7, underFwd: 6.3, underOut: 8.3, underWin: 0.3, elbowOut: 0.4, elbowFwd: -0.05,
+    topZ: 14, topY: 0, botZ: -17.2, botY: 0,    // how far the top arm sits over the other
+    topElbow: [24.2, 126, 24.3], botElbow: [18, 110, 5.6], elbowEarly: 0.7, topFloor: 133, botCap: 111.1, underDrop: 8, underFwd: 8.9, underOut: 4.2, underWin: 0.5, nearIn: 16.7, nearOut: 21, elbowOut: 0.4, elbowFwd: -0.05,
     handR: 4.3, foreR: 3.4, upperR: 4.2, ballR: 3.6,
     bps: 2.8,                       // beats per second at full speed
     g: 980
@@ -238,12 +238,17 @@
         P0[1] += top * G.topY + bot * G.botY;
         P0[2] += top * G.topZ + bot * G.botZ;
         if (bot > 0 && topEl) {
+          var e = topEl.elbow;
           // an under-the-arm throw is made just below and slightly in front of the top arm's elbow
           var u = underPull(h, tb) * bot;
           if (u > 0) {
-            var e = topEl.elbow, tgt = [e[0] + OWN[1 - h] * G.underOut, e[1] - G.underDrop, e[2] + G.underFwd];
+            var tgt = [e[0] + OWN[1 - h] * G.underOut, e[1] - G.underDrop, e[2] + G.underFwd];
             for (var c = 0; c < 3; c++) P0[c] += (tgt[c] - P0[c]) * u;
           }
+          // near the top arm's elbow, the bottom hand passes in front of it, never behind
+          var near = (1 - smooth(G.nearIn, G.nearOut, Math.hypot(P0[0] - e[0], P0[1] - e[1]))) * bot;
+          var front = e[2] + G.underFwd;
+          if (near > 0 && P0[2] < front) P0[2] += (front - P0[2]) * near;
         }
         var El = arm(h, P0, top, bot);
         if (top > 0) topEl = El;
