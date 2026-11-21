@@ -22,11 +22,12 @@ PH.PATTERNS.forEach(function (pt) {
   if (r.minBall < -G.graze) msgs.push('ball goes through an arm: ' + f1(r.minBall) + ' cm at beat ' + f1(r.ballT));
   if (r.wrongTop) msgs.push('wrong arm in front at ' + r.wrongTop + ' samples');
   if (r.minElbowBody < 0) msgs.push('elbow inside body');
+  if (r.inBody > 0.5) msgs.push('hand or forearm goes ' + f1(r.inBody) + ' cm into the body at beat ' + f1(r.inBodyT));
   if (r.minArc < G.minArc) msgs.push('a ball barely arcs: ' + f1(r.minArc) + ' cm sideways');
   if (r.behind) msgs.push('under hand goes behind the top elbow at ' + r.behind + ' samples');
   if (r.down / r.samples > 0.1) msgs.push('forearm slopes down ' + Math.round(100 * r.down / r.samples) + '% of the time');
   print((msgs.length ? 'WARN ' : 'ok   ') + pt.name + '  balls ' + m.balls + ', forearm gap ' + f1(r.minFore) +
-    ', ball clearance ' + f1(r.minBall) + ', hand gap ' + f1(r.minHand) + ', arc ' + f1(r.minArc) + ', reach ' + f1(r.maxReach * 100) + '%, forearm down ' +
+    ', ball clearance ' + f1(r.minBall) + ', hand gap ' + f1(r.minHand) + ', into body ' + f1(r.inBody) + ', arc ' + f1(r.minArc) + ', reach ' + f1(r.maxReach * 100) + '%, forearm down ' +
     Math.round(100 * r.down / r.samples) + '%' + (m.notes.length ? '  [' + m.notes.join('; ') + ']' : ''));
   msgs.forEach(function (s) { print('       ' + s); });
   if (msgs.length) bad++;

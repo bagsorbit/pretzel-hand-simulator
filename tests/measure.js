@@ -23,14 +23,28 @@ function f1(x) { return (Math.round(x * 10) / 10).toFixed(1); }
 
 
 var BALL_R = PH.G.ballR;
+// how far a sphere of radius rad at point q sinks into the body (torso and hips, as drawn), in cm (0 = clear)
+function bodyDepth(q, rad) {
+  var worst = 0;
+  [[0, 113, 0, 17, 30, 12], [0, 89, 0, 15.5, 11, 10.5]].forEach(function (e) {
+    var dx = (q[0] - e[0]) / (e[3] + rad), dy = (q[1] - e[1]) / (e[4] + rad), dz = (q[2] - e[2]) / (e[5] + rad);
+    var k = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (k < 1) worst = Math.max(worst, (1 - k) * Math.min(e[3], e[5]));
+  });
+  return worst;
+}
 function measure(pt, perBeat) {
   var G = PH.G, m = PH.build(pt.src);
   if (!m.ok) return { error: m.error };
   var r = { m: m, minFore: 1e9, minHand: 1e9, minHandFore: 1e9, maxReach: 0, wrongTop: 0, minElbowBody: 1e9, worstT: 0,
-            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, slashOk: m.slashSeen === m.parsed.slash };
+            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash };
   // every ball should arc across a little, not go straight up and down
-  r.minArc = 1e9;
+  r.minArc = 1e9; r.underZ = 0;
   for (var j = 0; j < m.period; j++) {
+    // how far forward the hand is at an outside under-the-arm throw
+    var tk = m.tokens[j % m.tokens.length], own = j % 2 ? 'L' : 'R';
+    if (tk.t !== 'U' && tk.t !== own && m.parsed.dirs[(j % m.tokens.length) % m.parsed.dirs.length] === 'o')
+      r.underZ = Math.max(r.underZ, m.pose(j).hands[j % 2][2]);
     var nn = m.parsed.digits[j % m.parsed.digits.length];
     if (nn < 3) continue;
     var k = j + nn - 2, a = m.pose(j).hands[j % 2], b = m.pose(k + 0.5).hands[k % 2];
@@ -42,9 +56,9 @@ function measure(pt, perBeat) {
     var R = { s: p.shoulders[0], e: p.elbows[0], h: p.hands[0] }, L = { s: p.shoulders[1], e: p.elbows[1], h: p.hands[1] };
     var ff = segDist(R.e, R.h, L.e, L.h);
     if (ff.d < r.minFore) { r.minFore = ff.d; r.worstT = t; }
-    // where the forearms come close, the top one must be over the other (higher). Near
-    // the top arm's elbow the under hand is in front of it, which is right.
-    if (ff.d < 16 && Math.abs(p.w) > 0.4) {
+    // where the forearms come close enough to overlap, the top one must be over the other
+    // (higher). Near the top arm's elbow the under hand is in front of it, which is right.
+    if (ff.d < 12 && Math.abs(p.w) > 0.4) {
       var topP = p.w > 0 ? ff.c1 : ff.c2, botP = p.w > 0 ? ff.c2 : ff.c1;
       if (topP[1] < botP[1] + 2) r.wrongTop++;
     }
@@ -62,6 +76,12 @@ function measure(pt, perBeat) {
       var TA = p.w > 0 ? R : L, BA = p.w > 0 ? L : R;
       if (Math.hypot(BA.h[0] - TA.e[0], BA.h[1] - TA.e[1]) < 18 && BA.h[2] < TA.e[2]) r.behind++;
     }
+    // hands and forearms stay out of the body
+    [R, L].forEach(function (A) {
+      var d = bodyDepth(A.h, G.handR);
+      for (var q = 0; q <= 4; q++) d = Math.max(d, bodyDepth(add(A.e, mul(sub(A.h, A.e), q / 4)), G.foreR));
+      if (d > r.inBody) { r.inBody = d; r.inBodyT = t; }
+    });
     r.minHand = Math.min(r.minHand, len(sub(R.h, L.h)));
     r.minHandFore = Math.min(r.minHandFore, segDist(R.h, R.h, L.e, L.h).d, segDist(L.h, L.h, R.e, R.h).d);
     r.maxReach = Math.max(r.maxReach, p.reach);

@@ -26,7 +26,7 @@
     throwY: 119, catchY: 127, scoopY: 113,
     topZ: 0.2, topY: 0, botZ: -15.3, botY: 0,    // how far the top arm sits over the other
     topElbow: [19, 126, 16], botElbow: [33.5, 112, 1.6], elbowEarly: 1, topFloor: 128, botCap: 113.4, underDrop: 8, underFwd: 6.7, underOut: 1, underWin: 0.5, nearIn: 20.1, nearOut: 27.1,
-    dipLead: 0.2, dipFrac: 0.35, underCatch: 0.15, minArc: 12, graze: 1,   // the most a ball or arm may brush another arm, in cm
+    dipLead: 0.2, dipFrac: 0.35, underCatch: 0.15, minArc: 12, graze: 1, underZMax: 33,   // the most a ball or arm may brush another arm, in cm
     drive: 0.22, follow: 0.1, settle: 0.18, give: 0.15, giveBack: 0.3, underStroke: 0.5, catchGive: 0.4, maxStroke: 110, elbowOut: 0.4, elbowFwd: -0.05,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 2.8,                       // beats per second at full speed
@@ -275,6 +275,27 @@
       return o;
     }
 
+    // how far (cm) a hand or forearm sinks into the body as drawn (torso and hips)
+    var BODY = [[0, 113, 0, 17, 30, 12], [0, 89, 0, 15.5, 11, 10.5]];
+    function sinkInto(q, rad) {
+      var worst = 0;
+      for (var i = 0; i < BODY.length; i++) {
+        var e = BODY[i];
+        var dx = (q[0] - e[0]) / (e[3] + rad), dy = (q[1] - e[1]) / (e[4] + rad), dz = (q[2] - e[2]) / (e[5] + rad);
+        var k = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (k < 1) worst = Math.max(worst, (1 - k) * Math.min(e[3], e[5]));
+      }
+      return worst;
+    }
+    function armInBody(El) {
+      var d = sinkInto(El.hand, G.handR);
+      for (var q = 0; q <= 4; q++) {
+        var f = q / 4, pt = [El.elbow[0] + (El.hand[0] - El.elbow[0]) * f, El.elbow[1] + (El.hand[1] - El.elbow[1]) * f, El.elbow[2] + (El.hand[2] - El.elbow[2]) * f];
+        d = Math.max(d, sinkInto(pt, G.foreR));
+      }
+      return d;
+    }
+
     function pose(tb, plain) {
       var R = baseHand(0, tb), L = baseHand(1, tb);
       var overlap = smooth(-26, -6, R[0] - L[0]);
@@ -306,6 +327,14 @@
         }
         if (!plain) { var so = strokeAt(h, tb); for (var c2 = 0; c2 < 3; c2++) P0[c2] += so[c2]; }
         var El = arm(h, P0, top, bot);
+        // the body pushes the arm out: if the hand or forearm would sink into the torso or
+        // hips, move the hand forward just enough to clear, and work the arm out again
+        for (var pass = 0; pass < 3; pass++) {
+          var dep = armInBody(El);
+          if (dep <= 0) break;
+          P0[2] += dep * 1.15 + 0.3;
+          El = arm(h, P0, top, bot);
+        }
         if (top > 0) topEl = El;
         out.hands[h] = El.hand; out.elbows[h] = El.elbow; out.shoulders[h] = El.shoulder; out.reach = Math.max(out.reach, El.reach);
       });

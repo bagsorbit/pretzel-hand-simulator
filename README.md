@@ -48,6 +48,8 @@ to load three.js). Pick a pattern, then:
 - In the mills mess, after an under-the-arm throw the same hand catches a little
   way back towards where it threw from, but every ball still arcs across (at least
   12 cm sideways), so the balls follow each other in the mess's snake shape.
+- The body pushes the arms out: if a hand or forearm would sink into the torso or
+  hips, the hand moves forward just enough to clear.
 - Throws are real throwing movements: the hand dips with the ball, drives up, and
   lets go while moving at the ball's own speed, then follows through and settles.
   On a catch the hand gives a little along the ball's path. (Under-the-arm throws
@@ -67,7 +69,7 @@ while crossed).
 
 For every pattern it checks that the notation reads, the siteswap works, the slash
 matches where the first throw peaks, no arm has to stretch straight, the elbows stay
-out of the body, forearms angle up, the under hand never goes behind the top arm's
+out of the body, hands and forearms stay out of the body, forearms angle up, the under hand never goes behind the top arm's
 elbow, the forearms never touch, no hand touches the
 other forearm, no ball in the air passes through an arm (a brush of up to 1 cm is
 allowed, as `graze` in engine.js), every ball arcs sideways, and the arm on top is always
