@@ -242,7 +242,7 @@ function showProblem(msg) {
   var arms = [makeArm(RED), makeArm(BLUE)];
   var ballMeshes = [];
   for (var i = 0; i < 8; i++) {
-    var bm = sphere(4.2, toon(BALL_COLS[i % BALL_COLS.length]));
+    var bm = sphere(G.ballR, toon(BALL_COLS[i % BALL_COLS.length]));
     bm.children[0].castShadow = false;   // ball shadows made dark spots on the shirt
     bm.visible = false; ballMeshes.push(bm);
   }

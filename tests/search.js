@@ -4,16 +4,16 @@ load('engine.js');
 var PH = this.PH, G = PH.G;
 load('tests/measure.js');
 var RANGES = {
-  topElbow0: [12, 26], topElbow1: [110, 126], topElbow2: [8, 26],
+  topElbow0: [12, 19], topElbow1: [110, 126], topElbow2: [2, 16],
   botElbow0: [18, 34], botElbow1: [96, 112], botElbow2: [0, 18],
-  topFloor: [124, 133], botCap: [104, 116], topZ: [4, 14], botZ: [-18, -6],
-  underDrop: [8, 18], underFwd: [3, 12], underOut: [4, 14], underWin: [0.3, 0.6], elbowEarly: [0.5, 1], nearIn: [8, 22], nearOut: [18, 36]
+  topFloor: [124, 133], botCap: [104, 116], topZ: [0, 10], botZ: [-18, -4], handZ: [22, 32],
+  underDrop: [8, 18], underFwd: [6, 10], underOut: [0, 5], underWin: [0.3, 0.6], elbowEarly: [0.5, 1], nearIn: [8, 22], nearOut: [18, 36]
 };
 var base = {}; for (var k in G) base[k] = Array.isArray(G[k]) ? G[k].slice() : G[k];
 function apply(x) {
   for (var k in base) G[k] = Array.isArray(base[k]) ? base[k].slice() : base[k];
   G.topElbow = [x.topElbow0, x.topElbow1, x.topElbow2]; G.botElbow = [x.botElbow0, x.botElbow1, x.botElbow2];
-  ['topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut'].forEach(function (k) { G[k] = x[k]; });
+  ['handZ', 'topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut'].forEach(function (k) { G[k] = x[k]; });
 }
 function score(x, perBeat) {
   apply(x);
@@ -32,7 +32,7 @@ function score(x, perBeat) {
 }
 var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
 function sample() { var x = {}; for (var k in RANGES) x[k] = RANGES[k][0] + rnd() * (RANGES[k][1] - RANGES[k][0]); return x; }
-var best = {}; for (var k in RANGES) best[k] = /^(top|bot)Elbow\d$/.test(k) ? G[k.slice(0, -1)][+k.slice(-1)] : G[k];
+var best = {}; for (var k in RANGES) best[k] = Math.max(RANGES[k][0], Math.min(RANGES[k][1], /^(top|bot)Elbow\d$/.test(k) ? G[k.slice(0, -1)][+k.slice(-1)] : G[k]));
 var bestS = score(best, 40);
 print('start score ' + bestS.s.toFixed(2) + ' (' + bestS.fails + ' failing)');
 var N = this.N || 400;

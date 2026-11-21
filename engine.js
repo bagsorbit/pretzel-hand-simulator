@@ -20,13 +20,13 @@
   var G = {
     shoulderX: 19, shoulderY: 138, shoulderZ: 0,
     upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
-    handZ: 31,                      // how far in front of the body the hands work
+    handZ: 25.4,                      // how far in front of the body the hands work
     outU: 23, outX: 16, outUnder: 30, inner: 4,   // throw/catch distance from the middle
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 119, catchY: 127, scoopY: 113,
-    topZ: 14, topY: 0, botZ: -17.2, botY: 0,    // how far the top arm sits over the other
-    topElbow: [24.2, 126, 24.3], botElbow: [18, 110, 5.6], elbowEarly: 0.7, topFloor: 133, botCap: 111.1, underDrop: 8, underFwd: 8.9, underOut: 4.2, underWin: 0.5, nearIn: 16.7, nearOut: 21, elbowOut: 0.4, elbowFwd: -0.05,
-    handR: 4.3, foreR: 3.4, upperR: 4.2, ballR: 3.6,
+    topZ: 3.9, topY: 0, botZ: -13.5, botY: 0,    // how far the top arm sits over the other
+    topElbow: [19, 126, 16], botElbow: [24.9, 112, 4], elbowEarly: 1, topFloor: 133, botCap: 111.2, underDrop: 8, underFwd: 9, underOut: 0, underWin: 0.6, nearIn: 17.1, nearOut: 36, elbowOut: 0.4, elbowFwd: -0.05,
+    handR: 4.3, foreR: 3.4, upperR: 4.2, ballR: 3.4,
     bps: 2.8,                       // beats per second at full speed
     g: 980
   };
@@ -185,9 +185,13 @@
     var underThrows = [[], []];
     for (j = 0; j < P; j++) {
       var tt = tok(j).t, tc = tok(j).c.toUpperCase(), hh = handOf(j), mine = hh === 0 ? 'R' : 'L';
-      // only the ones made out wide: an outside throw, or a catch of an inside throw
-      if (tt !== 'U' && tt !== mine && flies(j) && dirOf(j) === 'o') underThrows[hh].push(j);
-      if (tc !== 'U' && tc !== mine && incoming[j] !== null && dirOf(incoming[j]) === 'i') underThrows[hh].push(j + 0.5);
+      // only the ones made out wide: an outside throw, or a catch of an inside throw.
+      // After an outside under-arm throw, a hand still under the arm catches about where
+      // it threw from (as in the mills mess)
+      var wideThrow = tt !== 'U' && tt !== mine && flies(j) && dirOf(j) === 'o';
+      if (wideThrow) underThrows[hh].push(j);
+      if (tc !== 'U' && tc !== mine && incoming[j] !== null && (dirOf(incoming[j]) === 'i' || (wideThrow && tc === tt)))
+        underThrows[hh].push(j + 0.5);
     }
     // how strongly hand h is reaching under the other arm's elbow at beat tb (1 at the throw or catch)
     function underPull(h, tb) {

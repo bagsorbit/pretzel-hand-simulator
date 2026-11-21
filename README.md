@@ -45,6 +45,8 @@ to load three.js). Pick a pattern, then:
   throws and catches near the middle stay under the top forearm.
 - Near the top arm's elbow, the bottom hand always passes in front of it, never
   behind.
+- In the mills mess, after an under-the-arm throw the same hand catches about where
+  it threw from: the balls go mostly up and down and the arms carry them across.
 - The slash is worked out from where the first throw actually peaks, and must
   match the one written (the tests check this).
 - Siteswap digits before the slash set the throw heights, rotated to line up

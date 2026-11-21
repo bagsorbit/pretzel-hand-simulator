@@ -22,7 +22,7 @@ function clamp(x) { return Math.max(0, Math.min(1, x)); }
 function f1(x) { return (Math.round(x * 10) / 10).toFixed(1); }
 
 
-var BALL_R = 4.2;
+var BALL_R = PH.G.ballR;
 function measure(pt, perBeat) {
   var G = PH.G, m = PH.build(pt.src);
   if (!m.ok) return { error: m.error };
