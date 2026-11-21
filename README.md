@@ -45,8 +45,13 @@ to load three.js). Pick a pattern, then:
   throws and catches near the middle stay under the top forearm.
 - Near the top arm's elbow, the bottom hand always passes in front of it, never
   behind.
-- In the mills mess, after an under-the-arm throw the same hand catches about where
-  it threw from: the balls go mostly up and down and the arms carry them across.
+- In the mills mess, after an under-the-arm throw the same hand catches a little
+  way back towards where it threw from, but every ball still arcs across (at least
+  12 cm sideways), so the balls follow each other in the mess's snake shape.
+- Throws are real throwing movements: the hand dips with the ball, drives up, and
+  lets go while moving at the ball's own speed, then follows through and settles.
+  On a catch the hand gives a little along the ball's path. (Under-the-arm throws
+  use a smaller movement.)
 - The slash is worked out from where the first throw actually peaks, and must
   match the one written (the tests check this).
 - Siteswap digits before the slash set the throw heights, rotated to line up
@@ -64,7 +69,8 @@ For every pattern it checks that the notation reads, the siteswap works, the sla
 matches where the first throw peaks, no arm has to stretch straight, the elbows stay
 out of the body, forearms angle up, the under hand never goes behind the top arm's
 elbow, the forearms never touch, no hand touches the
-other forearm, no ball in the air passes through an arm, and the arm on top is always
+other forearm, no ball in the air passes through an arm (a brush of up to 1 cm is
+allowed, as `graze` in engine.js), every ball arcs sideways, and the arm on top is always
 the one in front where the arms cross.
 
 `tests/search.js` searches the arm-crossing settings (elbow spots, how far the top

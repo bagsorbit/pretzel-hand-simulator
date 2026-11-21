@@ -28,6 +28,14 @@ function measure(pt, perBeat) {
   if (!m.ok) return { error: m.error };
   var r = { m: m, minFore: 1e9, minHand: 1e9, minHandFore: 1e9, maxReach: 0, wrongTop: 0, minElbowBody: 1e9, worstT: 0,
             minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, slashOk: m.slashSeen === m.parsed.slash };
+  // every ball should arc across a little, not go straight up and down
+  r.minArc = 1e9;
+  for (var j = 0; j < m.period; j++) {
+    var nn = m.parsed.digits[j % m.parsed.digits.length];
+    if (nn < 3) continue;
+    var k = j + nn - 2, a = m.pose(j).hands[j % 2], b = m.pose(k + 0.5).hands[k % 2];
+    r.minArc = Math.min(r.minArc, Math.abs(b[0] - a[0]));
+  }
   var steps = m.period * perBeat;
   for (var i = 0; i < steps; i++) {
     var t = i / perBeat, p = m.at(t);

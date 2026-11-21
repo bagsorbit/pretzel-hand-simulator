@@ -20,13 +20,15 @@
   var G = {
     shoulderX: 19, shoulderY: 138, shoulderZ: 0,
     upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
-    handZ: 25.4,                      // how far in front of the body the hands work
-    outU: 23, outX: 16, outUnder: 30, inner: 4,   // throw/catch distance from the middle
+    handZ: 22,                      // how far in front of the body the hands work
+    outU: 23, outX: 19, outUnder: 30, inner: 3,   // throw/catch distance from the middle
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 119, catchY: 127, scoopY: 113,
-    topZ: 3.9, topY: 0, botZ: -13.5, botY: 0,    // how far the top arm sits over the other
-    topElbow: [19, 126, 16], botElbow: [24.9, 112, 4], elbowEarly: 1, topFloor: 133, botCap: 111.2, underDrop: 8, underFwd: 9, underOut: 0, underWin: 0.6, nearIn: 17.1, nearOut: 36, elbowOut: 0.4, elbowFwd: -0.05,
-    handR: 4.3, foreR: 3.4, upperR: 4.2, ballR: 3.4,
+    topZ: 0.2, topY: 0, botZ: -15.3, botY: 0,    // how far the top arm sits over the other
+    topElbow: [19, 126, 16], botElbow: [33.5, 112, 1.6], elbowEarly: 1, topFloor: 128, botCap: 113.4, underDrop: 8, underFwd: 6.7, underOut: 1, underWin: 0.5, nearIn: 20.1, nearOut: 27.1,
+    dipLead: 0.2, dipFrac: 0.35, underCatch: 0.15, minArc: 12, graze: 1,   // the most a ball or arm may brush another arm, in cm
+    drive: 0.22, follow: 0.1, settle: 0.18, give: 0.15, giveBack: 0.3, underStroke: 0.5, catchGive: 0.4, maxStroke: 110, elbowOut: 0.4, elbowFwd: -0.05,
+    handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 2.8,                       // beats per second at full speed
     g: 980
   };
@@ -188,17 +190,20 @@
       // only the ones made out wide: an outside throw, or a catch of an inside throw.
       // After an outside under-arm throw, a hand still under the arm catches about where
       // it threw from (as in the mills mess)
+      // (pulled only partway there, so the ball it catches still arcs across)
       var wideThrow = tt !== 'U' && tt !== mine && flies(j) && dirOf(j) === 'o';
-      if (wideThrow) underThrows[hh].push(j);
-      if (tc !== 'U' && tc !== mine && incoming[j] !== null && (dirOf(incoming[j]) === 'i' || (wideThrow && tc === tt)))
-        underThrows[hh].push(j + 0.5);
+      if (wideThrow) underThrows[hh].push({ t: j, w: 1 });
+      if (tc !== 'U' && tc !== mine && incoming[j] !== null) {
+        if (dirOf(incoming[j]) === 'i') underThrows[hh].push({ t: j + 0.5, w: 1 });
+        else if (wideThrow && tc === tt) underThrows[hh].push({ t: j + 0.5, w: G.underCatch });
+      }
     }
     // how strongly hand h is reaching under the other arm's elbow at beat tb (1 at the throw or catch)
     function underPull(h, tb) {
       var best = 0, list = underThrows[h];
       for (var i = 0; i < list.length; i++) {
-        var d = Math.abs(mod(tb - list[i] + P / 2, P) - P / 2);
-        best = Math.max(best, 1 - smooth(0, G.underWin, d));
+        var d = Math.abs(mod(tb - list[i].t + P / 2, P) - P / 2);
+        best = Math.max(best, (1 - smooth(0, G.underWin, d)) * list[i].w);
       }
       return best;
     }
@@ -225,7 +230,52 @@
       return El;
     }
 
-    function pose(tb) {
+    // the throwing movement: before each throw the hand dips with the ball, drives up and
+    // lets go while moving at the ball's own speed, then follows through and settles. On a
+    // catch the hand gives a little along the ball's path. Worked out from each ball's real
+    // launch and landing speeds, taken from the movement without these strokes (the strokes
+    // are zero at the moments of throws and catches, so both agree there).
+    var strokes = null;
+    function herm(p0, m0, p1, m1, u) {
+      var u2 = u * u, u3 = u2 * u;
+      return (2 * u3 - 3 * u2 + 1) * p0 + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * p1 + (u3 - u2) * m1;
+    }
+    function buildStrokes() {
+      strokes = [[], []];
+      for (var j = 0; j < P; j++) {
+        if (!flies(j)) continue;
+        var h = handOf(j), k = j + nOf(j) - 2, tc = k + 0.5, F = (tc - j) / G.bps;
+        var a = pose(j, true).hands[h], b = pose(tc, true).hands[handOf(k)];
+        var v = [(b[0] - a[0]) / F, (b[1] - a[1]) / F + G.g * F / 2, (b[2] - a[2]) / F];   // cm/s at release
+        var vl = [v[0], v[1] - G.g * F, v[2]];                                              // cm/s at the catch
+        var sc = Math.min(1, G.maxStroke / Math.max(1, v[1] / G.bps));
+        var under = underThrows[h].some(function (u) { return u.t === j; }) ? G.underStroke : 1;
+        strokes[h].push({ t: j, catch: false, v: v.map(function (x) { return x / G.bps * sc * under; }) });
+        strokes[handOf(k)].push({ t: tc, catch: true, v: vl.map(function (x) { return x / G.bps * G.catchGive; }) });
+      }
+    }
+    function strokeAt(h, tb) {
+      if (!strokes) buildStrokes();
+      var o = [0, 0, 0], list = strokes[h];
+      for (var i = 0; i < list.length; i++) {
+        var st = list[i], tau = mod(tb - st.t + P / 2, P) - P / 2, f = 0;
+        if (!st.catch) {
+          var T0 = G.dipLead, T1 = G.drive, T2 = G.follow, T3 = G.settle;
+          if (tau >= -T1 - T0 && tau < -T1) f = -T1 * G.dipFrac * smooth(0, 1, (tau + T1 + T0) / T0);
+          else if (tau >= -T1 && tau < 0) f = herm(-T1 * G.dipFrac, 0, 0, T1, (tau + T1) / T1);
+          else if (tau >= 0 && tau < T2) f = herm(0, T2, T2 * 0.5, 0, tau / T2);
+          else if (tau >= T2 && tau < T2 + T3) f = T2 * 0.5 * (1 - smooth(0, 1, (tau - T2) / T3));
+        } else {
+          var Tc = G.give, Tr = G.giveBack;
+          if (tau >= 0 && tau < Tc) f = herm(0, Tc, Tc * 0.5, 0, tau / Tc);
+          else if (tau >= Tc && tau < Tc + Tr) f = Tc * 0.5 * (1 - smooth(0, 1, (tau - Tc) / Tr));
+        }
+        if (f) for (var c = 0; c < 3; c++) o[c] += f * st.v[c];
+      }
+      return o;
+    }
+
+    function pose(tb, plain) {
       var R = baseHand(0, tb), L = baseHand(1, tb);
       var overlap = smooth(-26, -6, R[0] - L[0]);
       var w = overSign(tb) * overlap;          // >0: right arm on top
@@ -254,6 +304,7 @@
           var front = e[2] + G.underFwd;
           if (near > 0 && P0[2] < front) P0[2] += (front - P0[2]) * near;
         }
+        if (!plain) { var so = strokeAt(h, tb); for (var c2 = 0; c2 < 3; c2++) P0[c2] += so[c2]; }
         var El = arm(h, P0, top, bot);
         if (top > 0) topEl = El;
         out.hands[h] = El.hand; out.elbows[h] = El.elbow; out.shoulders[h] = El.shoulder; out.reach = Math.max(out.reach, El.reach);
