@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pretzel Hand Simulator</title>
+<meta name="description" content="Watch Pretzel Hand juggling patterns in 3D, with the arm on top always in front.">
+<meta name="theme-color" content="#fff4d6">
+<style>
+@font-face {
+  font-family: "Fredoka";
+  src: url("fonts/fredoka-latin.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+:root {
+  --ink: #2d2a4a;
+  --paper: #fff4d6;
+  --card: #fffdf5;
+  --sky: #dcf3ff;
+  --red: #ff7b6e;
+  --red-soft: #ffc4bd;
+  --blue: #4ea8ff;
+  --blue-soft: #b9ddff;
+  --grey-soft: #efe9d8;
+  --sun: #ffd43b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Fredoka", ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+}
+.app { width: 100%; max-width: 900px; padding: 10px 16px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
+h1 { margin: 2px 0 0; font-size: 22px; font-weight: 700; letter-spacing: .2px; }
+.stage {
+  position: relative; flex: 1; min-height: 300px; border: 3px solid var(--ink); border-radius: 22px; overflow: hidden;
+  background-color: var(--sky);
+  background-image: radial-gradient(rgba(255, 255, 255, .75) 2.5px, transparent 3px);
+  background-size: 26px 26px;
+  touch-action: none; cursor: grab;
+}
+.stage.drag { cursor: grabbing; }
+.stage canvas { display: block; width: 100%; height: 100%; }
+.badge {
+  position: absolute; left: 12px; top: 12px; padding: 6px 14px; border: 3px solid var(--ink); border-radius: 999px;
+  font-weight: 700; font-size: 18px; background: var(--grey-soft); box-shadow: 0 3px 0 var(--ink); pointer-events: none;
+  transition: background-color .12s;
+}
+.badge.R { background: var(--red); }
+.badge.L { background: var(--blue); }
+.views { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px; }
+.hint { position: absolute; left: 12px; bottom: 12px; font-size: 13px; opacity: .6; pointer-events: none; }
+button, select {
+  font: inherit; color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; background: var(--card);
+  box-shadow: 0 3px 0 var(--ink); height: 40px; padding: 0 12px; font-weight: 600; cursor: pointer;
+}
+button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+button[aria-pressed="true"] { background: var(--sun); }
+.views button { height: 34px; padding: 0 10px; font-size: 14px; border-radius: 12px; }
+.strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 52px; }
+.chip { font-weight: 700; font-size: 22px; padding: 0 4px; }
+.sep { font-weight: 700; font-size: 26px; padding: 0 1px; }
+.tok {
+  display: inline-flex; align-items: center; border: 3px solid var(--ink); border-radius: 13px; background: var(--card);
+  padding: 2px 3px; gap: 2px; border-bottom-width: 6px;
+}
+.tok.hR { border-bottom-color: var(--red); }
+.tok.hL { border-bottom-color: var(--blue); }
+.l { display: inline-block; min-width: 26px; text-align: center; font-weight: 700; font-size: 22px; line-height: 32px; border-radius: 9px; transition: transform .08s, background-color .08s; }
+.l.R { background: var(--red-soft); }
+.l.L { background: var(--blue-soft); }
+.l.U { background: var(--grey-soft); }
+.l.c { font-size: 19px; }
+.l.on { background: var(--sun); transform: translateY(-3px); box-shadow: 0 3px 0 var(--ink); }
+.hold { font-weight: 700; font-size: 22px; margin-left: -2px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+select { padding-right: 10px; max-width: 100%; }
+.speed { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.speed input { width: 130px; accent-color: var(--ink); }
+.info { font-size: 15px; line-height: 1.4; opacity: .85; }
+.key { display: inline-block; width: 12px; height: 12px; border-radius: 4px; border: 2px solid var(--ink); vertical-align: -1px; }
+.key.R { background: var(--red); } .key.L { background: var(--blue); }
+.err { color: #c92a2a; font-weight: 600; }
+@media (max-width: 600px) {
+  .app { padding: 8px 12px 12px; gap: 8px; }
+  h1 { font-size: 18px; }
+  .stage { min-height: 52vh; }
+  .badge { font-size: 15px; top: 8px; left: 8px; padding: 4px 10px; }
+  .strip { gap: 4px; }
+  .tok { padding: 2px; gap: 1px; border-radius: 11px; }
+  .l { min-width: 18px; font-size: 17px; line-height: 26px; border-radius: 7px; }
+  .l.c { font-size: 15px; }
+  #pattern { flex: 1 1 100%; }
+  .chip { font-size: 18px; } .sep { font-size: 20px; }
+  .hint { display: none; }
+  .speed input { width: 100px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Pretzel Hand Simulator</h1>
+  <div class="stage" id="stage">
+    <div class="badge" id="badge">Arms uncrossed</div>
+    <div class="hint">Drag to turn the juggler</div>
+    <div class="views" id="views">
+      <button data-view="front" aria-pressed="true">Front</button>
+      <button data-view="above">Above</button>
+      <button data-view="side">Side</button>
+      <button data-view="eyes">Juggler's eyes</button>
+    </div>
+  </div>
+  <div class="strip" id="strip" aria-label="Notation"></div>
+  <div class="controls">
+    <select id="pattern" aria-label="Pattern"></select>
+    <button id="play" aria-label="Pause">Pause</button>
+    <button id="back" aria-label="Step back">&#9664;</button>
+    <button id="fwd" aria-label="Step forward">&#9654;</button>
+    <label class="speed">Speed <input id="speed" type="range" min="0.05" max="1" step="0.05" value="0.35"> <span id="speedv">35%</span></label>
+  </div>
+  <div class="info" id="info"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="engine.js"></script>
+<script>
+(function () {
+  'use strict';
+  var PH = window.PH, G = PH.G;
+  var INK = 0x2d2a4a, RED = 0xff7b6e, BLUE = 0x4ea8ff;
+  var BALL_COLS = [0xffd43b, 0x69db7c, 0xb197fc, 0xffa94d, 0xf783ac, 0x66d9e8];
+
+  // ---------- scene ----------
+  var stage = document.getElementById('stage');
+  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.insertBefore(renderer.domElement, stage.firstChild);
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(34, 1, 10, 2000);
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xffe8c2, 0.5));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.55);
+  sun.position.set(45, 240, 170);
+  sun.target.position.set(0, 110, 15);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  var sc = sun.shadow.camera; sc.left = -70; sc.right = 70; sc.top = 80; sc.bottom = -80; sc.near = 60; sc.far = 450;
+  sun.shadow.bias = -0.0008; sun.shadow.normalBias = 0.4;
+  scene.add(sun); scene.add(sun.target);
+
+  var grad = new THREE.DataTexture(new Uint8Array([105, 185, 255]), 3, 1, THREE.LuminanceFormat);
+  grad.minFilter = grad.magFilter = THREE.NearestFilter; grad.generateMipmaps = false; grad.needsUpdate = true;
+  function toon(c) { return new THREE.MeshToonMaterial({ color: c, gradientMap: grad }); }
+  var inkMat = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide });
+  var OUT = 0.85;
+
+  function sphere(r, mat, parent, noOutline) {
+    var g = new THREE.Group();
+    var m = new THREE.Mesh(new THREE.SphereGeometry(r, 28, 20), mat);
+    m.castShadow = m.receiveShadow = true; g.add(m);
+    if (!noOutline) g.add(new THREE.Mesh(new THREE.SphereGeometry(r + OUT, 28, 20), inkMat));
+    (parent || scene).add(g);
+    return g;
+  }
+  function limb(r1, r2, mat) {
+    var g = new THREE.Group();
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(r2, r1, 1, 24, 1, true), mat);
+    m.castShadow = m.receiveShadow = true; g.add(m);
+    g.add(new THREE.Mesh(new THREE.CylinderGeometry(r2 + OUT, r1 + OUT, 1, 24, 1, true), inkMat));
+    scene.add(g);
+    return g;
+  }
+  var UP = new THREE.Vector3(0, 1, 0), tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpD = new THREE.Vector3();
+  function placeLimb(g, a, b) {   // runs from a (thick end) to b
+    tmpA.set(a[0], a[1], a[2]); tmpB.set(b[0], b[1], b[2]);
+    tmpD.subVectors(tmpB, tmpA);
+    var L = tmpD.length();
+    g.position.copy(tmpA).addScaledVector(tmpD, 0.5);
+    g.quaternion.setFromUnitVectors(UP, tmpD.normalize());
+    g.scale.set(1, L, 1);
+  }
+
+  // body
+  var shirt = toon(0xb9a6ff), skin = toon(0xffd8b5), pants = toon(0x6c6fb0), glove = toon(0xffffff), inkToon = toon(INK);
+  function ellipsoid(sx, sy, sz, mat, pos) {
+    var geo = new THREE.SphereGeometry(1, 32, 24);
+    var m = new THREE.Mesh(geo, mat); m.scale.set(sx, sy, sz); m.position.set(pos[0], pos[1], pos[2]);
+    m.castShadow = m.receiveShadow = true; scene.add(m);
+    var o = new THREE.Mesh(geo, inkMat); o.scale.set(sx + OUT, sy + OUT, sz + OUT); o.position.copy(m.position); scene.add(o);
+  }
+  ellipsoid(17, 30, 12, shirt, [0, 113, 0]);
+  ellipsoid(15.5, 11, 10.5, pants, [0, 89, 0]);
+  var neck = limb(5.5, 5.5, skin); placeLimb(neck, [0, 138, 0], [0, 150, 0]);
+  var headGroup = new THREE.Group(); scene.add(headGroup);   // hidden in the juggler's-eyes view
+  var head = sphere(13, skin, headGroup); head.position.set(0, 160, 1);
+  var hair = new THREE.Mesh(new THREE.SphereGeometry(13.8, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.42), inkToon);
+  hair.position.set(0, 160.5, -0.5); hair.rotation.x = -0.35; headGroup.add(hair);
+  [-1, 1].forEach(function (s) {
+    var eye = new THREE.Mesh(new THREE.SphereGeometry(1.7, 12, 10), inkToon); eye.position.set(s * 4.6, 162, 12.6); headGroup.add(eye);
+    var cheek = new THREE.Mesh(new THREE.CircleGeometry(2.2, 16), new THREE.MeshBasicMaterial({ color: 0xffb3b3 }));
+    cheek.position.set(s * 7.6, 157.5, 11.4); cheek.rotation.y = s * 0.55; headGroup.add(cheek);
+    var leg = limb(7, 6, pants); placeLimb(leg, [s * 8, 90, 0], [s * 10, 12, 2]);
+    ellipsoid(6, 4, 9, inkToon, [s * 10, 8, 6]);
+  });
+  var smile = new THREE.Mesh(new THREE.TorusGeometry(4, 0.75, 8, 20, Math.PI), inkToon);
+  smile.position.set(0, 156.5, 12.4); smile.rotation.z = Math.PI; headGroup.add(smile);
+
+  // arms: right sleeve red, left sleeve blue
+  function makeArm(col) {
+    var mat = toon(col);
+    return {
+      shoulder: sphere(6.2, mat), upper: limb(G.upperR + 0.6, G.upperR - 0.2, mat), elbow: sphere(G.upperR - 0.1, mat),
+      fore: limb(G.foreR + 0.5, G.foreR, mat), cuff: limb(G.foreR + 1.3, G.foreR + 1.3, toon(0xffffff)), hand: sphere(G.handR + 0.4, glove)
+    };
+  }
+  var arms = [makeArm(RED), makeArm(BLUE)];
+  var ballMeshes = [];
+  for (var i = 0; i < 8; i++) {
+    var bm = sphere(4.2, toon(BALL_COLS[i % BALL_COLS.length]));
+    bm.children[0].castShadow = false;   // ball shadows made dark spots on the shirt
+    bm.visible = false; ballMeshes.push(bm);
+  }
+
+  // ---------- camera ----------
+  var VIEWS = {
+    front: { az: 0, el: 0.2, dist: 185, ty: 122 },
+    above: { az: 0, el: 1.22, dist: 175, ty: 114 },
+    side: { az: -Math.PI / 2, el: 0.18, dist: 185, ty: 122 },
+    eyes: { eyes: true }
+  };
+  var cam = { az: 0, el: 0.2, dist: 185, ty: 122 }, camGoal = null;
+  var eyesOn = false, baseFov = 34;
+  function placeCamera() {
+    headGroup.visible = !eyesOn;
+    var fov = eyesOn ? 78 : baseFov;
+    if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    if (eyesOn) { camera.position.set(0, 163, 13); camera.lookAt(0, 120, 42); return; }
+    var ce = Math.cos(cam.el);
+    camera.position.set(Math.sin(cam.az) * ce * cam.dist, cam.ty + Math.sin(cam.el) * cam.dist, 12 + Math.cos(cam.az) * ce * cam.dist);
+    camera.lookAt(0, cam.ty, 12);
+  }
+  function setView(name) {
+    var v = VIEWS[name];
+    eyesOn = !!v.eyes;
+    markView(name);
+    if (eyesOn) { camGoal = null; return; }
+    camGoal = { az: v.az, el: v.el, dist: v.dist, ty: v.ty };
+    // turn the short way round
+    while (camGoal.az - cam.az > Math.PI) camGoal.az -= 2 * Math.PI;
+    while (camGoal.az - cam.az < -Math.PI) camGoal.az += 2 * Math.PI;
+  }
+  function markView(name) {
+    Array.prototype.forEach.call(document.querySelectorAll('#views button'), function (b) {
+      b.setAttribute('aria-pressed', b.dataset.view === name ? 'true' : 'false');
+    });
+  }
+  document.getElementById('views').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (b) setView(b.dataset.view);
+  });
+  // drag to turn, pinch or wheel to zoom
+  var pointers = {}, lastPinch = 0;
+  stage.addEventListener('pointerdown', function (e) {
+    if (e.target.closest('button')) return;
+    pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    stage.setPointerCapture(e.pointerId); stage.classList.add('drag'); camGoal = null;
+    if (eyesOn) { eyesOn = false; cam.az = Math.PI; cam.el = 0.9; cam.dist = 185; cam.ty = 112; }
+  });
+  stage.addEventListener('pointermove', function (e) {
+    var p = pointers[e.pointerId]; if (!p) return;
+    var ids = Object.keys(pointers);
+    if (ids.length === 2) {
+      p.x = e.clientX; p.y = e.clientY;
+      var a = pointers[ids[0]], b = pointers[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (lastPinch) cam.dist = Math.max(110, Math.min(420, cam.dist * lastPinch / d));
+      lastPinch = d; return;
+    }
+    cam.az -= (e.clientX - p.x) * 0.008;
+    cam.el = Math.max(-0.25, Math.min(1.45, cam.el + (e.clientY - p.y) * 0.006));
+    p.x = e.clientX; p.y = e.clientY;
+    markView(null);
+  });
+  function endPointer(e) { delete pointers[e.pointerId]; lastPinch = 0; if (!Object.keys(pointers).length) stage.classList.remove('drag'); }
+  stage.addEventListener('pointerup', endPointer);
+  stage.addEventListener('pointercancel', endPointer);
+  stage.addEventListener('wheel', function (e) {
+    e.preventDefault(); cam.dist = Math.max(110, Math.min(420, cam.dist * Math.exp(e.deltaY * 0.001)));
+  }, { passive: false });
+
+  function resize() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    // keep the whole upper body in view on tall, narrow screens
+    baseFov = w / h < 0.8 ? 34 / Math.max(0.55, w / h / 0.8) : 34;
+    camera.fov = eyesOn ? 78 : baseFov;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage);
+
+  // ---------- patterns and notation strip ----------
+  var sel = document.getElementById('pattern'), strip = document.getElementById('strip');
+  var info = document.getElementById('info'), badge = document.getElementById('badge');
+  var groups = {};
+  PH.PATTERNS.forEach(function (pt, i) {
+    if (!groups[pt.group]) { groups[pt.group] = document.createElement('optgroup'); groups[pt.group].label = pt.group; sel.appendChild(groups[pt.group]); }
+    var o = document.createElement('option'); o.value = i; o.textContent = pt.name; groups[pt.group].appendChild(o);
+  });
+
+  var model = null, letters = [], tiles = [], beat = 0, lastEvent = -1, lastPass = -1;
+  function letterSpan(ch, isCatch) {
+    var s = document.createElement('span');
+    s.className = 'l ' + ch.toUpperCase() + (isCatch ? ' c' : '');
+    s.textContent = ch; return s;
+  }
+  function load(i) {
+    var pt = PH.PATTERNS[i], m = PH.build(pt.src);
+    strip.innerHTML = ''; letters = []; tiles = [];
+    if (!m.ok) { model = null; info.innerHTML = '<span class="err">' + m.error + '</span>'; return; }
+    model = m; beat = 0; lastEvent = -1; lastPass = -1;
+    var chip = document.createElement('span'); chip.className = 'chip';
+    chip.textContent = m.parsed.src.match(/^[^RLU]*/)[0].trim(); strip.appendChild(chip);
+    var group = 0;
+    m.tokens.forEach(function (t, k) {
+      if (t.group !== group) { var sp = document.createElement('span'); sp.className = 'sep'; sp.textContent = ':'; strip.appendChild(sp); group = t.group; }
+      var tile = document.createElement('span'); tile.className = 'tok';
+      var a = letterSpan(t.t, false), b = letterSpan(t.c, true);
+      tile.appendChild(a); tile.appendChild(b);
+      if (t.hold) { var h = document.createElement('span'); h.className = 'hold'; h.textContent = '.'; tile.appendChild(h); }
+      strip.appendChild(tile); letters.push([a, b]); tiles.push(tile);
+    });
+    var odd = m.tokens.length % 2 === 1;
+    info.innerHTML = m.balls + ' balls. <span class="key R"></span> red sleeve = right arm, <span class="key L"></span> blue sleeve = left arm. ' +
+      'The coloured line under each throw shows which hand makes it' + (odd ? ' (it swaps each time round, as there is an odd number of throws)' : '') + '. ' +
+      'Seen from the front, the juggler’s right arm is on your left.';
+    try { localStorage.setItem('phs-pattern', String(i)); } catch (e) {}
+  }
+  sel.addEventListener('change', function () { load(+sel.value); });
+
+  // ---------- playing ----------
+  var playing = true, speed = 0.35;
+  var playBtn = document.getElementById('play'), speedIn = document.getElementById('speed'), speedV = document.getElementById('speedv');
+  function setPlaying(v) { playing = v; playBtn.textContent = v ? 'Pause' : 'Play'; playBtn.setAttribute('aria-label', v ? 'Pause' : 'Play'); }
+  playBtn.addEventListener('click', function () { setPlaying(!playing); });
+  speedIn.addEventListener('input', function () { speed = +speedIn.value; speedV.textContent = Math.round(speed * 100) + '%'; });
+  function step(dir) {
+    if (!model) return;
+    setPlaying(false);
+    var e = Math.floor(beat * 2 + 1e-6) + dir;
+    beat = ((e / 2) % model.loop + model.loop) % model.loop + 0.001;
+  }
+  document.getElementById('back').addEventListener('click', function () { step(-1); });
+  document.getElementById('fwd').addEventListener('click', function () { step(1); });
+  document.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'SELECT') return;
+    if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
+    else if (e.key === 'ArrowRight') step(1);
+    else if (e.key === 'ArrowLeft') step(-1);
+  });
+
+  var BADGE = { 1: ['R', 'Right arm on top'], '-1': ['L', 'Left arm on top'], 0: ['', 'Arms uncrossed'] };
+  function draw() {
+    if (!model) return;
+    var p = model.at(beat);
+    for (var h = 0; h < 2; h++) {
+      var A = arms[h], S = p.shoulders[h], E = p.elbows[h], H = p.hands[h];
+      A.shoulder.position.set(S[0], S[1], S[2]);
+      placeLimb(A.upper, S, E);
+      A.elbow.position.set(E[0], E[1], E[2]);
+      // forearm stops at the cuff, the glove sits on the end
+      var d = [H[0] - E[0], H[1] - E[1], H[2] - E[2]], L = Math.hypot(d[0], d[1], d[2]);
+      var W = [H[0] - d[0] / L * 4.5, H[1] - d[1] / L * 4.5, H[2] - d[2] / L * 4.5];
+      var C = [H[0] - d[0] / L * 7.5, H[1] - d[1] / L * 7.5, H[2] - d[2] / L * 7.5];
+      placeLimb(A.fore, E, C); placeLimb(A.cuff, C, W);
+      A.hand.position.set(H[0], H[1], H[2]);
+    }
+    for (var i = 0; i < ballMeshes.length; i++) ballMeshes[i].visible = false;
+    p.balls.forEach(function (b) {
+      var m = ballMeshes[b.col % ballMeshes.length];
+      m.visible = true; m.position.set(b.pos[0], b.pos[1], b.pos[2]);
+    });
+    var ev = p.event;
+    if (ev.index !== lastEvent) {
+      lastEvent = ev.index;
+      letters.forEach(function (pair) { pair[0].classList.remove('on'); pair[1].classList.remove('on'); });
+      var cell = letters[ev.token]; if (cell) cell[ev.part === 'throw' ? 0 : 1].classList.add('on');
+      var b = BADGE[p.state]; badge.className = 'badge ' + b[0]; badge.textContent = b[1];
+      var pass = Math.floor(Math.floor(beat) / model.tokens.length) % 2;
+      if (pass !== lastPass) {
+        lastPass = pass;
+        tiles.forEach(function (t, k) {
+          var hand = (pass * model.tokens.length + k) % 2;
+          t.classList.toggle('hR', hand === 0); t.classList.toggle('hL', hand === 1);
+        });
+      }
+    }
+  }
+
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (model && playing) beat = (beat + dt * G.bps * speed) % model.loop;
+    if (camGoal) {
+      var k = 1 - Math.exp(-dt * 7);
+      ['az', 'el', 'dist', 'ty'].forEach(function (key) { cam[key] += (camGoal[key] - cam[key]) * k; });
+      if (Math.abs(camGoal.az - cam.az) < 1e-3 && Math.abs(camGoal.el - cam.el) < 1e-3) camGoal = null;
+    }
+    placeCamera();
+    draw();
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+
+  var start = 4;
+  try { var s = localStorage.getItem('phs-pattern'); if (s !== null && PH.PATTERNS[+s]) start = +s; } catch (e) {}
+  // test settings in the address: ?p=pattern number&t=beat (pauses there)&view=above
+  var q = new URLSearchParams(location.search);
+  if (q.has('p') && PH.PATTERNS[+q.get('p')]) start = +q.get('p');
+  sel.value = start; load(start);
+  if (q.has('t')) { beat = +q.get('t'); setPlaying(false); }
+  if (q.has('view') && VIEWS[q.get('view')]) { setView(q.get('view')); if (camGoal) { cam.az = camGoal.az; cam.el = camGoal.el; cam.dist = camGoal.dist; cam.ty = camGoal.ty; camGoal = null; } }
+  resize(); placeCamera();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
