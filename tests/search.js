@@ -6,14 +6,14 @@ load('tests/measure.js');
 var RANGES = {
   topElbow0: [12, 24], topElbow1: [110, 132], topElbow2: [2, 22],
   botElbow0: [18, 34], botElbow1: [96, 112], botElbow2: [0, 18],
-  topFloor: [120, 128], underCatch: [0, 0.6], outX: [16, 21], inner: [2, 5], botCap: [104, 116], topZ: [0, 10], botZ: [-18, 2], handZ: [22, 32],
+  topFloor: [120, 128], underCatch: [0, 0.6], outX: [16, 21], inner: [2, 5], outUnder: [16, 24], botCap: [104, 116], topZ: [0, 10], botZ: [-18, 2], handZ: [22, 32],
   underDrop: [8, 18], underFwd: [4, 7.5], underOut: [1, 6], underWin: [0.3, 0.6], elbowEarly: [0.5, 1], nearIn: [8, 22], nearOut: [18, 36]
 };
 var base = {}; for (var k in G) base[k] = Array.isArray(G[k]) ? G[k].slice() : G[k];
 function apply(x) {
   for (var k in base) G[k] = Array.isArray(base[k]) ? base[k].slice() : base[k];
   G.topElbow = [x.topElbow0, x.topElbow1, x.topElbow2]; G.botElbow = [x.botElbow0, x.botElbow1, x.botElbow2];
-  ['handZ', 'outX', 'inner', 'underCatch', 'topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut'].forEach(function (k) { G[k] = x[k]; });
+  ['handZ', 'outX', 'inner', 'outUnder', 'underCatch', 'topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut'].forEach(function (k) { G[k] = x[k]; });
 }
 function score(x, perBeat) {
   apply(x);

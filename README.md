@@ -20,6 +20,18 @@ to load three.js). Pick a pattern, then:
   front, above, side, or the juggler's own eyes.
 - Play/Pause, step one throw or catch at a time (also the arrow keys and space),
   and a speed slider.
+- Type your own pattern in the box and press Play it (or Enter). If the slash does
+  not match where the first throw peaks, the page says so.
+- Pattern tools: Time reverse (the pattern played backwards: throws become catches,
+  `o` and `i` swap, the siteswap follows the balls), Flip (right and left swapped),
+  and Mills ↔ flos (Appendix C: move the first throw to the end and switch the red
+  letters, the first throw and last catch of each half; the digits rotate too). If
+  the result is in the list, its name is shown. `tests/transforms.js` checks all
+  three against the pairs published in the article.
+
+The list has the cascades and eight base messes, some extras from the main article
+(including the shower patterns with siteswap 1s), the Appendix B windmill patterns,
+and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 
 ## How the notation is turned into movement (engine.js)
 
@@ -58,10 +70,20 @@ to load three.js). Pick a pattern, then:
   match the one written (the tests check this).
 - Siteswap digits before the slash set the throw heights, rotated to line up
   with the letters. A 2 is held (a dot), unless marked T.
+- A 1, written `U(u)`, is caught by the other hand a quarter beat after it is thrown
+  ("throw, throw, catch, catch"); the bracket letter is that catch, and the throw
+  before it has no catch letter of its own.
+- `O` throws go from the outside and are caught outside.
+- Patterns with more balls are juggled faster, so they stay compact: a 4-ball
+  pattern runs at about 1.5 times the tempo of a 3-ball one.
 
-Not in yet: 1s (`U(u)`), multiplexes, empty hands, `O`/`I`, `-` direction changes,
-sebs (forward throws) and the hectic messes (an arm swapping from under to over
-while crossed).
+Not in yet: multiplexes, empty hands, `I`, `-` direction changes, sebs (forward
+throws) and the hectic messes (an arm swapping from under to over while crossed).
+
+Open questions: four `O` windmills (under throw windmill, under throw 4233 and 342T3
+windmills, 5223 alternating windmill) come out with the first throw peaking on the
+other side from the written slash, which suggests `O` is modelled wrongly. The 2T in
+the 342T33 mills mess brushes the top forearm by 1.5 cm.
 
 ## Tests
 

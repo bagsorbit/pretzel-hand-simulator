@@ -61,6 +61,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 button[aria-pressed="true"] { background: var(--sun); }
 .views button { height: 34px; padding: 0 10px; font-size: 14px; border-radius: 12px; }
 .strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 52px; }
+.strip, .controls, .tools, .msg, .info, h1 { flex-shrink: 0; }   /* the page scrolls instead of squashing these */
 .chip { font-weight: 700; font-size: 22px; padding: 0 4px; }
 .sep { font-weight: 700; font-size: 26px; padding: 0 1px; }
 .tok {
@@ -81,6 +82,15 @@ select { padding-right: 10px; max-width: 100%; }
 .speed { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .speed input { width: 130px; accent-color: var(--ink); }
 .info { font-size: 15px; line-height: 1.4; opacity: .85; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tools input {
+  flex: 1 1 260px; min-width: 0; height: 40px; padding: 0 12px; border: 3px solid var(--ink); border-radius: 14px;
+  background: var(--card); color: var(--ink); font: 600 17px ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.msg { font-size: 15px; line-height: 1.4; min-height: 1.4em; }
+.msg b { font-weight: 700; }
+.l.br { font-size: 15px; min-width: 0; padding: 0 2px; background: none; }
+.l.br.on { background: var(--sun); }
 .key { display: inline-block; width: 12px; height: 12px; border-radius: 4px; border: 2px solid var(--ink); vertical-align: -1px; }
 .key.R { background: var(--red); } .key.L { background: var(--blue); }
 .err { color: #c92a2a; font-weight: 600; }
@@ -127,6 +137,14 @@ select { padding-right: 10px; max-width: 100%; }
     <button id="fwd" aria-label="Step forward">&#9654;</button>
     <label class="speed">Speed <input id="speed" type="range" min="0.05" max="1" step="0.05" value="0.35"> <span id="speedv">35%</span></label>
   </div>
+  <div class="tools">
+    <input id="typed" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type a pattern, like  o\ Ru Ul Ll : Lu Ur Rr" aria-label="Type a pattern">
+    <button id="playTyped">Play it</button>
+    <button id="trBtn" title="Play the pattern backwards in time">Time reverse</button>
+    <button id="flipBtn" title="Swap right and left">Flip</button>
+    <button id="mfBtn" title="Appendix C: move the first throw to the end and switch the red letters">Mills &harr; flos</button>
+  </div>
+  <div class="msg" id="msg"></div>
   <div class="info" id="info"></div>
 </div>
 
@@ -327,40 +345,89 @@ function showProblem(msg) {
   var sel = document.getElementById('pattern'), strip = document.getElementById('strip');
   var info = document.getElementById('info'), badge = document.getElementById('badge');
   var groups = {};
+  var customOpt = document.createElement('option'); customOpt.value = 'custom'; customOpt.textContent = 'Your pattern'; customOpt.hidden = true;
+  sel.appendChild(customOpt);
   PH.PATTERNS.forEach(function (pt, i) {
     if (!groups[pt.group]) { groups[pt.group] = document.createElement('optgroup'); groups[pt.group].label = pt.group; sel.appendChild(groups[pt.group]); }
     var o = document.createElement('option'); o.value = i; o.textContent = pt.name; groups[pt.group].appendChild(o);
   });
 
-  var model = null, letters = [], tiles = [], beat = 0, lastEvent = -1, lastPass = -1;
-  function letterSpan(ch, isCatch) {
+  var model = null, letters = [], tiles = [], beat = 0, lastEvent = -1, lastPass = -1, current = null;
+  var typed = document.getElementById('typed'), msg = document.getElementById('msg');
+  function letterSpan(ch, cls) {
     var s = document.createElement('span');
-    s.className = 'l ' + ch.toUpperCase() + (isCatch ? ' c' : '');
+    s.className = 'l ' + ch.toUpperCase() + (cls ? ' ' + cls : '');
     s.textContent = ch; return s;
   }
-  function load(i) {
-    var pt = PH.PATTERNS[i], m = PH.build(pt.src);
-    strip.innerHTML = ''; letters = []; tiles = [];
-    if (!m.ok) { model = null; info.innerHTML = '<span class="err">' + m.error + '</span>'; return; }
+  function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  // play a notation string; name is its name in the list, if it has one
+  function loadSrc(src, name, note) {
+    var m = PH.build(src);
+    if (!m.ok) { msg.innerHTML = '<span class="err">' + esc(m.error) + '</span>'; return false; }
+    var idx = -1;
+    PH.PATTERNS.forEach(function (pt, i) { if (pt.src === src) idx = i; });
+    if (!name) { var f = PH.findPattern(src); if (f) name = f.name; }
+    current = { src: src, name: name || null };
     model = m; beat = 0; lastEvent = -1; lastPass = -1;
+    sel.value = idx >= 0 ? String(idx) : 'custom';
+    customOpt.hidden = idx >= 0;
+    typed.value = m.parsed.src;
+    strip.innerHTML = ''; letters = []; tiles = [];
     var chip = document.createElement('span'); chip.className = 'chip';
     chip.textContent = m.parsed.src.match(/^[^RLU]*/)[0].trim(); strip.appendChild(chip);
     var group = 0;
     m.tokens.forEach(function (t, k) {
       if (t.group !== group) { var sp = document.createElement('span'); sp.className = 'sep'; sp.textContent = ':'; strip.appendChild(sp); group = t.group; }
       var tile = document.createElement('span'); tile.className = 'tok';
-      var a = letterSpan(t.t, false), b = letterSpan(t.c, true);
-      tile.appendChild(a); tile.appendChild(b);
+      var cell = { t: letterSpan(t.t, ''), br: null, c: null };
+      tile.appendChild(cell.t);
+      if (t.br) {
+        var o = document.createElement('span'); o.className = 'l br'; o.textContent = '(';
+        cell.br = letterSpan(t.br, 'c br');
+        var cl = document.createElement('span'); cl.className = 'l br'; cl.textContent = ')';
+        tile.appendChild(o); tile.appendChild(cell.br); tile.appendChild(cl);
+      }
+      if (!t.cFromNext) { cell.c = letterSpan(t.c, 'c'); tile.appendChild(cell.c); }
       if (t.hold) { var h = document.createElement('span'); h.className = 'hold'; h.textContent = '.'; tile.appendChild(h); }
-      strip.appendChild(tile); letters.push([a, b]); tiles.push(tile);
+      strip.appendChild(tile); letters.push(cell); tiles.push(tile);
     });
     var odd = m.tokens.length % 2 === 1;
-    info.innerHTML = m.balls + ' balls. <span class="key R"></span> red sleeve = right arm, <span class="key L"></span> blue sleeve = left arm. ' +
+    info.innerHTML = (name ? '<b>' + esc(name) + '.</b> ' : '') + m.balls + ' balls. <span class="key R"></span> red sleeve = right arm, <span class="key L"></span> blue sleeve = left arm. ' +
       'The coloured line under each throw shows which hand makes it' + (odd ? ' (it swaps each time round, as there is an odd number of throws)' : '') + '. ' +
       'Seen from the front, the juggler’s right arm is on your left.';
-    try { localStorage.setItem('phs-pattern', String(i)); } catch (e) {}
+    var notes = [];
+    if (note) notes.push(note);
+    if (m.slashSeen !== m.parsed.slash && m.parsed.slash !== '|') {
+      var side = m.slashSeen === '/' ? 'right' : 'left';
+      if (idx >= 0) notes.push('Open question: the article writes <b>' + esc(m.parsed.slash) + '</b> here, but in the simulator the first throw peaks on the ' +
+        side + '. The simulator may have this kind of throw wrong.');
+      else notes.push('Slash check: this is written with <b>' + esc(m.parsed.slash) + '</b>, but its first throw peaks on the ' +
+        side + ', so by the rule it would be <b>' + esc(m.slashSeen) + '</b>.');
+    }
+    msg.innerHTML = notes.join(' ');
+    try { localStorage.setItem('phs-src', src); } catch (e) {}
+    return true;
   }
-  sel.addEventListener('change', function () { load(+sel.value); });
+  function load(i) { var pt = PH.PATTERNS[i]; loadSrc(pt.src, pt.name); }
+  sel.addEventListener('change', function () { if (sel.value !== 'custom') load(+sel.value); });
+
+  // typing your own, and the pattern tools
+  function playTyped() { var v = typed.value.trim(); if (v) loadSrc(v, null, null); }
+  document.getElementById('playTyped').addEventListener('click', playTyped);
+  typed.addEventListener('keydown', function (e) { if (e.key === 'Enter') playTyped(); });
+  function after(src) { return src.replace(/^[^\/\\|]*[\/\\|]\s*/, '').replace(/\s+/g, ' ').trim(); }
+  function tool(fn, label) {
+    if (!current) return;
+    var from = current.name || 'this pattern', r = fn(current.src);
+    if (!r.ok) { msg.innerHTML = '<span class="err">' + esc(label) + ': ' + esc(r.error) + '</span>'; return; }
+    var f = PH.findPattern(r.src);
+    if (f) loadSrc(f.src, f.name, esc(label) + ' of ' + esc(from) + ' is <b>' + esc(f.name) + '</b>' +
+      (after(f.src) !== after(r.src) ? ' (worked out as ' + esc(r.src) + ', the same pattern started from another throw)' : '') + '.');
+    else loadSrc(r.src, null, esc(label) + ' of ' + esc(from) + ': <b>' + esc(r.src) + '</b>. It is not in the list.');
+  }
+  document.getElementById('trBtn').addEventListener('click', function () { tool(PH.timeReverse, 'Time reverse'); });
+  document.getElementById('flipBtn').addEventListener('click', function () { tool(PH.flip, 'Flip'); });
+  document.getElementById('mfBtn').addEventListener('click', function () { tool(PH.millsFlos, 'Mills to flos'); });
 
   // ---------- playing ----------
   var playing = true, speed = 0.35;
@@ -371,13 +438,17 @@ function showProblem(msg) {
   function step(dir) {
     if (!model) return;
     setPlaying(false);
-    var e = Math.floor(beat * 2 + 1e-6) + dir;
-    beat = ((e / 2) % model.loop + model.loop) % model.loop + 0.001;
+    var all = [];
+    for (var r = 0; r < model.loop / model.period; r++) model.eventTimes.forEach(function (x) { all.push(x + r * model.period); });
+    all.sort(function (a, b) { return a - b; });
+    var i = 0;
+    for (var q = 0; q < all.length; q++) if (all[q] <= beat + 1e-6) i = q;
+    beat = all[(i + dir + all.length) % all.length] + 0.001;
   }
   document.getElementById('back').addEventListener('click', function () { step(-1); });
   document.getElementById('fwd').addEventListener('click', function () { step(1); });
   document.addEventListener('keydown', function (e) {
-    if (e.target.tagName === 'SELECT') return;
+    if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
     if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
     else if (e.key === 'ArrowRight') step(1);
     else if (e.key === 'ArrowLeft') step(-1);
@@ -407,10 +478,13 @@ function showProblem(msg) {
     var ev = p.event;
     if (ev.index !== lastEvent) {
       lastEvent = ev.index;
-      letters.forEach(function (pair) { pair[0].classList.remove('on'); pair[1].classList.remove('on'); });
-      var cell = letters[ev.token]; if (cell) cell[ev.part === 'throw' ? 0 : 1].classList.add('on');
+      letters.forEach(function (cell) { [cell.t, cell.c, cell.br].forEach(function (el) { if (el) el.classList.remove('on'); }); });
+      var N = model.tokens.length, el = null;
+      if (ev.part === 'throw') el = letters[ev.token].t;
+      else el = model.tokens[ev.token].cFromNext ? letters[(ev.token + 1) % N].br : letters[ev.token].c;
+      if (el) el.classList.add('on');
       var b = BADGE[p.state]; badge.className = 'badge ' + b[0]; badge.textContent = b[1];
-      var pass = Math.floor(Math.floor(beat) / model.tokens.length) % 2;
+      var pass = ((Math.floor(ev.throwIndex / N) % 2) + 2) % 2;
       if (pass !== lastPass) {
         lastPass = pass;
         tiles.forEach(function (t, k) {
@@ -424,7 +498,7 @@ function showProblem(msg) {
   var last = performance.now();
   function frame(now) {
     var dt = Math.min(0.1, (now - last) / 1000); last = now;
-    if (model && playing) beat = (beat + dt * G.bps * speed) % model.loop;
+    if (model && playing) beat = (beat + dt * model.bps * speed) % model.loop;
     if (camGoal) {
       var k = 1 - Math.exp(-dt * 7);
       ['az', 'el', 'dist', 'ty'].forEach(function (key) { cam[key] += (camGoal[key] - cam[key]) * k; });
@@ -436,12 +510,13 @@ function showProblem(msg) {
     requestAnimationFrame(frame);
   }
 
-  var start = 4;
-  try { var s = localStorage.getItem('phs-pattern'); if (s !== null && PH.PATTERNS[+s]) start = +s; } catch (e) {}
-  // test settings in the address: ?p=pattern number&t=beat (pauses there)&view=above
+  var startSrc = PH.PATTERNS[4].src;
+  try { var s = localStorage.getItem('phs-src'); if (s && PH.build(s).ok) startSrc = s; } catch (e) {}
+  // test settings in the address: ?p=pattern number&t=beat (pauses there)&view=above, or ?n=notation
   var q = new URLSearchParams(location.search);
-  if (q.has('p') && PH.PATTERNS[+q.get('p')]) start = +q.get('p');
-  sel.value = start; load(start);
+  if (q.has('p') && PH.PATTERNS[+q.get('p')]) startSrc = PH.PATTERNS[+q.get('p')].src;
+  if (q.has('n')) startSrc = q.get('n');
+  if (!loadSrc(startSrc, null, null)) load(4);
   if (q.has('t')) { beat = +q.get('t'); setPlaying(false); }
   if (q.has('view') && VIEWS[q.get('view')]) { setView(q.get('view')); if (camGoal) { cam.az = camGoal.az; cam.el = camGoal.el; cam.dist = camGoal.dist; cam.ty = camGoal.ty; camGoal = null; } }
   resize(); placeCamera();

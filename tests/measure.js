@@ -45,9 +45,9 @@ function measure(pt, perBeat) {
     var tk = m.tokens[j % m.tokens.length], own = j % 2 ? 'L' : 'R';
     if (tk.t !== 'U' && tk.t !== own && m.parsed.dirs[(j % m.tokens.length) % m.parsed.dirs.length] === 'o')
       r.underZ = Math.max(r.underZ, m.pose(j).hands[j % 2][2]);
-    var nn = m.parsed.digits[j % m.parsed.digits.length];
+    var nn = m.digit(j);
     if (nn < 3) continue;
-    var k = j + nn - 2, a = m.pose(j).hands[j % 2], b = m.pose(k + 0.5).hands[k % 2];
+    var k = j + nn - 2, a = m.pose(j).hands[j % 2], b = m.pose(m.catchTime(k)).hands[k % 2];
     r.minArc = Math.min(r.minArc, Math.abs(b[0] - a[0]));
   }
   var steps = m.period * perBeat;
