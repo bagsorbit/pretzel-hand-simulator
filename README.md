@@ -35,9 +35,9 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 
 ## How the notation is turned into movement (engine.js)
 
-- Throws alternate hands starting with the right. Each hand catches half a beat
-  after it throws, so a 3 is in the air for a beat and a half and held for a beat
-  and a half.
+- Throws alternate hands starting with the right. Each hand catches 0.8 of a beat
+  after it throws, so a 3 is in the air for 1.8 beats and held for 1.2 (each hand
+  holds a ball about 60% of the time, as in the author's own juggling).
 - R, L and U give the arms at each throw and catch: crossed with the right on
   top, crossed with the left on top, or uncrossed. Crossed means both hands are
   on the other side of the body.
@@ -45,11 +45,12 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   throw near the middle and catch outside.
 - Between its own throws and catches a hand drifts along its path but is kept on
   whichever side the other hand's letter says.
-- Elbows hang low, so forearms angle up from the elbow to the hand (level only
-  briefly). When the arms cross, the top hand works in a higher band (up to chest
-  height) and further forward, and the bottom hand in a lower band just above its
-  elbow, so the top forearm passes over the other. The top arm's elbow aims for a
-  spot by its ribs; the bottom arm's elbow aims out and back.
+- The hands work well out in front, about 35 cm from the shoulders, and the elbows
+  stay in by the sides of the body, so the arms cross in an X about a forearm's
+  length ahead of the chest. Elbows hang low, so forearms angle up gently from the
+  elbow to the hand (level only briefly). When the arms cross, the top hand works
+  at the lower chest and the bottom hand in a lower band just above its elbow, so
+  the top forearm passes over the other.
 - An under-the-arm throw is made just below and slightly in front of the top arm's
   elbow (and a little outside it, clear of the top forearm), so the ball goes up in
   front of the top upper arm. A catch out wide under the arm, as in the TR messes,
@@ -75,23 +76,38 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   before it has no catch letter of its own.
 - `O` throws go from the outside and are caught outside.
 - Patterns with more balls are juggled faster, so they stay compact: a 4-ball
-  pattern runs at about 1.5 times the tempo of a 3-ball one. The base tempo is 3.5
-  beats a second, as in the article's Juggling Lab settings.
+  pattern runs at about 1.5 times the tempo of a 3-ball one. The base tempo is 3.2
+  beats a second, the author's own mills mess.
 - Throws higher than a pattern's basic throw are compressed, as jugglers do: a 4 or
-  5 goes only a little higher than a 3 (in Rubenstein's Revenge the 3s peak just
-  under the chin and the 5 about the middle of the head). Each ball still follows a
-  smooth arc; higher throws get the gravity that gives them that height (`compress`
-  in engine.js). Short throws (1s, thrown 2s) are not changed.
+  5 goes only a little higher than a 3. A pattern whose highest throw is a 4 or more
+  is juggled so that throw peaks at a set height, with its other throws scaled to
+  match: 4s just below the top of the head (as in 44133), 5s at about the top of the
+  head (Rubenstein's Revenge, whose 3s then peak about the mouth, and Mike's mess),
+  as the author juggles them. Each ball still follows a smooth arc; higher throws get
+  the gravity that gives them that height (`compress`, `peak4` and `peakStep` in
+  engine.js). Short throws (1s, thrown 2s) are not changed.
 
 Not in yet: multiplexes, empty hands, `I`, `-` direction changes, sebs (forward
 throws) and the hectic messes (an arm swapping from under to over while crossed).
 
 Open questions: four `O` windmills (under throw windmill, under throw 4233 and 342T3
 windmills, 5223 alternating windmill) come out with the first throw peaking on the
-other side from the written slash, which suggests `O` is modelled wrongly. The 2T in
-the 342T33 mills mess brushes the top forearm a little, and in the mills mess with
-windmill and the mills mess with shower, one uncrossed throw is brushed by its own
-forearm (2 cm) as that arm sweeps over on top.
+other side from the written slash, which suggests `O` is modelled wrongly; the
+alternating windmill's first throw now peaks dead centre, so it fails the same check.
+In the mills mess with windmill one uncrossed throw is brushed by its own forearm
+(3 cm) as that arm sweeps over on top. Since the footage changes (2026-11-22) the TR
+mills messes have a forearm sloping down just over the 10% limit.
+
+## Footage
+
+The arm positions and timing were checked against the author filming a 3-ball mills
+mess from the front, the side and below (2026-11-22, 120 frames a second). The
+simulator is meant to be a cleaner, more even version of that, not a copy. The
+targets taken from it (hands about 35 cm out in front and at belly to lower-chest
+height, elbows in by the body and a little forward, the crossed top hand no higher
+than the lower chest) are in `tests/measure.js` as `FOOT`, and the checks and the
+arm-setting search use them for every pattern except the plain cascades. The video
+files are not kept in the repository.
 
 ## Tests
 

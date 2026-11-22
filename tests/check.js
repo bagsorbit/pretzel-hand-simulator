@@ -24,10 +24,20 @@ PH.PATTERNS.forEach(function (pt) {
   if (r.minElbowBody < 0) msgs.push('elbow inside body');
   if (r.inBody > 0.5) msgs.push('hand or forearm goes ' + f1(r.inBody) + ' cm into the body at beat ' + f1(r.inBodyT));
   if (r.minArc < G.minArc) msgs.push('a ball barely arcs: ' + f1(r.minArc) + ' cm sideways');
+  if (r.underZ > G.underZMax) msgs.push('under hand reaches ' + f1(r.underZ) + ' cm forward at an under-arm throw (limit ' + G.underZMax + ')');
   if (r.behind) msgs.push('under hand goes behind the top elbow at ' + r.behind + ' samples');
   if (r.down / r.samples > 0.1) msgs.push('forearm slopes down ' + Math.round(100 * r.down / r.samples) + '% of the time');
+  // the author's filmed mills mess: hands 35-45 cm out in front, elbows in by the body, top hand at the lower chest
+  // (the cascades weren't filmed, so they keep their own shape)
+  if (pt.group !== 'Cascades') {
+  if (r.handZ < FOOT.handZ) msgs.push('hands work only ' + f1(r.handZ) + ' cm in front on average (footage: ' + FOOT.handZ + '+)');
+  if (r.handY > FOOT.handY) msgs.push('hands work at ' + f1(r.handY) + ' cm high on average (footage: up to ' + FOOT.handY + ')');
+  if (r.elbowY > FOOT.elbowY || r.elbowZ > FOOT.elbowZ) msgs.push('elbows sit at ' + f1(r.elbowY) + ' cm high, ' + f1(r.elbowZ) + ' cm forward on average (footage: up to ' + FOOT.elbowY + ' and ' + FOOT.elbowZ + ')');
+  if (r.crossed && r.elbowX > FOOT.elbowX) msgs.push('an elbow sticks out ' + f1(r.elbowX) + ' cm while crossed (footage: up to ' + FOOT.elbowX + ')');
+  if (r.crossed && r.topY > FOOT.topY) msgs.push('top hand goes up to ' + f1(r.topY) + ' cm while crossed (footage: up to ' + FOOT.topY + ')');
+  }
   print((msgs.length ? 'WARN ' : 'ok   ') + pt.name + '  balls ' + m.balls + ', forearm gap ' + f1(r.minFore) +
-    ', ball clearance ' + f1(r.minBall) + ', hand gap ' + f1(r.minHand) + ', into body ' + f1(r.inBody) + ', arc ' + f1(r.minArc) + ', reach ' + f1(r.maxReach * 100) + '%, forearm down ' +
+    ', in front ' + f1(r.handZ) + ', hands at ' + f1(r.handY) + ', elbows at ' + f1(r.elbowY) + '/' + f1(r.elbowZ) + ', elbow out ' + f1(r.elbowX) + ', top hand ' + f1(r.topY) + ', ball clearance ' + f1(r.minBall) + ', hand gap ' + f1(r.minHand) + ', into body ' + f1(r.inBody) + ', arc ' + f1(r.minArc) + ', reach ' + f1(r.maxReach * 100) + '%, forearm down ' +
     Math.round(100 * r.down / r.samples) + '%' + (m.notes.length ? '  [' + m.notes.join('; ') + ']' : ''));
   msgs.forEach(function (s) { print('       ' + s); });
   if (msgs.length) bad++;

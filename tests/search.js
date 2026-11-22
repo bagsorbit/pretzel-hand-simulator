@@ -4,16 +4,17 @@ load('engine.js');
 var PH = this.PH, G = PH.G;
 load('tests/measure.js');
 var RANGES = {
-  topElbow0: [12, 24], topElbow1: [110, 132], topElbow2: [2, 22],
-  botElbow0: [18, 34], botElbow1: [96, 112], botElbow2: [0, 18],
-  topFloor: [120, 128], underCatch: [0, 0.6], outX: [16, 21], inner: [2, 5], outUnder: [16, 24], botCap: [104, 116], topZ: [0, 10], botZ: [-18, 2], handZ: [22, 32],
-  underDrop: [8, 18], underFwd: [4, 7.5], underOut: [1, 6], underWin: [0.3, 0.6], elbowEarly: [0.5, 1], nearIn: [8, 22], nearOut: [18, 36]
+  topElbow0: [8, 22], topElbow1: [98, 120], topElbow2: [0, 24],
+  botElbow0: [12, 28], botElbow1: [94, 112], botElbow2: [0, 26],
+  topFloor: [110, 124], underCatch: [0, 0.6], outX: [16, 21], inner: [2, 5], outUnder: [16, 22], botCap: [96, 114], topZ: [0, 10], botZ: [-14, 2], handZ: [30, 42],
+  underDrop: [10, 18], underFwd: [2, 10], underOut: [1, 6], underWin: [0.3, 0.6], elbowEarly: [0.5, 1], nearIn: [8, 22], nearOut: [18, 36],
+  elbowOut: [0, 0.6], elbowFwd: [-0.4, 0.6], throwY: [106, 120], catchY: [110, 124], scoopY: [104, 116]
 };
 var base = {}; for (var k in G) base[k] = Array.isArray(G[k]) ? G[k].slice() : G[k];
 function apply(x) {
   for (var k in base) G[k] = Array.isArray(base[k]) ? base[k].slice() : base[k];
   G.topElbow = [x.topElbow0, x.topElbow1, x.topElbow2]; G.botElbow = [x.botElbow0, x.botElbow1, x.botElbow2];
-  ['handZ', 'outX', 'inner', 'outUnder', 'underCatch', 'topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut'].forEach(function (k) { G[k] = x[k]; });
+  ['handZ', 'outX', 'inner', 'outUnder', 'underCatch', 'topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut', 'elbowOut', 'elbowFwd', 'throwY', 'catchY', 'scoopY'].forEach(function (k) { G[k] = x[k]; });
 }
 function score(x, perBeat) {
   apply(x);
@@ -25,6 +26,8 @@ function score(x, perBeat) {
     f += Math.max(0, 2 * G.handR + 0.5 - r.minHand) + Math.max(0, G.handR + G.foreR - G.graze + 0.3 - r.minHandFore) * 2;
     f += r.wrongTop * 0.2; f += r.behind * 0.2; f += Math.max(0, G.minArc + 1 - r.minArc) * 2; f += Math.max(0, r.maxReach - 0.97) * 200;
     f += Math.max(0, -r.minElbowBody) * 3; f += r.inBody * 4; f += Math.max(0, r.underZ - G.underZMax) * 2; f += Math.max(0, r.down / r.samples - 0.05) * 100;
+    // footage targets, with the same small margin
+    if (pt.group !== 'Cascades') f += Math.max(0, FOOT.handZ + 2 - r.handZ) + Math.max(0, r.handY - FOOT.handY + 1) + Math.max(0, r.elbowY - FOOT.elbowY + 1) + Math.max(0, r.elbowZ - FOOT.elbowZ + 1); if (r.crossed && pt.group !== 'Cascades') { f += Math.max(0, r.elbowX - FOOT.elbowX + 1); f += Math.max(0, r.topY - FOOT.topY + 1); }
     if (f > 0) fails++;
     s += f;
   });

@@ -6,9 +6,10 @@
    on the viewer's left, as in the article.
 
    Timing: throw j happens at beat j (right hand on even j), and the same
-   hand catches half a beat later. So every half beat there is one event:
-   throw, catch, throw, catch... A ball thrown as a 3 lands a beat and a
-   half later and is thrown again a beat and a half after that.
+   hand catches catchLag beats later (0.8, measured from the author's own
+   juggling: each hand holds a ball about 60% of the time). The events still
+   go throw, catch, throw, catch... A ball thrown as a 3 is in the air for
+   1.8 beats and held for 1.2.
 
    Arm states come straight from the letters: R = arms crossed with the
    right arm on top, L = crossed with the left arm on top, U = uncrossed.
@@ -20,16 +21,17 @@
   var G = {
     shoulderX: 19, shoulderY: 138, shoulderZ: 0,
     upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
-    handZ: 22,                      // how far in front of the body the hands work
-    outU: 23, outX: 18.2, outUnder: 16, inner: 2.8,   // throw/catch distance from the middle
+    handZ: 34.5,                      // how far in front of the body the hands work
+    outU: 23, outX: 21, outUnder: 16, inner: 4.2,   // throw/catch distance from the middle
     crossMin: 7,                    // a crossed hand is at least this far over
-    throwY: 119, catchY: 127, scoopY: 113,
-    topZ: 0, topY: 0, botZ: -4.1, botY: 0,    // how far the top arm sits over the other
-    topElbow: [17.3, 127.7, 15.9], botElbow: [31.4, 109.6, 7], elbowEarly: 0.9, topFloor: 128, botCap: 113.2, underDrop: 8, underFwd: 6.6, underOut: 2, underWin: 0.4, nearIn: 21.8, nearOut: 33.7,
-    dipLead: 0.2, dipFrac: 0.35, underCatch: 0.1, minArc: 12, graze: 1, underZMax: 33, oneFlight: 0.25, tempoK: 0.8, compress: 0.71,   // the most a ball or arm may brush another arm, in cm
-    drive: 0.22, follow: 0.1, settle: 0.18, give: 0.15, giveBack: 0.3, underStroke: 0.5, catchGive: 0.4, maxStroke: 110, elbowOut: 0.4, elbowFwd: -0.05,
+    throwY: 120.5, catchY: 124.8, scoopY: 116,
+    topZ: 1.4, topY: 0, botZ: -1.5, botY: 0,    // how far the top arm sits over the other
+    topElbow: [16.4, 117.6, 28.8], botElbow: [25.8, 109.7, 2.3], elbowEarly: 0.5, topFloor: 121.6, botCap: 108.9, underDrop: 10, underFwd: 9, underOut: 1, underWin: 0.3, nearIn: 21.3, nearOut: 28.5,
+    dipLead: 0.2, dipFrac: 0.35, underCatch: 0.3, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
+    drive: 0.22, follow: 0.1, settle: 0.18, give: 0.15, giveBack: 0.3, underStroke: 0.5, catchGive: 0.4, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0.2,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
-    bps: 3.5,                       // beats per second at full speed (the article's Juggling Lab setting)
+    bps: 3.2,                       // beats per second at full speed (the author's own mills mess, filmed 2026-11-22)
+    catchLag: 0.8,                  // beats from a hand's throw to its next catch
     g: 980
   };
   var OWN = [-1, 1];                // own side of hand 0 (right) and hand 1 (left)
@@ -110,26 +112,52 @@
     var BPS = G.bps * (balls > 3 ? ((balls - 1.5) / 1.5) / Math.pow(balls / 3, G.tempoK / 2) : 1);
 
     // Throws higher than the pattern's basic throw are compressed, as jugglers do: a 4 or 5
-    // goes only a little higher than a 3 (a 5 in Rubenstein's Revenge peaks about head height).
-    // Each ball still follows a smooth arc, with the gravity that gives it that height.
-    var F0 = (Math.max(3, balls) - 1.5) / BPS;
+    // goes only a little higher than a 3. A pattern whose highest throw is a 4 or more is
+    // juggled so that throw peaks at a set height (peak4 for a 4, peakStep higher for each
+    // step above), and its other throws scale with it. From the author: the 4s in a shower
+    // pattern peak definitely below the top of the head, and the 5s in Rubenstein's Revenge
+    // and Mike's mess about the top of the head (with Rubenstein's 3s about the mouth).
+    // Short throws (1s, thrown 2s) keep real gravity. Each ball still follows a smooth arc,
+    // with the gravity that gives it its height.
+    var F0 = (Math.max(3, balls) - 2 + G.catchLag) / BPS, H0 = G.g * F0 * F0 / 8, hScale = null;
+    function rawRise(F) { return H0 * Math.pow(F / F0, G.compress); }
+    function flightOf(q) { return (catchTime(q + nOf(q) - 2) - q) / BPS; }
+    // how high throw q peaks when every rise is scaled by sc
+    function peakOf(q, sc) {
+      var k = q + nOf(q) - 2, tc = catchTime(k), F = (tc - q) / BPS;
+      var a = ballOn(pose(q, true).hands[handOf(q)]), b = ballOn(pose(tc, true).hands[handOf(k)]);
+      var gg = 8 * rawRise(F) * sc / (F * F), vy = (b[1] - a[1]) / F + gg * F / 2, tp = Math.min(F, Math.max(0, vy / gg));
+      return a[1] + vy * tp - gg * tp * tp / 2;
+    }
     function gFor(F) {
-      if (F <= F0) return G.g;
-      var h = G.g * F0 * F0 / 8 * Math.pow(F / F0, G.compress);
-      return 8 * h / (F * F);
+      if (F < F0 * 0.999) return G.g;
+      if (hScale === null) {
+        hScale = 1;
+        var top = 0, q;
+        for (q = 0; q < P; q++) if (flies(q)) top = Math.max(top, nOf(q));
+        if (top >= 4) {
+          var target = G.peak4 + (top - 4) * G.peakStep, lo = 0.05, hi = 4;
+          for (var it = 0; it < 30; it++) {
+            var mid = (lo + hi) / 2, pk = 0;
+            for (q = 0; q < P; q++) if (flies(q) && nOf(q) === top) pk = Math.max(pk, peakOf(q, mid));
+            if (pk > target) hi = mid; else lo = mid;
+          }
+          hScale = (lo + hi) / 2;
+        }
+      }
+      return 8 * rawRise(F) * hScale / (F * F);
     }
 
     // which throw lands at catch k (null for a held ball)
     var incoming = [];
     for (j = 0; j < P; j++) incoming[j] = null;
     for (j = 0; j < P; j++) if (flies(j)) incoming[mod(j + nOf(j) - 2, P)] = j;
-    // when each catch happens: half a beat after that hand's throw, except that a 1 is
+    // when each catch happens: catchLag beats after that hand's throw, except that a 1 is
     // caught by the other hand a moment after it is thrown ("throw, throw, catch, catch")
     function catchTime(k) {
       var inc = incoming[mod(k, P)];
-      var base = k + 0.5;
-      if (inc !== null && nOf(inc) === 1) return base + (G.oneFlight + 0.5);   // = the 1's throw time + oneFlight
-      return base;
+      if (inc !== null && nOf(inc) === 1) return k + 1 + G.oneFlight;   // = the 1's throw time + oneFlight
+      return k + G.catchLag;
     }
 
     function handOf(j) { return mod(j, 2); }

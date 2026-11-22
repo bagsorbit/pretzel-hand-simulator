@@ -23,6 +23,7 @@ function f1(x) { return (Math.round(x * 10) / 10).toFixed(1); }
 
 
 var BALL_R = PH.G.ballR;
+var FOOT = { handZ: 32, handY: 117, elbowY: 111, elbowZ: 18, elbowX: 25, topY: 127 };   // targets from the author's filmed mills mess
 // how far a sphere of radius rad at point q sinks into the body (torso and hips, as drawn), in cm (0 = clear)
 function bodyDepth(q, rad) {
   var worst = 0;
@@ -37,7 +38,8 @@ function measure(pt, perBeat) {
   var G = PH.G, m = PH.build(pt.src);
   if (!m.ok) return { error: m.error };
   var r = { m: m, minFore: 1e9, minHand: 1e9, minHandFore: 1e9, maxReach: 0, wrongTop: 0, minElbowBody: 1e9, worstT: 0,
-            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash };
+            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash,
+            handZ: 0, handY: 0, elbowY: 0, elbowZ: 0, elbowX: 0, topY: 0, crossed: 0 };
   // every ball should arc across a little, not go straight up and down
   r.minArc = 1e9; r.underZ = 0;
   for (var j = 0; j < m.period; j++) {
@@ -82,6 +84,15 @@ function measure(pt, perBeat) {
       for (var q = 0; q <= 4; q++) d = Math.max(d, bodyDepth(add(A.e, mul(sub(A.h, A.e), q / 4)), G.foreR));
       if (d > r.inBody) { r.inBody = d; r.inBodyT = t; }
     });
+    // footage targets (the author's mills mess, 2026-11-22): hands well out in front,
+    // elbows in by the body while crossed, and the top hand no higher than the lower chest
+    r.handZ += (R.h[2] + L.h[2]) / 2 / steps; r.handY += (R.h[1] + L.h[1]) / 2 / steps;
+    r.elbowY += (R.e[1] + L.e[1]) / 2 / steps; r.elbowZ += (R.e[2] + L.e[2]) / 2 / steps;
+    if (Math.abs(p.w) > 0.8) {
+      r.crossed++;
+      r.elbowX = Math.max(r.elbowX, Math.abs(R.e[0]), Math.abs(L.e[0]));
+      r.topY = Math.max(r.topY, (p.w > 0 ? R : L).h[1]);
+    }
     r.minHand = Math.min(r.minHand, len(sub(R.h, L.h)));
     r.minHandFore = Math.min(r.minHandFore, segDist(R.h, R.h, L.e, L.h).d, segDist(L.h, L.h, R.e, R.h).d);
     r.maxReach = Math.max(r.maxReach, p.reach);
