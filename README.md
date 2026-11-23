@@ -16,8 +16,18 @@ to load three.js). Pick a pattern, then:
   shows which hand makes it: red is the right hand, blue the left.
 - Right sleeve red, left sleeve blue. From the front the juggler's right arm is
   on your left, as in the article.
-- Drag to turn the juggler; pinch or scroll to zoom. The view buttons jump to
+- The Mouse button (bottom left of the picture, or the M key) picks what dragging
+  does: turn the juggler, or scrub back and forth through time (dragging pauses it).
+  A click or tap pauses and plays. Pinch or scroll to zoom. The view buttons jump to
   front, above, side, or the juggler's own eyes.
+- The buttons down the right of the picture show one ball on its own, or one pair of
+  balls, for learning a pattern a ball or two at a time. The hands still do the whole
+  pattern. Press the lit button again for all the balls.
+- Above the notation, a line in each ball's colour joins each throw (capital letter)
+  to the catch of that ball (small letter), with its siteswap number under it; taller
+  lines are higher throws. Faint, greyed rounds of the pattern either side, out to the
+  edges of the picture, show where the lines come from and go. While learning a ball
+  or two, the other balls' lines fade.
 - Play/Pause, step one throw or catch at a time (also the arrow keys and space),
   and a speed slider.
 - Type your own pattern in the box and press Play it (or Enter). If the slash does
@@ -108,7 +118,23 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   giving a little room only if needed, and the circle flows straight into the catch.
   A pattern whose swap goes over to under (the TR hectic messes) is shown as its
   time reverse played backwards, so it is the same movement with time flowing the
-  other way, as the author describes it.
+  other way, as the author describes it. Late in the circle, once over the other
+  forearm, the hand drifts on towards its catch, so it never stops at the top
+  (`orbitXa`).
+
+- Hectic flos messes (the arms change over between one hand's catch and the other
+  hand's throw, as in `Ul Ru`): as the author juggles it, the hand about to throw
+  moves diagonally back towards the body and round the other forearm, the same move
+  as the hectic mess. The other hand eases forward a little; both arms rise slightly
+  for the move; the catch just before it comes early (`shareLag`) to give it time,
+  and that ball keeps the height of the others (`shareEven`). These have their own
+  copies of the orbit settings (all named `share...`), so tuning them never moves
+  the hectic mills; `tests/search-flos.js` searches them. A TR hectic flos mess is
+  shown as its hectic flos mess played backwards.
+
+- A pattern whose throw and catch spots lean clearly to one side (the windmill: both
+  hands throw on the left) is moved sideways as a whole, so it sits in front of the
+  middle of the body (`centreKeys`).
 
 Not in yet: multiplexes, empty hands, `I`, `-` direction changes and sebs (forward
 throws).
@@ -119,7 +145,9 @@ other side from the written slash, which suggests `O` is modelled wrongly; the
 alternating windmill's first throw now peaks dead centre, so it fails the same check.
 In the mills mess with windmill one uncrossed throw is brushed by its own forearm
 (3 cm) as that arm sweeps over on top. Since the footage changes (2026-11-22) the TR
-mills messes have a forearm sloping down just over the 10% limit.
+mills messes have a forearm sloping down just over the 10% limit. The hectic flos
+messes are not right yet: in the plain pair a ball clips the left hand at the catch
+just before the change-over, and the moving hand brushes the other forearm.
 
 ## Footage
 
@@ -148,6 +176,9 @@ the one in front where the arms cross.
 arm sits over, how far under-the-arm throws reach) for values that pass all of the
 above; the current values in `engine.js` came from it. Trial values can be passed to
 the check: `jsc -e 'var OVERRIDES={outUnder:28}' tests/check.js`.
+
+`tests/search-flos.js` does the same for the hectic flos change-over settings only,
+scored on clearance, jolts, how low the hands go and how even the ball heights are.
 
 `tests/phone.html` shows the page in a phone-sized frame. Adding `?p=4&t=1.5&view=above`
 to the page address opens pattern 4 paused at beat 1.5, seen from above.

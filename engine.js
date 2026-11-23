@@ -26,7 +26,7 @@
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 111.9, catchY: 112.3, lowY: 112,       // heights of a hand's scoop: release, catch, and its low point
     loopY: 122.2, lowAt: 0.6,                    // top of the empty hand's loop; where in the hold the low point is
-    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 0, swapKey: 0, orbitR: 13, orbitSide: -1, orbitSideDown: 1, orbitElbow: 0, orbitHold: 1, orbit0: 0.1, orbit1: 0.9, orbitIn: 0.2, orbitOut: 0.7, swapOut: 0, swapUnder: 10, swapMidT: 0.4, roomBack: 0, roomDown: 0, swapClear: 2, swapEaseIn: 0.4, swapEaseOut: 0.9, swapPushFwd: 1, swapPushUp: 0.3, swapPushOther: 0.3, swapPushBack: 0.1, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
+    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 0, swapKey: 0, orbitR: 13, orbitSide: -1, orbitSideDown: -1, sharePushOther: 0.5, shareOrbitR: 16, shareOrbitRY: 10, shareLag: 0.2, shareCatchUp: 0, shareEven: 1, shareOrbit0: 0.1, shareOrbit1: 0.9, shareOrbitIn: 0.2, shareOrbitOut: 0.8, shareSwapRise0: 0.55, shareSwapRise1: 0.95, shareSwapEaseIn: 0.4, shareSwapEaseOut: 0.9, shareLift: 6, shareLiftW: 0.5, orbitXa: 0.75, centreKeys: 1, centreMin: 3,  sharePushFwd: 1, orbitElbow: 0, orbitHold: 1, orbit0: 0.1, orbit1: 0.9, orbitIn: 0.2, orbitOut: 0.8, swapOut: 0, swapUnder: 10, swapMidT: 0.4, roomBack: 0, roomDown: 0, swapClear: 2, swapEaseIn: 0.4, shareA: 0.5, shareB: 1, swapEaseOut: 0.9, swapPushFwd: 1, swapPushUp: 0.3, swapPushOther: 0.3, swapPushBack: 0.1, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
     underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
@@ -136,8 +136,11 @@
       var gg = 8 * rawRise(F) * sc / (F * F), vy = (b[1] - a[1]) / F + gg * F / 2, tp = Math.min(F, Math.max(0, vy / gg));
       return a[1] + vy * tp - gg * tp * tp / 2;
     }
-    function gFor(F) {
-      if (F < F0 * 0.999) return G.g;
+    // (a 3 or higher whose flight is cut short only because it is caught early for a hectic
+    // flos change-over keeps the evened-out height of the others, not real gravity: shareEven)
+    function gFor(F, j) {
+      var even = j !== undefined && G.shareEven && nOf(j) >= 3 && shareCatchK(j + nOf(j) - 2);
+      if (F < F0 * 0.999 && !even) return G.g;
       if (hScale === null) {
         hScale = 1;
         var top = 0, q;
@@ -166,6 +169,9 @@
       if (inc !== null && nOf(inc) === 1) return k + 1 + G.oneFlight;   // = the 1's throw time + oneFlight
       // when the arms must cross or uncross between this catch and the next throw (its catch
       // letter differs from the next throw letter), the catch comes earlier, leaving time for it
+      // (a hectic flos change-over, from one crossing straight to the other, gets its own)
+      var cU = tok(k).c.toUpperCase(), tN = tok(k + 1).t;
+      if (cU !== tN && cU !== 'U' && tN !== 'U') return k + G.shareLag;
       if (tok(k).c.toUpperCase() !== tok(k + 1).t) return k + G.changeLag;
       return k + G.catchLag;
     }
@@ -215,6 +221,14 @@
     events.forEach(function (ev, i) {
       keys[ev.hand].push({ t: ev.t, i: i, pos: ev.part === 'throw' ? throwKey(ev.j) : catchKey(ev.j), own: true });
     });
+    // a pattern whose throws all come from one side (the windmill: both hands throw on the
+    // left and catch on the right) is moved sideways as a whole, so it sits in front of the
+    // middle of the body (centreKeys 1 = fully centred)
+    var keyMid = 0, nKeys = 0;
+    keys.forEach(function (ks) { ks.forEach(function (q) { keyMid += q.pos[0]; nKeys++; }); });
+    keyMid = nKeys ? keyMid / nKeys : 0;
+    keyMid = Math.abs(keyMid) > G.centreMin ? keyMid * G.centreKeys : 0;   // (small leanings are left alone)
+    keys.forEach(function (ks) { ks.forEach(function (q) { q.pos = [q.pos[0] - keyMid, q.pos[1], q.pos[2]]; }); });
     for (var h = 0; h < 2; h++) {
       var own = keys[h].slice();
       events.forEach(function (ev, i) {
@@ -309,6 +323,7 @@
           // smoothly from its last catch to its next throw, with no little throwing scoop
           if ((ev.part === 'throw' && !flies(ev.j)) || (ev.part === 'catch' && incoming[mod(ev.j, P)] === null)) { fill.push(ev.t); return; }
           var y = ev.yKey !== undefined ? ev.yKey : (ev.part === 'throw' ? G.throwY : G.catchY) + role(ev.t);
+          if (ev.part === 'catch' && G.shareCatchUp && shareCatch(ev)) y += G.shareCatchUp;   // (caught higher, just before a hectic flos change-over)
           var tm = mod(ev.t + d * (ev.part === 'throw' ? 0.5 : G.lowAt), P);
           ys.push([ev.t, y]);
           ys.push([tm, (ev.part === 'throw' ? G.loopY : G.lowY) + role(tm)]);
@@ -344,6 +359,22 @@
     // top, while the other arm stays where it is and only becomes the under arm once the
     // moving one has passed over it
     var swaps = null;
+    // a setting for this swap: the hectic flos change-over ('shared') has its own copy of
+    // the orbit timings (share + the name), so tuning it never moves the hectic mills
+    function swG(sw, name) {
+      if (sw.kind === 'shared') { var k = 'share' + name.charAt(0).toUpperCase() + name.slice(1); if (G[k] !== undefined) return G[k]; }
+      return G[name];
+    }
+    function shareCatchK(k) {
+      swapAt(0);
+      var t = mod(catchTime(k), P);
+      return swaps.some(function (sw) { return sw.kind === 'shared' && Math.abs(mod(t - sw.t0 + P / 2, P) - P / 2) < 1e-6; });
+    }
+    // is this catch the one just before a hectic flos change-over?
+    function shareCatch(ev) {
+      swapAt(0);
+      return swaps.some(function (sw) { return sw.kind === 'shared' && Math.abs(mod(ev.t - sw.t0 + P / 2, P) - P / 2) < 1e-6; });
+    }
     // how far into a swap beat tb is (0..1), and which arm was on top, or null
     function swapAt(tb) {
       if (!swaps) {
@@ -352,12 +383,12 @@
           var e1 = events[si], e2 = events[mod(si + 1, E)];
           var e3 = events[mod(si + 2, E)];
           // the other arm has until its own next event (usually its throw from under) to settle
-          if (e1.st && e2.st && e1.st !== e2.st) swaps.push({ t0: e1.t, t1: e1.t + (mod(e2.t - e1.t, P) || P), t2: e1.t + (mod(e2.t - e1.t, P) || P) + (mod(e3.t - e2.t, P) || P), from: e1.st, mover: e1.hand });
+          if (e1.st && e2.st && e1.st !== e2.st) swaps.push({ t0: e1.t, t1: e1.t + (mod(e2.t - e1.t, P) || P), t2: e1.t + (mod(e2.t - e1.t, P) || P) + (mod(e3.t - e2.t, P) || P), from: e1.st, mover: e1.hand === e2.hand ? e1.hand : e2.hand, kind: e1.hand === e2.hand && e1.part === 'throw' && e2.part === 'catch' ? 'hectic' : 'shared', dir: e2.part === 'throw' ? dirOf(e2.j) : '' });
         }
       }
       for (var q = 0; q < swaps.length; q++) {
         var sw = swaps[q], t = sw.t0 + mod(tb - sw.t0, P);
-        if (t <= sw.t2) return { f: Math.min(1, (t - sw.t0) / (sw.t1 - sw.t0)), f2: (t - sw.t0) / (sw.t2 - sw.t0), from: sw.from, mover: sw.mover, done: t > sw.t1, t0: sw.t0, t1: sw.t1 };
+        if (t <= sw.t2) return { f: Math.min(1, (t - sw.t0) / (sw.t1 - sw.t0)), f2: (t - sw.t0) / (sw.t2 - sw.t0), from: sw.from, mover: sw.mover, done: t > sw.t1, t0: sw.t0, t1: sw.t1, kind: sw.kind };
       }
       return null;
     }
@@ -367,8 +398,28 @@
       if (!sw) return crossW(tb) * me;
       var olap = smoother(-26, -6, splines[0][0](tb) - splines[1][0](tb));
       var r0 = sw.from === me ? 1 : -1;
-      if (sw.mover === h) return sw.done ? crossW(tb) * me : olap * (r0 + (-r0 - r0) * smoother(G.swapRise0, G.swapRise1, sw.f));   // moves around the other arm
+      // (in a change-over between one hand's catch and the other hand's throw, as in the
+      // hectic flos messes, the hand about to throw is the one that goes round)
+      if (sw.mover === h) return sw.done ? crossW(tb) * me : olap * (r0 + (-r0 - r0) * smoother(swG(sw, 'swapRise0'), swG(sw, 'swapRise1'), sw.f));   // moves around the other arm
+      // (the hand that has just caught, in a hectic flos change-over, rises to the top by the throw)
+      if (sw.kind === 'shared') return sw.done ? crossW(tb) * me : olap * (r0 - 2 * r0 * smoother(G.shareA, G.shareB, sw.f));
       return olap * (r0 + (-r0 - r0) * smoother(G.swapStay, 1, sw.f2));                                    // stays, then is the other way round
+    }
+    // In a hectic flos change-over both arms rise a little to do the trick, so the moving
+    // hand has a shorter, quicker path round the other forearm. The lift swells smoothly
+    // from shareLiftW beats before the catch to shareLiftW beats after the throw.
+    function shareLift(tb) {
+      if (!G.shareLift || !swaps) return 0;
+      var best = 0;
+      for (var q = 0; q < swaps.length; q++) {
+        var sw = swaps[q];
+        if (sw.kind !== 'shared') continue;
+        var a = sw.t0 - G.shareLiftW, b = sw.t1 + G.shareLiftW, t = a + mod(tb - a, P);
+        if (t > b) continue;
+        var up = smoother(a, sw.t0, t) * (1 - smoother(sw.t1, b, t));
+        best = Math.max(best, up);
+      }
+      return G.shareLift * best;
     }
     // the other arm gives a little room: its hand eases back towards the body and down while
     // the hectic arm comes past (the hectic arm does the travelling: see the swing key)
@@ -488,7 +539,7 @@
         if (!flies(j)) continue;
         var h = handOf(j), k = j + nOf(j) - 2, hk = handOf(k), tc = catchTime(k), F = (tc - j) / BPS;
         var a = baseAt(h, j), b = baseAt(hk, tc);
-        var gg = gFor(F);
+        var gg = gFor(F, j);
         var v = [(b[0] - a[0]) / F, (b[1] - a[1]) / F + gg * F / 2, (b[2] - a[2]) / F];   // cm/s at release
         var vl = [v[0], v[1] - gg * F, v[2]];                                              // cm/s at the catch
         var under = underThrows[h].some(function (u) { return u.t === j; }) ? G.underStroke : 1;
@@ -547,7 +598,8 @@
       // of the other forearm: from below it, round the front, to above it (or the reverse),
       // close in. The other arm is placed first and stays put.
       var swo = underInKeys && !orbitOff ? swapAt(tb) : null, orbitArm = null;
-      if (swo && !swo.done) { order = [1 - swo.mover, swo.mover]; }
+      if (swo && swo.done) swo = null;
+      if (swo) { order = [1 - swo.mover, swo.mover]; }
       var topEl = null;
       order.forEach(function (h) {
         var top = Math.max(0, roles[h]), bot = Math.max(0, -roles[h]);
@@ -560,6 +612,7 @@
         P0[1] += top * (softMax(P0[1], G.topFloor, G.bandSoft) - P0[1]) + bot * (softMin(P0[1], G.botCap, G.bandSoft) - P0[1]);
         P0[1] += top * G.topLift - bot * G.botDrop;
         P0[2] += top * G.topZ + bot * G.botZ;
+        P0[1] += shareLift(tb);
         if (bot > 0 && topEl) {
           var e = topEl.elbow;
           // an under-the-arm throw is made just below and slightly in front of the top arm's elbow
@@ -585,9 +638,13 @@
           var ref = orbitRef[mod(swo.t0, P).toFixed(3)];
           if (G.orbitHold > 0 && ref) mid = mid.map(function (v, c) { return v + (ref[c] - v) * G.orbitHold; });
           var rising = swo.from !== (h === 0 ? 1 : -1);
-          var th = Math.PI * (smoother(G.orbit0, G.orbit1, swo.f) - 0.5) * (rising ? 1 : -1);   // -90 below .. +90 above
-          var tgo = [mid[0], mid[1] + G.orbitR * Math.sin(th), mid[2] + (rising ? G.orbitSide : G.orbitSideDown) * G.orbitR * Math.cos(th)];   // orbitSide -1: round the back, towards the navel
-          var bw = smoother(0, G.orbitIn, swo.f) * (1 - smoother(G.orbitOut, 1, swo.f));
+          var th = Math.PI * (smoother(swG(swo, 'orbit0'), swG(swo, 'orbit1'), swo.f) - 0.5) * (rising ? 1 : -1);   // -90 below .. +90 above
+          var oR = swo.kind === 'shared' ? G.shareOrbitR : G.orbitR, oRy = swo.kind === 'shared' ? G.shareOrbitRY : G.orbitR;   // (the flos one is flatter: wide behind, not so deep below)
+          // (late in the circle, once it is over the other forearm, it drifts sideways on
+          // towards its catch, so it never stops at the top and then dashes)
+          var xs = G.orbitXa < 1 && swo.kind === 'hectic' ? smoother(G.orbitXa, 1, swo.f) : 0;
+          var tgo = [mid[0] + (P0[0] - mid[0]) * xs, mid[1] + oRy * Math.sin(th), mid[2] + (rising ? G.orbitSide : G.orbitSideDown) * oR * Math.cos(th)];   // orbitSide -1: round the back, towards the navel
+          var bw = smoother(0, swG(swo, 'orbitIn'), swo.f) * (1 - smoother(swG(swo, 'orbitOut'), 1, swo.f));
           for (var c3 = 0; c3 < 3; c3++) P0[c3] += (tgo[c3] - P0[c3]) * bw;
           elbowBias[h] = G.orbitElbow * bw * Math.max(0, Math.cos(th));   // the elbow comes forward too, so the whole forearm passes in front
         } else elbowBias[h] = 0;
@@ -617,7 +674,7 @@
         // (not while the throw spots are being worked out, and easing in after the throw has
         // left the hand, so the hand makes its throw from the right place)
         if (sw && !sw.done && underInKeys && sw.f > 0) {
-          var ease = smoother(0, G.swapEaseIn, sw.f) * (1 - smoother(G.swapEaseOut, 1, sw.f));   // eases in after the throw and out before the catch
+          var ease = smoother(0, swG(sw, 'swapEaseIn'), sw.f) * (1 - smoother(swG(sw, 'swapEaseOut'), 1, sw.f));   // eases in after the throw and out before the catch
           var mh = sw.mover, oh = 1 - mh, tg = out.targets[mh], to = out.targets[oh], need = 2 * G.foreR + G.swapClear;
           // rising (under to over, as the author describes Lr in the hectic mess): first down
         // and back towards the navel, then up and forward over the other arm. Going the other
@@ -628,9 +685,12 @@
           for (var it = 0; it < 8; it++) {
             var d = segGap(out.elbows[mh], out.hands[mh], out.elbows[oh], out.hands[oh]);
             if (d >= need) break;
-            var k = (need - d) * ease, share = Em && Em.reach > 0.95 ? 0.3 : 1 - G.swapPushOther;   // the hectic arm moves most, unless it is at full stretch
-            Q[2] += k * share * (fwd ? G.swapPushFwd : -G.swapPushBack); Q[1] += upDown * k * share * G.swapPushUp;
-            Qo[2] -= k * (1 - share) * G.swapPushFwd; Qo[1] -= upDown * k * (1 - share) * G.swapPushUp;
+            var k = (need - d) * ease, share = Em && Em.reach > 0.95 ? 0.3 : 1 - (sw.kind === 'shared' ? G.sharePushOther : G.swapPushOther);   // the hectic arm moves most, unless it is at full stretch
+            // (going over to under round the back, in a hectic flos change-over, the moving hand
+            // keeps towards the body and the other hand eases forward out of its way)
+            var backDown = !rising && G.orbitSideDown < 0, oz = backDown ? G.sharePushFwd : -G.swapPushFwd;
+            Q[2] += k * share * (fwd && !backDown ? G.swapPushFwd : -G.swapPushBack); Q[1] += upDown * k * share * G.swapPushUp;
+            Qo[2] += k * (1 - share) * oz; Qo[1] -= upDown * k * (1 - share) * G.swapPushUp;
             Em = arm(mh, Q, tg.top, tg.bot); Eo = arm(oh, Qo, to.top, to.bot);
             out.hands[mh] = Em.hand; out.elbows[mh] = Em.elbow; out.hands[oh] = Eo.hand; out.elbows[oh] = Eo.elbow;
             out.reach = Math.max(out.reach, Em.reach, Eo.reach);
@@ -712,7 +772,7 @@
       if (swapAt(0) !== undefined) {
         orbitOff = true;
         swaps.forEach(function (sw) {
-          var pr = pose(sw.t0 + G.orbitIn * (sw.t1 - sw.t0), true), o = 1 - sw.mover;
+          var pr = pose(sw.t0 + swG(sw, 'orbitIn') * (sw.t1 - sw.t0), true), o = 1 - sw.mover;
           orbitRef[mod(sw.t0, P).toFixed(3)] = [0, 1, 2].map(function (c) { return (pr.elbows[o][c] + pr.hands[o][c]) / 2; });
         });
         orbitOff = false;
@@ -756,7 +816,7 @@
           var k = j + nj - 2, tc = catchTime(k);
           if (tb < tc) {
             var a = ballOn(flowPose(j).hands[hand]), bpt = ballOn(flowPose(tc).hands[handOf(k)]);
-            var F = (tc - j) / bps, tau = (tb - j) / bps, gg = gFor(F);
+            var F = (tc - j) / bps, tau = (tb - j) / bps, gg = gFor(F, j);
             var vy = (bpt[1] - a[1]) / F + gg * F / 2;
             pos = [a[0] + (bpt[0] - a[0]) * tau / F, a[1] + vy * tau - gg * tau * tau / 2, a[2] + (bpt[2] - a[2]) * tau / F];
             res.push({ pos: pos, col: colAt(j), fly: true, from: hand, to: handOf(k), t0: j, t1: tc });
@@ -840,7 +900,7 @@
       if (!flies(j)) { slashSeen = sideFor(0, t0.t) < 0 ? '/' : '\\'; break; }
       var k = j + nOf(j) - 2, tc = catchTime(k);
       var a0 = pose(j).hands[0], b0 = pose(tc).hands[handOf(k)];
-      var F = (tc - j) / bps, gs = gFor(F), vy = (b0[1] - a0[1]) / F + gs * F / 2, tp = Math.min(F, vy / gs);
+      var F = (tc - j) / bps, gs = gFor(F, j), vy = (b0[1] - a0[1]) / F + gs * F / 2, tp = Math.min(F, vy / gs);
       var xp = a0[0] + (b0[0] - a0[0]) * tp / F;
       slashSeen = xp < 0 ? '/' : '\\';
       break;
@@ -857,7 +917,7 @@
     // each catch a throw, and beat tb here is beat (catchLag - tb) there.
     if (!opts.noReverse) {
       swapAt(0);
-      var descending = swaps.some(function (sw) { return sw.from === (sw.mover === 0 ? 1 : -1); });
+      var descending = swaps.some(function (sw) { return sw.kind === 'hectic' ? sw.from === (sw.mover === 0 ? 1 : -1) : sw.dir === 'i'; });
       if (descending) {
         var rv = timeReverse(p.src), srcM = rv.ok ? build(rv.src, { noReverse: true }) : null;
         if (srcM && srcM.ok && srcM.period === P) {
@@ -907,6 +967,12 @@
     { group: 'Mills messes', name: 'TR flipped mess', src: '3 i/ Ul Ll Lu : Ur Rr Ru' },
     { group: 'Mills messes', name: 'Hectic mills', src: 'o\\ Lu Ul Lr : Ru Ur Rl' },
     { group: 'Mills messes', name: 'TR hectic mills', src: '3 i/ Ul Lr Ru : Ur Rl Lu' },
+    { group: 'Mills messes', name: 'Hectic flipped mess', src: 'o\\ Ru Ur Rl : Lu Ul Lr' },
+    { group: 'Mills messes', name: 'TR hectic flipped mess', src: '3 i/ Ur Rl Lu : Ul Lr Ru' },
+    { group: 'Flos messes', name: 'Hectic flos mess', src: 'o/ Ul Ru Uu : Ur Lu Uu' },
+    { group: 'Flos messes', name: 'Hectic flipped flos mess', src: 'o/ Ur Lu Uu : Ul Ru Uu' },
+    { group: 'Flos messes', name: 'TR hectic flos mess', src: '3 i\\ Lu Uu Ul : Ru Uu Ur' },
+    { group: 'Flos messes', name: 'TR hectic flipped flos mess', src: '3 i\\ Ru Uu Ur : Lu Uu Ul' },
     { group: 'Flos messes', name: 'Flos mess', src: 'o/ Ur Ru Uu : Ul Lu Uu' },
     { group: 'Flos messes', name: 'Flipped flos mess', src: 'o/ Ul Lu Uu : Ur Ru Uu' },
     { group: 'Flos messes', name: 'TR flos mess', src: '3 i\\ Ru Uu Ul : Lu Uu Ur' },
