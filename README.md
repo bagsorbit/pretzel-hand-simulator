@@ -101,11 +101,15 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   the gravity that gives them that height (`compress`, `peak4` and `peakStep` in
   engine.js). Short throws (1s, thrown 2s) are not changed.
 
+- Hectic messes (an arm swapping from under to over while the arms stay crossed, as
+  in `Lr`): between the `L` throw and the `r` catch, the hand making them circles the
+  middle of the other forearm, as the author juggles it. Going from under to over it
+  passes round the back of that forearm (towards the navel) and up over it; going
+  from over to under (TR hectic) it passes round the front. The other arm stays put,
+  giving a little room only if needed, and the circle flows straight into the catch.
+
 Not in yet: multiplexes, empty hands, `I`, `-` direction changes and sebs (forward
-throws). The hectic messes (an arm swapping from under to over while crossed) are in
-the list with the right throws, but their arms still pass through each other at the
-swap; a reference video shows the top hand dropping under its own elbow first, then
-the other coming over in front.
+throws).
 
 Open questions: four `O` windmills (under throw windmill, under throw 4233 and 342T3
 windmills, 5223 alternating windmill) come out with the first throw peaking on the

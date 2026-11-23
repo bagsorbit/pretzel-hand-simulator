@@ -26,7 +26,7 @@
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 111.9, catchY: 112.3, lowY: 112,       // heights of a hand's scoop: release, catch, and its low point
     loopY: 122.2, lowAt: 0.6,                    // top of the empty hand's loop; where in the hold the low point is
-    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 18, swapOut: 0, swapMidT: 0.65, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
+    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 0, swapKey: 0, orbitR: 13, orbitSide: -1, orbitSideDown: 1, orbitElbow: 0, orbitHold: 1, orbit0: 0.1, orbit1: 0.9, orbitIn: 0.2, orbitOut: 0.7, swapOut: 0, swapUnder: 10, swapMidT: 0.4, roomBack: 0, roomDown: 0, swapClear: 2, swapEaseIn: 0.4, swapEaseOut: 0.9, swapPushFwd: 1, swapPushUp: 0.3, swapPushOther: 0.3, swapPushBack: 0.1, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
     underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
@@ -235,13 +235,14 @@
     }
 
     // Hectic swaps (the arms change over while staying crossed, e.g. Lr): as the author
-    // describes it, the hand making that throw and catch moves in towards the centre line,
-    // passes under the other forearm and comes up over it, while the other arm stays put
+    // describes it, the hand making that throw and catch goes round the middle of the other
+    // forearm (just under it, then up and over), while the other arm stays put. The spot is
+    // set once the other arm's path is known (see the under-arm block below)
     for (var si2 = 0; si2 < E; si2++) {
       var a1 = events[si2], a2 = events[mod(si2 + 1, E)];
       if (!(a1.st && a2.st && a1.st !== a2.st)) continue;
       var mH = a1.hand, sT0 = a1.t, sT1 = sT0 + (mod(a2.t - sT0, P) || P);
-      keys[mH].push({ t: mod(sT0 + (sT1 - sT0) * G.swapMidT, P), pos: [-OWN[mH] * G.swapOut, G.lowY, G.handZ + G.swapFwd], own: false });
+      if (G.swapKey) keys[mH].push({ t: mod(sT0 + (sT1 - sT0) * G.swapMidT, P), pos: [-OWN[mH] * G.swapOut, G.lowY, G.handZ + G.swapFwd], own: false, swing: true });
       keys[mH].sort(function (u, v) { return u.t - v.t; });
     }
 
@@ -298,7 +299,7 @@
       // the top hand's catches, throws and loop sit higher (roleLift) and the bottom hand's
       // lower (roleDrop), so the scoops themselves keep the top forearm over the other
       return [0, 1].map(function (h) {
-        var ys = [], own = [], fill = [];
+        var ys = (swingY[h] || []).slice(), own = [], fill = [];
         events.forEach(function (ev) { if (ev.hand === h) own.push(ev); });
         function role(t) { var w = handRole(h, t); return w > 0 ? w * G.roleLift : w * G.roleDrop; }
         own.forEach(function (ev, i) {
@@ -324,7 +325,7 @@
         return [sx[h][0], loopSpline(ys.concat(add)), sx[h][2]];
       });
     }
-    var splines = null, underInKeys = false;
+    var splines = null, underInKeys = false, swingY = [[], []];
     splines = makeSplines();
     function baseHand(h, tb) {
       var S = splines[h];
@@ -355,7 +356,7 @@
       }
       for (var q = 0; q < swaps.length; q++) {
         var sw = swaps[q], t = sw.t0 + mod(tb - sw.t0, P);
-        if (t <= sw.t2) return { f: Math.min(1, (t - sw.t0) / (sw.t1 - sw.t0)), f2: (t - sw.t0) / (sw.t2 - sw.t0), from: sw.from, mover: sw.mover, done: t > sw.t1 };
+        if (t <= sw.t2) return { f: Math.min(1, (t - sw.t0) / (sw.t1 - sw.t0)), f2: (t - sw.t0) / (sw.t2 - sw.t0), from: sw.from, mover: sw.mover, done: t > sw.t1, t0: sw.t0, t1: sw.t1 };
       }
       return null;
     }
@@ -368,11 +369,12 @@
       if (sw.mover === h) return sw.done ? crossW(tb) * me : olap * (r0 + (-r0 - r0) * smoother(G.swapRise0, G.swapRise1, sw.f));   // moves around the other arm
       return olap * (r0 + (-r0 - r0) * smoother(G.swapStay, 1, sw.f2));                                    // stays, then is the other way round
     }
-    // the rising hand passes in front of the other forearm
-    function swapFwd(h, tb) {
+    // the other arm gives a little room: its hand eases back towards the body and down while
+    // the hectic arm comes past (the hectic arm does the travelling: see the swing key)
+    function swapRoom(h, tb) {
       var sw = swapAt(tb);
-      if (!sw || sw.mover !== h) return 0;
-      return 0;   // (the forward move is in the swing key itself)
+      if (!sw || sw.mover === h) return 0;
+      return Math.sin(Math.PI * smoother(0, 1, sw.f2));
     }
     // How crossed the arms are, and which is on top: +1 right arm over, -1 left arm over,
     // 0 apart. It is the arm on top times how far the hands overlap sideways, averaged over
@@ -437,6 +439,7 @@
       return best;
     }
 
+    var elbowBias = [0, 0], orbitRef = {}, orbitOff = false;       // extra forward lean for an elbow (the hectic arm's, during its orbit)
     function arm(h, P0, top, bot) {
       var own = OWN[h];
       var across = smooth(-6, 12, P0[0] * -own);
@@ -454,6 +457,7 @@
       };
       aim(G.topElbow, top * k);
       aim(G.botElbow, bot * across);
+      if (elbowBias[h]) { var pn = Math.hypot(pole[0], pole[1], pole[2]); pole = [pole[0] / pn, pole[1] / pn, pole[2] / pn + elbowBias[h]]; }
       var El = ik(S, P0, G.upper, G.fore, pole);
       El.shoulder = S;
       return El;
@@ -538,11 +542,17 @@
       // the top arm first, so the bottom hand can reach under its elbow
       var roles = [handRole(0, tb), handRole(1, tb)];
       var order = roles[0] >= roles[1] ? [0, 1] : [1, 0];
+      // In a hectic swap (between the L and the r of Lr), the hectic hand orbits the middle
+      // of the other forearm: from below it, round the front, to above it (or the reverse),
+      // close in. The other arm is placed first and stays put.
+      var swo = underInKeys && !orbitOff ? swapAt(tb) : null, orbitArm = null;
+      if (swo && !swo.done) { order = [1 - swo.mover, swo.mover]; }
       var topEl = null;
       order.forEach(function (h) {
         var top = Math.max(0, roles[h]), bot = Math.max(0, -roles[h]);
         var P0 = hands[h].slice();
-        P0[2] += swapFwd(h, tb);
+        var room = swapRoom(h, tb);
+        P0[2] -= room * G.roomBack; P0[1] -= room * G.roomDown;
         // when the arms cross, the top hand stays above a floor and the bottom hand below a
         // ceiling (just above its elbow), so the top forearm passes well over the other. Both
         // limits are soft, so the hands ease along them instead of hitting an edge.
@@ -567,6 +577,19 @@
         }
         if (nearCorr) P0[2] += nearAt(h, tb);
         if (!plain) { var so = strokeAt(h, tb); for (var c2 = 0; c2 < 3; c2++) P0[c2] += so[c2]; }
+        if (swo && !swo.done && h === swo.mover && orbitArm) {
+          var mid = [0, 1, 2].map(function (c) { return (orbitArm.elbow[c] + orbitArm.hand[c]) / 2; });
+          // circle where the other forearm is as the orbit starts, so its later settling
+          // doesn't drag the hectic hand about (orbitHold 1 = fully held)
+          var ref = orbitRef[mod(swo.t0, P).toFixed(3)];
+          if (G.orbitHold > 0 && ref) mid = mid.map(function (v, c) { return v + (ref[c] - v) * G.orbitHold; });
+          var rising = swo.from !== (h === 0 ? 1 : -1);
+          var th = Math.PI * (smoother(G.orbit0, G.orbit1, swo.f) - 0.5) * (rising ? 1 : -1);   // -90 below .. +90 above
+          var tgo = [mid[0], mid[1] + G.orbitR * Math.sin(th), mid[2] + (rising ? G.orbitSide : G.orbitSideDown) * G.orbitR * Math.cos(th)];   // orbitSide -1: round the back, towards the navel
+          var bw = smoother(0, G.orbitIn, swo.f) * (1 - smoother(G.orbitOut, 1, swo.f));
+          for (var c3 = 0; c3 < 3; c3++) P0[c3] += (tgo[c3] - P0[c3]) * bw;
+          elbowBias[h] = G.orbitElbow * bw * Math.max(0, Math.cos(th));   // the elbow comes forward too, so the whole forearm passes in front
+        } else elbowBias[h] = 0;
         var El = arm(h, P0, top, bot);
         // the body pushes the arm out: if the hand or forearm comes near the torso or hips,
         // ease the hand forward so it clears, and work the arm out again. The push starts
@@ -578,9 +601,51 @@
           El = arm(h, P0, top, bot);
         }
         if (top > 0) topEl = El;
+        if (swo && !swo.done && h !== swo.mover) orbitArm = El;
         out.hands[h] = El.hand; out.elbows[h] = El.elbow; out.shoulders[h] = El.shoulder; out.reach = Math.max(out.reach, El.reach);
+        out.targets = out.targets || []; out.targets[h] = { P0: P0, top: top, bot: bot };
       });
+      // In a hectic swap the hectic arm goes round the other one: wherever its forearm
+      // would come too close, its hand is moved forward (and up as it comes over, or down
+      // as it goes under) until the forearms clear. The blending pass smooths this out.
+      resolveSwap(out, roles, tb);
       return out;
+    }
+    function resolveSwap(out, roles, tb) {
+        var sw = swapAt(tb);
+        // (not while the throw spots are being worked out, and easing in after the throw has
+        // left the hand, so the hand makes its throw from the right place)
+        if (sw && !sw.done && underInKeys && sw.f > 0) {
+          var ease = smoother(0, G.swapEaseIn, sw.f) * (1 - smoother(G.swapEaseOut, 1, sw.f));   // eases in after the throw and out before the catch
+          var mh = sw.mover, oh = 1 - mh, tg = out.targets[mh], to = out.targets[oh], need = 2 * G.foreR + G.swapClear;
+          // rising (under to over, as the author describes Lr in the hectic mess): first down
+        // and back towards the navel, then up and forward over the other arm. Going the other
+        // way (over to under, as in the TR hectic mess) is the time reverse: down in front of
+        // the other arm first, then back towards the navel
+        var rising = sw.from !== (mh === 0 ? 1 : -1);
+        var upDown = rising ? (roles[mh] >= 0 ? 1 : -1) : -1, fwd = roles[mh] >= 0, Q = tg.P0.slice(), Qo = to.P0.slice(), Em, Eo;
+          for (var it = 0; it < 8; it++) {
+            var d = segGap(out.elbows[mh], out.hands[mh], out.elbows[oh], out.hands[oh]);
+            if (d >= need) break;
+            var k = (need - d) * ease, share = Em && Em.reach > 0.95 ? 0.3 : 1 - G.swapPushOther;   // the hectic arm moves most, unless it is at full stretch
+            Q[2] += k * share * (fwd ? G.swapPushFwd : -G.swapPushBack); Q[1] += upDown * k * share * G.swapPushUp;
+            Qo[2] -= k * (1 - share) * G.swapPushFwd; Qo[1] -= upDown * k * (1 - share) * G.swapPushUp;
+            Em = arm(mh, Q, tg.top, tg.bot); Eo = arm(oh, Qo, to.top, to.bot);
+            out.hands[mh] = Em.hand; out.elbows[mh] = Em.elbow; out.hands[oh] = Eo.hand; out.elbows[oh] = Eo.elbow;
+            out.reach = Math.max(out.reach, Em.reach, Eo.reach);
+          }
+        }
+    }
+    // closest distance between two segments (forearms)
+    function segGap(p1, q1, p2, q2) {
+      var d1 = [q1[0] - p1[0], q1[1] - p1[1], q1[2] - p1[2]], d2 = [q2[0] - p2[0], q2[1] - p2[1], q2[2] - p2[2]], r = [p1[0] - p2[0], p1[1] - p2[1], p1[2] - p2[2]];
+      function dt(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+      var a = dt(d1, d1), e = dt(d2, d2), f = dt(d2, r), c = dt(d1, r), b = dt(d1, d2), den = a * e - b * b, sP, tP;
+      sP = den > 1e-9 ? Math.max(0, Math.min(1, (b * f - c * e) / den)) : 0;
+      tP = (b * sP + f) / e;
+      if (tP < 0) { tP = 0; sP = Math.max(0, Math.min(1, -c / a)); } else if (tP > 1) { tP = 1; sP = Math.max(0, Math.min(1, (b - c) / a)); }
+      var x = [p1[0] + d1[0] * sP - p2[0] - d2[0] * tP, p1[1] + d1[1] * sP - p2[1] - d2[1] * tP, p1[2] + d1[2] * sP - p2[2] - d2[2] * tP];
+      return Math.sqrt(dt(x, x));
     }
 
     // The push that keeps the bottom hand in front of the top elbow, worked out for the
@@ -629,8 +694,28 @@
         c.k.pos = [c.k.pos[0] + (c.tgt[0] - c.k.pos[0]) * c.w, c.k.pos[1], c.k.pos[2] + (c.tgt[2] - c.k.pos[2]) * c.w];
         c.ev.yKey = y0 + (c.tgt[1] - y0) * c.w;
       });
+      // hectic swings: round the middle of the other forearm, just under it
+      [0, 1].forEach(function (h) {
+        keys[h].forEach(function (q) {
+          if (!q.swing) return;
+          var ps = pose(q.t, true), o = 1 - h;
+          var mid = [0, 1, 2].map(function (c) { return (ps.elbows[o][c] + ps.hands[o][c]) / 2; });
+          q.pos = [mid[0] - OWN[h] * G.swapOut, q.pos[1], mid[2] + G.swapFwd];
+          swingY[h].push([q.t, mid[1] - G.swapUnder]);
+        });
+      });
       splines = makeSplines();
       underInKeys = true;
+      // where the other forearm's middle is as each hectic orbit starts (worked out with the
+      // orbits off, so they don't feed back into themselves)
+      if (swapAt(0) !== undefined) {
+        orbitOff = true;
+        swaps.forEach(function (sw) {
+          var pr = pose(sw.t0 + G.orbitIn * (sw.t1 - sw.t0), true), o = 1 - sw.mover;
+          orbitRef[mod(sw.t0, P).toFixed(3)] = [0, 1, 2].map(function (c) { return (pr.elbows[o][c] + pr.hands[o][c]) / 2; });
+        });
+        orbitOff = false;
+      }
       bakeNear();
     })();
 
