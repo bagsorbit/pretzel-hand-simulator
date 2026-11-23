@@ -37,7 +37,18 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 
 - Throws alternate hands starting with the right. Each hand catches 0.8 of a beat
   after it throws, so a 3 is in the air for 1.8 beats and held for 1.2 (each hand
-  holds a ball about 60% of the time, as in the author's own juggling).
+  holds a ball about 60% of the time, as in the author's own juggling). Where the
+  arms must cross or uncross between a catch and the next throw (the catch letter
+  differs from the next throw letter, as in the mills mess with windmill), that catch
+  comes half a beat after the throw instead, leaving time for the change.
+- Each hand follows one smooth looping curve (a periodic spline through its key
+  positions), so its speed and acceleration change gradually. Its height scoops as
+  in the author's juggling: caught high, carried down, driven up into the throw,
+  then over the top of its loop to the next catch. A held 2 just carries the ball
+  on, with no throwing scoop. Throws and catches are single smooth swings laid over
+  the path, so the hand moves at nearly the ball's speed as it lets go. The
+  crossing, the reach under the elbow and the keep-in-front push are all eased, so
+  nothing jolts (`tests/check.js` measures how hard each hand accelerates).
 - R, L and U give the arms at each throw and catch: crossed with the right on
   top, crossed with the left on top, or uncrossed. Crossed means both hands are
   on the other side of the body.
@@ -48,9 +59,9 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 - The hands work well out in front, about 35 cm from the shoulders, and the elbows
   stay in by the sides of the body, so the arms cross in an X about a forearm's
   length ahead of the chest. Elbows hang low, so forearms angle up gently from the
-  elbow to the hand (level only briefly). When the arms cross, the top hand works
-  at the lower chest and the bottom hand in a lower band just above its elbow, so
-  the top forearm passes over the other.
+  elbow to the hand (level only briefly). When the arms cross, the top hand stays
+  above a soft floor at the lower chest and the bottom hand below a soft ceiling
+  just above its elbow, so the top forearm passes over the other.
 - An under-the-arm throw is made just below and slightly in front of the top arm's
   elbow (and a little outside it, clear of the top forearm), so the ball goes up in
   front of the top upper arm. A catch out wide under the arm, as in the TR messes,
@@ -87,8 +98,11 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   the gravity that gives them that height (`compress`, `peak4` and `peakStep` in
   engine.js). Short throws (1s, thrown 2s) are not changed.
 
-Not in yet: multiplexes, empty hands, `I`, `-` direction changes, sebs (forward
-throws) and the hectic messes (an arm swapping from under to over while crossed).
+Not in yet: multiplexes, empty hands, `I`, `-` direction changes and sebs (forward
+throws). The hectic messes (an arm swapping from under to over while crossed) are in
+the list with the right throws, but their arms still pass through each other at the
+swap; a reference video shows the top hand dropping under its own elbow first, then
+the other coming over in front.
 
 Open questions: four `O` windmills (under throw windmill, under throw 4233 and 342T3
 windmills, 5223 alternating windmill) come out with the first throw peaking on the

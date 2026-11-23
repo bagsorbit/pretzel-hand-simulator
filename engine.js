@@ -21,22 +21,28 @@
   var G = {
     shoulderX: 19, shoulderY: 138, shoulderZ: 0,
     upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
-    handZ: 34.5,                      // how far in front of the body the hands work
-    outU: 23, outX: 21, outUnder: 16, inner: 4.2,   // throw/catch distance from the middle
+    handZ: 33.5,                      // how far in front of the body the hands work
+    outU: 23, outX: 21, outUnder: 17.2, inner: 4.5,   // throw/catch distance from the middle
     crossMin: 7,                    // a crossed hand is at least this far over
-    throwY: 120.5, catchY: 124.8, scoopY: 116,
-    topZ: 1.4, topY: 0, botZ: -1.5, botY: 0,    // how far the top arm sits over the other
-    topElbow: [16.4, 117.6, 28.8], botElbow: [25.8, 109.7, 2.3], elbowEarly: 0.5, topFloor: 121.6, botCap: 108.9, underDrop: 10, underFwd: 9, underOut: 1, underWin: 0.3, nearIn: 21.3, nearOut: 28.5,
-    dipLead: 0.2, dipFrac: 0.35, underCatch: 0.3, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
-    drive: 0.22, follow: 0.1, settle: 0.18, give: 0.15, giveBack: 0.3, underStroke: 0.5, catchGive: 0.4, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0.2,
+    throwY: 111.9, catchY: 112.3, lowY: 112,       // heights of a hand's scoop: release, catch, and its low point
+    loopY: 122.2, lowAt: 0.6,                    // top of the empty hand's loop; where in the hold the low point is
+    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, swapSplit: 0.45, swapFwd: 8, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
+    topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
+    topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
+    underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
+    throwMatch: 0.9, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 3.2,                       // beats per second at full speed (the author's own mills mess, filmed 2026-11-22)
     catchLag: 0.8,                  // beats from a hand's throw to its next catch
+    changeLag: 0.5,                 // the same, when the arms must change over before the next throw
     g: 980
   };
   var OWN = [-1, 1];                // own side of hand 0 (right) and hand 1 (left)
 
   function lcm(a, b) { var x = a, y = b; while (y) { var t = y; y = x % y; x = t; } return a / x * b; }
+  function softMin(a, b, e) { return 0.5 * (a + b - Math.sqrt((a - b) * (a - b) + e * e)); }
+  function softMax(a, b, e) { return 0.5 * (a + b + Math.sqrt((a - b) * (a - b) + e * e)); }
+  function smoother(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * t * (t * (6 * t - 15) + 10); }
   function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
   function mod(a, n) { return ((a % n) + n) % n; }
   function stateSign(ch) { ch = ch.toUpperCase(); return ch === 'R' ? 1 : ch === 'L' ? -1 : 0; }
@@ -157,6 +163,9 @@
     function catchTime(k) {
       var inc = incoming[mod(k, P)];
       if (inc !== null && nOf(inc) === 1) return k + 1 + G.oneFlight;   // = the 1's throw time + oneFlight
+      // when the arms must cross or uncross between this catch and the next throw (its catch
+      // letter differs from the next throw letter), the catch comes earlier, leaving time for it
+      if (tok(k).c.toUpperCase() !== tok(k + 1).t) return k + G.changeLag;
       return k + G.catchLag;
     }
 
@@ -220,43 +229,167 @@
         var x = a.pos[0] + (b.pos[0] - a.pos[0]) * f;
         var need = ev.st === 0 ? OWN[h] : -OWN[h];
         if (x * need < G.crossMin) x = need * G.crossMin;
-        keys[h].push({ t: ev.t, i: i, pos: [x, G.scoopY, G.handZ], own: false });
+        keys[h].push({ t: ev.t, i: i, pos: [x, G.lowY, G.handZ], own: false });
       });
       keys[h].sort(function (u, v) { return u.t - v.t; });
     }
 
-    // smooth path through a hand's keys (Catmull-Rom with uneven spacing)
-    function baseHand(h, tb) {
-      var K = keys[h], M = K.length, t = mod(tb, P), i = M - 1;
-      for (var q = 0; q < M; q++) if (K[q].t <= t) i = q;
-      function kt(q) { return K[mod(q, M)].t + Math.floor(q / M) * P; }
-      function kp(q) { return K[mod(q, M)].pos; }
-      var i1 = t < K[0].t ? -1 : i;
-      var t0 = kt(i1 - 1), t1 = kt(i1), t2 = kt(i1 + 1), t3 = kt(i1 + 2);
-      var p0 = kp(i1 - 1), p1 = kp(i1), p2 = kp(i1 + 1), p3 = kp(i1 + 2);
-      var dt = t2 - t1, u = dt > 0 ? (t - t1) / dt : 0, out = [0, 0, 0];
-      for (var c = 0; c < 3; c++) {
-        var m1 = (p2[c] - p0[c]) / (t2 - t0) * dt, m2 = (p3[c] - p1[c]) / (t3 - t1) * dt;
-        out[c] = herm(p1[c], m1, p2[c], m2, u);
+    // Each hand follows one smooth looping curve through its key positions (a periodic
+    // cubic spline in time), so its speed and acceleration change gradually, with no joins.
+    // Its height follows scoops, as in the author's own juggling: it catches high while
+    // moving down with the ball, carries it down to a low point, drives up and lets go on
+    // the way up, then follows through over the top of its loop to the next catch.
+    function loopSpline(pts) {
+      pts = pts.slice().sort(function (a, b) { return a[0] - b[0]; });
+      var tt = [], vv = [];
+      pts.forEach(function (q) { if (!tt.length || q[0] - tt[tt.length - 1] > 1e-6) { tt.push(q[0]); vv.push(q[1]); } });
+      var n = tt.length;
+      if (n < 2) return function () { return vv[0]; };
+      var hh = [], i, j, A = [], B = [];
+      for (i = 0; i < n; i++) hh[i] = (i < n - 1 ? tt[i + 1] : tt[0] + P) - tt[i];
+      for (i = 0; i < n; i++) { A[i] = []; for (j = 0; j < n; j++) A[i][j] = 0; }
+      for (i = 0; i < n; i++) {
+        var ip = mod(i - 1, n), inx = mod(i + 1, n), h0 = hh[ip], h1 = hh[i];
+        A[i][ip] += h0; A[i][i] += 2 * (h0 + h1); A[i][inx] += h1;
+        B[i] = 6 * ((vv[inx] - vv[i]) / h1 - (vv[i] - vv[ip]) / h0);
       }
-      return out;
+      for (i = 0; i < n; i++) {               // Gaussian elimination (n is small)
+        var pv = i;
+        for (j = i + 1; j < n; j++) if (Math.abs(A[j][i]) > Math.abs(A[pv][i])) pv = j;
+        var tr = A[i]; A[i] = A[pv]; A[pv] = tr; var tb0 = B[i]; B[i] = B[pv]; B[pv] = tb0;
+        for (j = i + 1; j < n; j++) {
+          var f = A[j][i] / A[i][i];
+          if (!f) continue;
+          for (var c = i; c < n; c++) A[j][c] -= f * A[i][c];
+          B[j] -= f * B[i];
+        }
+      }
+      var M = [];
+      for (i = n - 1; i >= 0; i--) { var sum = B[i]; for (j = i + 1; j < n; j++) sum -= A[i][j] * M[j]; M[i] = sum / A[i][i]; }
+      return function (tb) {
+        var t = mod(tb, P), k = n - 1;
+        for (var q = 0; q < n; q++) if (tt[q] <= t) k = q;
+        var t0 = tt[k], h = hh[k], k1 = mod(k + 1, n);
+        if (t < t0) t += P;
+        var a = t0 + h - t, b = t - t0;
+        return M[k] * a * a * a / (6 * h) + M[k1] * b * b * b / (6 * h) + (vv[k] / h - M[k] * h / 6) * a + (vv[k1] / h - M[k1] * h / 6) * b;
+      };
+    }
+    function makeSplines() {
+      // sideways and forward paths first: the crossing (crossW) is worked out from them
+      var sx = [0, 1].map(function (h) {
+        var xs = [], zs = [];
+        keys[h].forEach(function (k) { xs.push([k.t, k.pos[0]]); zs.push([k.t, k.pos[2]]); });
+        return [loopSpline(xs), null, loopSpline(zs)];
+      });
+      splines = sx;
+      // Heights follow the hand's role, as in the author's juggling: while the arms cross,
+      // the top hand's catches, throws and loop sit higher (roleLift) and the bottom hand's
+      // lower (roleDrop), so the scoops themselves keep the top forearm over the other
+      return [0, 1].map(function (h) {
+        var ys = [], own = [], fill = [];
+        events.forEach(function (ev) { if (ev.hand === h) own.push(ev); });
+        function role(t) { var w = handRole(h, t); return w > 0 ? w * G.roleLift : w * G.roleDrop; }
+        own.forEach(function (ev, i) {
+          var nx = own[(i + 1) % own.length], d = mod(nx.t - ev.t, P) || P;
+          // a held 2 is no throw and brings no catch: the hand just carries the ball on,
+          // smoothly from its last catch to its next throw, with no little throwing scoop
+          if ((ev.part === 'throw' && !flies(ev.j)) || (ev.part === 'catch' && incoming[mod(ev.j, P)] === null)) { fill.push(ev.t); return; }
+          var y = ev.yKey !== undefined ? ev.yKey : (ev.part === 'throw' ? G.throwY : G.catchY) + role(ev.t);
+          var tm = mod(ev.t + d * (ev.part === 'throw' ? 0.5 : G.lowAt), P);
+          ys.push([ev.t, y]);
+          ys.push([tm, (ev.part === 'throw' ? G.loopY : G.lowY) + role(tm)]);
+        });
+        // held moments get a key on the straight line between their neighbours, which keeps
+        // the curve anchored without adding any up and down
+        ys.sort(function (a, b) { return a[0] - b[0]; });
+        var add = fill.map(function (t) {
+          var ia = -1, ib = -1;
+          for (var q = 0; q < ys.length; q++) { if (ys[q][0] <= t) ia = q; if (ib < 0 && ys[q][0] > t) ib = q; }
+          var a = ia < 0 ? ys[ys.length - 1] : ys[ia], ta = ia < 0 ? a[0] - P : a[0];
+          var b = ib < 0 ? ys[0] : ys[ib], tb2 = ib < 0 ? b[0] + P : b[0];
+          return [t, a[1] + (b[1] - a[1]) * (t - ta) / (tb2 - ta)];
+        });
+        return [sx[h][0], loopSpline(ys.concat(add)), sx[h][2]];
+      });
+    }
+    var splines = null, underInKeys = false;
+    splines = makeSplines();
+    function baseHand(h, tb) {
+      var S = splines[h];
+      return [S[0](tb), S[1](tb), S[2](tb)];
     }
     // nearest crossed state before/after an event, for when both ends are uncrossed
     function crossedNear(i, dir) {
       for (var k = 1; k <= E; k++) { var v = events[mod(i + dir * k, E)].st; if (v) return v; }
       return 0;
     }
-    // which arm is over: +1 right, -1 left
-    function overSign(tb) {
-      var i = eventAt(tb), t1 = evTimes[i], t2 = evTime(i + 1), t = mod(tb, P);
-      if (t < t1) t += P;
-      var f = t2 > t1 ? (t - t1) / (t2 - t1) : 0;
-      var a = events[i].st, b = events[mod(i + 1, E)].st;
-      if (a && b) return a === b ? a : a + (b - a) * smooth(0, 1, f);
-      if (a) return a;
-      if (b) return b;
-      var pa = crossedNear(i, -1), pb = crossedNear(i + 1, 1);
-      return pa + (pb - pa) * smooth(0, 1, f);
+    // which arm is over: +1 right, -1 left. Averaged over a short window (crossEase beats
+    // either side), so the arms swap over smoothly even when two events come close together
+    // Direct swaps while the arms stay crossed (the hectic messes, e.g. Lr): as in the
+    // author's reference video, the hand that was on top drops straight down first, then the
+    // other hand rises up the middle, a little in front, and comes over the top
+    var swaps = null;
+    // how far into a swap beat tb is (0..1), and which arm was on top, or null
+    function swapAt(tb) {
+      if (!swaps) {
+        swaps = [];
+        for (var si = 0; si < E; si++) {
+          var e1 = events[si], e2 = events[mod(si + 1, E)];
+          if (e1.st && e2.st && e1.st !== e2.st) swaps.push({ t0: e1.t, t1: e1.t + (mod(e2.t - e1.t, P) || P), from: e1.st });
+        }
+      }
+      for (var q = 0; q < swaps.length; q++) {
+        var sw = swaps[q], t = sw.t0 + mod(tb - sw.t0, P);
+        if (t <= sw.t1) return { f: (t - sw.t0) / (sw.t1 - sw.t0), from: sw.from };
+      }
+      return null;
+    }
+    // the role of hand h: +1 on top, -1 underneath, 0 apart
+    function handRole(h, tb) {
+      var me = h === 0 ? 1 : -1, sw = swapAt(tb);
+      if (!sw) return crossW(tb) * me;
+      var olap = smoother(-26, -6, splines[0][0](tb) - splines[1][0](tb));
+      if (sw.from === me) return olap * (1 - 2 * smoother(0, G.swapSplit, sw.f));     // was on top: drops first
+      return olap * (-1 + 2 * smoother(G.swapSplit, 1, sw.f));                       // comes over afterwards
+    }
+    // the rising hand passes in front of the other forearm
+    function swapFwd(h, tb) {
+      var sw = swapAt(tb), me = h === 0 ? 1 : -1;
+      if (!sw || sw.from === me) return 0;
+      return G.swapFwd * Math.sin(Math.PI * smoother(0, 1, sw.f));
+    }
+
+    // How crossed the arms are, and which is on top: +1 right arm over, -1 left arm over,
+    // 0 apart. It is the arm on top times how far the hands overlap sideways, averaged over
+    // a short window (crossEase beats either side), so the arms cross, swap and part smoothly.
+    function crossW(tb) {
+      var s = 0, ws = 0;
+      for (var k = -4; k <= 4; k++) {
+        var tk = tb + k * G.crossEase / 4, wt = 1 + Math.cos(Math.PI * k / 5);
+        s += wt * overSignRaw(tk) * smoother(-26, -6, splines[0][0](tk) - splines[1][0](tk));
+        ws += wt;
+      }
+      return s / ws;
+    }
+    // which arm is on top, from the last crossed event to the next one
+    // in between, so it never jumps
+    function overSignRaw(tb) {
+      var i = eventAt(tb), t = mod(tb, P);
+      if (t < evTimes[i] - 1e-6) t += P;   // (eventAt allows a hair of rounding either side of an event)
+      var ia = i, ib = i + 1, k = 0;
+      while (!events[mod(ia, E)].st && k++ < E) ia--;
+      k = 0;
+      while (!events[mod(ib, E)].st && k++ < E) ib++;
+      var pa = events[mod(ia, E)].st, pb = events[mod(ib, E)].st;
+      if (!pa) return 0;
+      if (pa === pb) return pa;
+      var ta = evTime(ia), tb2 = evTime(ib);
+      if (ib === ia + 1) return pa + (pb - pa) * smooth(ta, tb2, t);     // a direct swap
+      // hold the crossing until the hands uncross, and swap while they are apart
+      var z1 = evTime(ia + 1), z2 = evTime(ib - 1);
+      if (z2 - z1 < 0.3) { var zc = (z1 + z2) / 2; z1 = Math.max(ta, zc - 0.15); z2 = Math.min(tb2, zc + 0.15); }
+      return pa + (pb - pa) * smooth(z1, z2, t);
     }
     function herm(p0, m0, p1, m1, u) {
       var u2 = u * u, u3 = u2 * u;
@@ -284,7 +417,8 @@
       var best = 0, list = underThrows[h];
       for (var i = 0; i < list.length; i++) {
         var d = Math.abs(mod(tb - list[i].t + P / 2, P) - P / 2);
-        best = Math.max(best, (1 - smooth(0, G.underWin, d)) * list[i].w);
+        var u = (1 - smoother(0, G.underWin, d)) * list[i].w;
+        best = 1 - (1 - best) * (1 - u);      // overlapping reaches blend smoothly
       }
       return best;
     }
@@ -311,43 +445,50 @@
       return El;
     }
 
-    // the throwing movement: before each throw the hand dips with the ball, drives up and
-    // lets go while moving at the ball's own speed, then follows through and settles. On a
-    // catch the hand gives a little along the ball's path. Worked out from each ball's real
-    // launch and landing speeds, taken from the movement without these strokes (the strokes
-    // are zero at the moments of throws and catches, so both agree there).
+    // The throwing movement: each throw is one smooth swing laid over the hand's path. The
+    // hand draws back and down, drives through so that it is moving at the ball's own speed
+    // as it lets go, then follows through and settles. On a catch the hand meets the ball
+    // moving partly with it and gives a little along its path. (throwMatch below 1 lets the
+    // ball leave a little faster than the hand, which keeps the swings compact.) Each swing is
+    // tau * cos^2(pi tau / 2T): zero at the moment of the throw or catch, with exactly the
+    // speed needed there, and fading smoothly to nothing T beats either side, so the hand
+    // never jolts.
     var strokes = null;
+    function handVel(h, t) {       // cm a beat, along the path without swings
+      var d = 0.01, a = pose(t - d, true).hands[h], b = pose(t + d, true).hands[h];
+      return [(b[0] - a[0]) / (2 * d), (b[1] - a[1]) / (2 * d), (b[2] - a[2]) / (2 * d)];
+    }
+    function capSpeed(v) {
+      var l = Math.hypot(v[0], v[1], v[2]), k = l > G.maxStroke ? G.maxStroke / l : 1;
+      return v.map(function (x) { return x * k; });
+    }
     function buildStrokes() {
       strokes = [[], []];
       for (var j = 0; j < P; j++) {
         if (!flies(j)) continue;
-        var h = handOf(j), k = j + nOf(j) - 2, tc = catchTime(k), F = (tc - j) / BPS;
-        var a = pose(j, true).hands[h], b = pose(tc, true).hands[handOf(k)];
+        var h = handOf(j), k = j + nOf(j) - 2, hk = handOf(k), tc = catchTime(k), F = (tc - j) / BPS;
+        var a = pose(j, true).hands[h], b = pose(tc, true).hands[hk];
         var gg = gFor(F);
         var v = [(b[0] - a[0]) / F, (b[1] - a[1]) / F + gg * F / 2, (b[2] - a[2]) / F];   // cm/s at release
         var vl = [v[0], v[1] - gg * F, v[2]];                                              // cm/s at the catch
-        var sc = Math.min(1, G.maxStroke / Math.max(1, v[1] / BPS));
         var under = underThrows[h].some(function (u) { return u.t === j; }) ? G.underStroke : 1;
-        strokes[h].push({ t: j, catch: false, v: v.map(function (x) { return x / BPS * sc * under; }) });
-        strokes[handOf(k)].push({ t: tc, catch: true, v: vl.map(function (x) { return x / BPS * G.catchGive; }) });
+        var hv = handVel(h, j), hc = handVel(hk, tc);
+        strokes[h].push({ t: j, catch: false, v: capSpeed([0, 1, 2].map(function (c) { return (v[c] / BPS - hv[c]) * under * G.throwMatch; })) });
+        strokes[hk].push({ t: tc, catch: true, v: capSpeed([0, 1, 2].map(function (c) { return (vl[c] / BPS - hc[c]) * G.catchGive; })) });
       }
+    }
+    function swing(tau, before, after) {
+      var T = tau < 0 ? before : after;
+      if (Math.abs(tau) >= T) return 0;
+      var c = Math.cos(Math.PI * tau / (2 * T));
+      return tau * c * c;
     }
     function strokeAt(h, tb) {
       if (!strokes) buildStrokes();
       var o = [0, 0, 0], list = strokes[h];
       for (var i = 0; i < list.length; i++) {
-        var st = list[i], tau = mod(tb - st.t + P / 2, P) - P / 2, f = 0;
-        if (!st.catch) {
-          var T0 = G.dipLead, T1 = G.drive, T2 = G.follow, T3 = G.settle;
-          if (tau >= -T1 - T0 && tau < -T1) f = -T1 * G.dipFrac * smooth(0, 1, (tau + T1 + T0) / T0);
-          else if (tau >= -T1 && tau < 0) f = herm(-T1 * G.dipFrac, 0, 0, T1, (tau + T1) / T1);
-          else if (tau >= 0 && tau < T2) f = herm(0, T2, T2 * 0.5, 0, tau / T2);
-          else if (tau >= T2 && tau < T2 + T3) f = T2 * 0.5 * (1 - smooth(0, 1, (tau - T2) / T3));
-        } else {
-          var Tc = G.give, Tr = G.giveBack;
-          if (tau >= 0 && tau < Tc) f = herm(0, Tc, Tc * 0.5, 0, tau / Tc);
-          else if (tau >= Tc && tau < Tc + Tr) f = Tc * 0.5 * (1 - smooth(0, 1, (tau - Tc) / Tr));
-        }
+        var st = list[i], tau = mod(tb - st.t + P / 2, P) - P / 2;
+        var f = st.catch ? swing(tau, G.catchBefore, G.catchAfter) : swing(tau, G.throwBefore, G.throwAfter);
         if (f) for (var c = 0; c < 3; c++) o[c] += f * st.v[c];
       }
       return o;
@@ -365,52 +506,60 @@
       }
       return worst;
     }
-    function armInBody(El) {
-      var d = sinkInto(El.hand, G.handR);
+    function armInBody(El, extra) {
+      extra = extra || 0;
+      var d = sinkInto(El.hand, G.handR + extra);
       for (var q = 0; q <= 4; q++) {
         var f = q / 4, pt = [El.elbow[0] + (El.hand[0] - El.elbow[0]) * f, El.elbow[1] + (El.hand[1] - El.elbow[1]) * f, El.elbow[2] + (El.hand[2] - El.elbow[2]) * f];
-        d = Math.max(d, sinkInto(pt, G.foreR));
+        d = Math.max(d, sinkInto(pt, G.foreR + extra));
       }
       return d;
     }
 
     function pose(tb, plain) {
       var R = baseHand(0, tb), L = baseHand(1, tb);
-      var overlap = smooth(-26, -6, R[0] - L[0]);
-      var w = overSign(tb) * overlap;          // >0: right arm on top
+      var w = crossW(tb);                      // >0: right arm on top
       var hands = [R, L], out = { w: w, hands: [], elbows: [], shoulders: [], reach: 0 };
       // the top arm first, so the bottom hand can reach under its elbow
-      var order = w >= 0 ? [0, 1] : [1, 0];
+      var roles = [handRole(0, tb), handRole(1, tb)];
+      var order = roles[0] >= roles[1] ? [0, 1] : [1, 0];
       var topEl = null;
       order.forEach(function (h) {
-        var top = Math.max(0, h === 0 ? w : -w), bot = Math.max(0, h === 0 ? -w : w);
+        var top = Math.max(0, roles[h]), bot = Math.max(0, -roles[h]);
         var P0 = hands[h].slice();
-        // when the arms cross, the top hand works in a high band and the bottom hand in a
-        // low band (just above its elbow), so the top forearm passes well over the other
-        P0[1] += top * (Math.max(P0[1], G.topFloor) - P0[1]) + bot * (Math.min(P0[1], G.botCap) - P0[1]);
-        P0[1] += top * G.topY + bot * G.botY;
+        P0[2] += swapFwd(h, tb);
+        // when the arms cross, the top hand stays above a floor and the bottom hand below a
+        // ceiling (just above its elbow), so the top forearm passes well over the other. Both
+        // limits are soft, so the hands ease along them instead of hitting an edge.
+        P0[1] += top * (softMax(P0[1], G.topFloor, G.bandSoft) - P0[1]) + bot * (softMin(P0[1], G.botCap, G.bandSoft) - P0[1]);
+        P0[1] += top * G.topLift - bot * G.botDrop;
         P0[2] += top * G.topZ + bot * G.botZ;
         if (bot > 0 && topEl) {
           var e = topEl.elbow;
           // an under-the-arm throw is made just below and slightly in front of the top arm's elbow
-          var u = underPull(h, tb) * bot;
+          var u = underInKeys ? 0 : underPull(h, tb) * bot;
           if (u > 0) {
             var tgt = [e[0] + OWN[1 - h] * G.underOut, e[1] - G.underDrop, e[2] + G.underFwd];
             for (var c = 0; c < 3; c++) P0[c] += (tgt[c] - P0[c]) * u;
           }
           // near the top arm's elbow, the bottom hand passes in front of it, never behind
-          var near = (1 - smooth(G.nearIn, G.nearOut, Math.hypot(P0[0] - e[0], P0[1] - e[1]))) * bot;
-          var front = e[2] + G.underFwd;
-          if (near > 0 && P0[2] < front) P0[2] += (front - P0[2]) * near;
+          // (worked out over the whole cycle first, then eased in and out: see nearAt)
+          if (!nearCorr) {
+            var near = (1 - smooth(G.nearIn, G.nearOut, Math.hypot(P0[0] - e[0], P0[1] - e[1]))) * bot;
+            var front = e[2] + G.underFwd;
+            if (near > 0) { nearRaw[h] = (softMax(P0[2], front, 3) - P0[2]) * near; P0[2] += nearRaw[h]; }
+          }
         }
+        if (nearCorr) P0[2] += nearAt(h, tb);
         if (!plain) { var so = strokeAt(h, tb); for (var c2 = 0; c2 < 3; c2++) P0[c2] += so[c2]; }
         var El = arm(h, P0, top, bot);
-        // the body pushes the arm out: if the hand or forearm would sink into the torso or
-        // hips, move the hand forward just enough to clear, and work the arm out again
+        // the body pushes the arm out: if the hand or forearm comes near the torso or hips,
+        // ease the hand forward so it clears, and work the arm out again. The push starts
+        // gently a few cm before contact, so the hand never jolts.
         for (var pass = 0; pass < 3; pass++) {
-          var dep = armInBody(El);
+          var dep = armInBody(El, G.bodyEase);
           if (dep <= 0) break;
-          P0[2] += dep * 1.15 + 0.3;
+          P0[2] += dep < G.bodyEase ? dep * dep / (2 * G.bodyEase) : dep - G.bodyEase / 2;
           El = arm(h, P0, top, bot);
         }
         if (top > 0) topEl = El;
@@ -418,6 +567,57 @@
       });
       return out;
     }
+
+    // The push that keeps the bottom hand in front of the top elbow, worked out for the
+    // whole cycle, then held a little longer and eased in and out, so the hand glides
+    // forward past the elbow instead of being shoved
+    var nearRaw = [0, 0], nearCorr = null, NR = 40;
+    function bakeNear() {
+      var n = Math.round(P * NR), raw = [[], []], i, j;
+      for (i = 0; i < n; i++) { nearRaw = [0, 0]; pose(i / NR, true); raw[0][i] = nearRaw[0]; raw[1][i] = nearRaw[1]; }
+      var hold = Math.round(G.nearHold * NR), blur = Math.max(1, Math.round(G.nearBlur * NR));
+      nearCorr = raw.map(function (r) {
+        var d = [], o = [];
+        for (i = 0; i < n; i++) { var m = 0; for (j = -hold; j <= hold; j++) m = Math.max(m, r[mod(i + j, n)]); d[i] = m; }
+        for (i = 0; i < n; i++) {
+          var sum = 0, ws = 0;
+          for (j = -blur; j <= blur; j++) { var wt = 1 + Math.cos(Math.PI * j / (blur + 1)); sum += wt * d[mod(i + j, n)]; ws += wt; }
+          o[i] = sum / ws;
+        }
+        return o;
+      });
+    }
+    function nearAt(h, tb) {      // smooth (Catmull-Rom) reading of the baked push
+      var c = nearCorr[h], n = c.length, x = mod(tb, P) * NR, i = Math.floor(x), u = x - i;
+      var p0 = c[mod(i - 1, n)], p1 = c[mod(i, n)], p2 = c[mod(i + 1, n)], p3 = c[mod(i + 2, n)];
+      return herm(p1, (p2 - p0) / 2, p2, (p3 - p1) / 2, u);
+    }
+
+    // Under-the-arm throws and catches: each one's key position is set to the spot just
+    // below and in front of where the top arm's elbow will be, and the hand's smooth path
+    // is rebuilt through it. (Chasing the elbow as it moved made the under hand jolt.)
+    (function () {
+      var changes = [];
+      [0, 1].forEach(function (h) {
+        underThrows[h].forEach(function (u) {
+          var t = mod(u.t, P), ps = pose(t, true), bot = Math.max(0, h === 0 ? -ps.w : ps.w);
+          if (bot < 0.05) return;
+          var e = ps.elbows[1 - h];
+          var tgt = [e[0] + OWN[1 - h] * G.underOut, e[1] - G.underDrop + bot * G.botDrop, e[2] + G.underFwd - bot * G.botZ];   // (the ceiling is soft, so a spot below it stays put)
+          keys[h].forEach(function (q) {
+            if (q.own && Math.abs(mod(q.t - t + P / 2, P) - P / 2) < 1e-6) changes.push({ k: q, ev: events[q.i], tgt: tgt, w: u.w * bot });
+          });
+        });
+      });
+      changes.forEach(function (c) {
+        var y0 = c.ev.part === 'throw' ? G.throwY : G.catchY;
+        c.k.pos = [c.k.pos[0] + (c.tgt[0] - c.k.pos[0]) * c.w, c.k.pos[1], c.k.pos[2] + (c.tgt[2] - c.k.pos[2]) * c.w];
+        c.ev.yKey = y0 + (c.tgt[1] - y0) * c.w;
+      });
+      splines = makeSplines();
+      underInKeys = true;
+      bakeNear();
+    })();
 
     // ball paths
     var maxN = 0;
@@ -502,7 +702,7 @@
 
     return {
       ok: true, parsed: p, balls: balls, period: P, loop: loop, events: E, eventTimes: evTimes.slice(), at: at, pose: pose,
-      tokens: p.tokens, slashSeen: slashSeen, notes: notes, maxN: maxN, bps: BPS, catchTime: catchTime, digit: nOf
+      tokens: p.tokens, slashSeen: slashSeen, notes: notes, maxN: maxN, bps: BPS, catchTime: catchTime, digit: nOf, baseHand: baseHand
     };
   }
 
@@ -533,6 +733,8 @@
     { group: 'Mills messes', name: 'Flipped mess', src: 'o\\ Lu Ur Rr : Ru Ul Ll' },
     { group: 'Mills messes', name: 'TR mills mess', src: '3 i/ Ur Rr Ru : Ul Ll Lu' },
     { group: 'Mills messes', name: 'TR flipped mess', src: '3 i/ Ul Ll Lu : Ur Rr Ru' },
+    { group: 'Mills messes', name: 'Hectic mills', src: 'o\\ Lu Ul Lr : Ru Ur Rl' },
+    { group: 'Mills messes', name: 'TR hectic mills', src: '3 i/ Ul Lr Ru : Ur Rl Lu' },
     { group: 'Flos messes', name: 'Flos mess', src: 'o/ Ur Ru Uu : Ul Lu Uu' },
     { group: 'Flos messes', name: 'Flipped flos mess', src: 'o/ Ul Lu Uu : Ur Ru Uu' },
     { group: 'Flos messes', name: 'TR flos mess', src: '3 i\\ Ru Uu Ul : Lu Uu Ur' },

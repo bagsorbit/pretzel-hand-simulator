@@ -23,7 +23,7 @@ function f1(x) { return (Math.round(x * 10) / 10).toFixed(1); }
 
 
 var BALL_R = PH.G.ballR;
-var FOOT = { handZ: 32, handY: 117, elbowY: 111, elbowZ: 18, elbowX: 25, topY: 127 };   // targets from the author's filmed mills mess
+var FOOT = { maxAcc: 20000, scoop: 16, handZ: 32, handY: 117, elbowY: 111, elbowZ: 18, elbowX: 25, topY: 127 };   // targets from the author's filmed mills mess
 // how far a sphere of radius rad at point q sinks into the body (torso and hips, as drawn), in cm (0 = clear)
 function bodyDepth(q, rad) {
   var worst = 0;
@@ -39,7 +39,7 @@ function measure(pt, perBeat) {
   if (!m.ok) return { error: m.error };
   var r = { m: m, minFore: 1e9, minHand: 1e9, minHandFore: 1e9, maxReach: 0, wrongTop: 0, minElbowBody: 1e9, worstT: 0,
             minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash,
-            handZ: 0, handY: 0, elbowY: 0, elbowZ: 0, elbowX: 0, topY: 0, crossed: 0 };
+            maxAcc: 0, accT: 0, yMin: [1e9, 1e9], yMax: [-1e9, -1e9], handZ: 0, handY: 0, elbowY: 0, elbowZ: 0, elbowX: 0, topY: 0, crossed: 0 };
   // every ball should arc across a little, not go straight up and down
   r.minArc = 1e9; r.underZ = 0;
   for (var j = 0; j < m.period; j++) {
@@ -52,7 +52,7 @@ function measure(pt, perBeat) {
     var k = j + nn - 2, a = m.pose(j).hands[j % 2], b = m.pose(m.catchTime(k)).hands[k % 2];
     r.minArc = Math.min(r.minArc, Math.abs(b[0] - a[0]));
   }
-  var steps = m.period * perBeat;
+  var steps = m.period * perBeat, prev = [], dts = 1 / (perBeat * m.bps);
   for (var i = 0; i < steps; i++) {
     var t = i / perBeat, p = m.at(t);
     var R = { s: p.shoulders[0], e: p.elbows[0], h: p.hands[0] }, L = { s: p.shoulders[1], e: p.elbows[1], h: p.hands[1] };
@@ -86,6 +86,16 @@ function measure(pt, perBeat) {
     });
     // footage targets (the author's mills mess, 2026-11-22): hands well out in front,
     // elbows in by the body while crossed, and the top hand no higher than the lower chest
+    // flow: how hard each hand accelerates (cm/s/s), from the last three samples
+    [R.h, L.h].forEach(function (hp, h) {
+      var q = prev[h] || (prev[h] = []);
+      q.push(hp.slice()); if (q.length > 3) q.shift();
+      if (q.length === 3) {
+        var a = len(add(sub(q[2], q[1]), sub(q[0], q[1]))) / (dts * dts);
+        if (a > r.maxAcc) { r.maxAcc = a; r.accT = t; }
+      }
+    });
+    [R.h, L.h].forEach(function (hp, h) { r.yMin[h] = Math.min(r.yMin[h], hp[1]); r.yMax[h] = Math.max(r.yMax[h], hp[1]); });
     r.handZ += (R.h[2] + L.h[2]) / 2 / steps; r.handY += (R.h[1] + L.h[1]) / 2 / steps;
     r.elbowY += (R.e[1] + L.e[1]) / 2 / steps; r.elbowZ += (R.e[2] + L.e[2]) / 2 / steps;
     if (Math.abs(p.w) > 0.8) {
@@ -99,5 +109,6 @@ function measure(pt, perBeat) {
     [R, L].forEach(function (A) { r.samples++; if (A.h[1] < A.e[1] - 3) r.down++; });
     [R.e, L.e].forEach(function (el) { r.minElbowBody = Math.min(r.minElbowBody, Math.max(Math.abs(el[0]) - 14, Math.abs(el[2]) - 10)); });
   }
+  r.scoop = Math.min(r.yMax[0] - r.yMin[0], r.yMax[1] - r.yMin[1]);   // how far each hand rises and falls in its loop
   return r;
 }

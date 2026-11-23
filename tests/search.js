@@ -3,18 +3,22 @@
 load('engine.js');
 var PH = this.PH, G = PH.G;
 load('tests/measure.js');
+// a different starting point: jsc -e 'var START={roleLift:10}' tests/search.js
+if (this.START) for (var k0 in this.START) G[k0] = this.START[k0];
 var RANGES = {
   topElbow0: [8, 22], topElbow1: [98, 120], topElbow2: [0, 24],
   botElbow0: [12, 28], botElbow1: [94, 112], botElbow2: [0, 26],
-  topFloor: [110, 124], underCatch: [0, 0.6], outX: [16, 21], inner: [2, 5], outUnder: [16, 22], botCap: [96, 114], topZ: [0, 10], botZ: [-14, 2], handZ: [30, 42],
+  topFloor: [80, 124], botCap: [100, 140], bandSoft: [1, 8], roleLift: [0, 16], roleDrop: [0, 16], underCatch: [0, 0.6], outX: [16, 21], inner: [2, 5], outUnder: [16, 22], topZ: [0, 10], botZ: [-14, 2], handZ: [30, 42],
   underDrop: [10, 18], underFwd: [2, 10], underOut: [1, 6], underWin: [0.3, 0.6], elbowEarly: [0.5, 1], nearIn: [8, 22], nearOut: [18, 36],
-  elbowOut: [0, 0.6], elbowFwd: [-0.4, 0.6], throwY: [106, 120], catchY: [110, 124], scoopY: [104, 116]
+  elbowOut: [0, 0.6], elbowFwd: [-0.4, 0.6], throwY: [106, 120], catchY: [112, 128], lowY: [96, 112], loopY: [116, 134], lowAt: [0.3, 0.7], topLift: [0, 16], botDrop: [0, 14],
+  nearHold: [0, 0.25], nearBlur: [0.1, 0.5], crossEase: [0.1, 0.5],
+  throwMatch: [0.85, 1], throwBefore: [0.3, 0.8], throwAfter: [0.2, 0.5], catchBefore: [0.2, 0.4], catchAfter: [0.3, 0.7], catchGive: [0.05, 0.4]
 };
 var base = {}; for (var k in G) base[k] = Array.isArray(G[k]) ? G[k].slice() : G[k];
 function apply(x) {
   for (var k in base) G[k] = Array.isArray(base[k]) ? base[k].slice() : base[k];
   G.topElbow = [x.topElbow0, x.topElbow1, x.topElbow2]; G.botElbow = [x.botElbow0, x.botElbow1, x.botElbow2];
-  ['handZ', 'outX', 'inner', 'outUnder', 'underCatch', 'topFloor', 'botCap', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut', 'elbowOut', 'elbowFwd', 'throwY', 'catchY', 'scoopY'].forEach(function (k) { G[k] = x[k]; });
+  ['handZ', 'outX', 'inner', 'outUnder', 'topFloor', 'botCap', 'bandSoft', 'roleLift', 'roleDrop', 'underCatch', 'topZ', 'botZ', 'elbowEarly', 'underDrop', 'underFwd', 'underOut', 'underWin', 'nearIn', 'nearOut', 'elbowOut', 'elbowFwd', 'throwY', 'catchY', 'lowY', 'loopY', 'lowAt', 'topLift', 'botDrop', 'nearHold', 'nearBlur', 'crossEase', 'throwMatch', 'throwBefore', 'throwAfter', 'catchBefore', 'catchAfter', 'catchGive'].forEach(function (k) { G[k] = x[k]; });
 }
 function score(x, perBeat) {
   apply(x);
@@ -27,13 +31,15 @@ function score(x, perBeat) {
     f += r.wrongTop * 0.2; f += r.behind * 0.2; f += Math.max(0, G.minArc + 1 - r.minArc) * 2; f += Math.max(0, r.maxReach - 0.97) * 200;
     f += Math.max(0, -r.minElbowBody) * 3; f += r.inBody * 4; f += Math.max(0, r.underZ - G.underZMax) * 2; f += Math.max(0, r.down / r.samples - 0.05) * 100;
     // footage targets, with the same small margin
+    f += Math.max(0, FOOT.scoop + 1 - r.scoop);
     if (pt.group !== 'Cascades') f += Math.max(0, FOOT.handZ + 2 - r.handZ) + Math.max(0, r.handY - FOOT.handY + 1) + Math.max(0, r.elbowY - FOOT.elbowY + 1) + Math.max(0, r.elbowZ - FOOT.elbowZ + 1); if (r.crossed && pt.group !== 'Cascades') { f += Math.max(0, r.elbowX - FOOT.elbowX + 1); f += Math.max(0, r.topY - FOOT.topY + 1); }
+    f += Math.max(0, r.maxAcc - FOOT.maxAcc * (/1/.test(pt.src.split(/[oiOI]/)[0]) ? 2 : 1)) / 1000;
     if (f > 0) fails++;
     s += f;
   });
   return { s: s, fails: fails };
 }
-var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+var seed = this.SEED || 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
 function sample() { var x = {}; for (var k in RANGES) x[k] = RANGES[k][0] + rnd() * (RANGES[k][1] - RANGES[k][0]); return x; }
 var best = {}; for (var k in RANGES) best[k] = Math.max(RANGES[k][0], Math.min(RANGES[k][1], /^(top|bot)Elbow\d$/.test(k) ? G[k.slice(0, -1)][+k.slice(-1)] : G[k]));
 var bestS = score(best, 40);
