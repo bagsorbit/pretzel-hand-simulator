@@ -90,7 +90,8 @@
   }
 
   // ---------- building the movement ----------
-  function build(src) {
+  function build(src, opts) {
+    opts = opts || {};
     var p = typeof src === 'string' ? parse(src) : src;
     if (!p.ok) return p;
     var N = p.tokens.length, D = p.digits.length;
@@ -845,10 +846,36 @@
       break;
     }
 
-    return {
+    var model = {
       ok: true, parsed: p, balls: balls, period: P, loop: loop, events: E, eventTimes: evTimes.slice(), at: at, pose: pose,
       tokens: p.tokens, slashSeen: slashSeen, notes: notes, maxN: maxN, bps: BPS, catchTime: catchTime, digit: nOf, baseHand: baseHand
     };
+
+    // A hectic pattern whose swap goes over to under (the TR hectic messes) is shown as its
+    // time reverse played backwards, as the author describes it: the same movement as the
+    // hectic mess with time flowing the other way. Played backwards each throw is a catch and
+    // each catch a throw, and beat tb here is beat (catchLag - tb) there.
+    if (!opts.noReverse) {
+      swapAt(0);
+      var descending = swaps.some(function (sw) { return sw.from === (sw.mover === 0 ? 1 : -1); });
+      if (descending) {
+        var rv = timeReverse(p.src), srcM = rv.ok ? build(rv.src, { noReverse: true }) : null;
+        if (srcM && srcM.ok && srcM.period === P) {
+          var C = G.catchLag + 64 * srcM.loop;
+          model.reversedFrom = rv.src;
+          model.at = function (tb) {
+            var own = at(tb), ps = srcM.at(C - tb);
+            own.hands = ps.hands; own.elbows = ps.elbows; own.shoulders = ps.shoulders; own.w = ps.w; own.reach = ps.reach;
+            own.balls = ps.balls.map(function (b) {
+              if (!b.fly) return b;
+              return { pos: b.pos, col: b.col, fly: true, from: b.to, to: b.from, t0: C - b.t1, t1: C - b.t0 };
+            });
+            return own;
+          };
+        }
+      }
+    }
+    return model;
   }
 
   // two-bone arm: shoulder S, hand target T, bone lengths a and b, elbow pointing towards pole
@@ -942,7 +969,7 @@
     });
     while (at < tokens.length) body.push(tokens[at++]);
     var src0 = (head ? head + ' ' : '') + dirs + '/ ' + body.join(' ');
-    var m = build(src0);
+    var m = build(src0, { noReverse: true });
     if (!m.ok) return { ok: false, error: m.error };
     return { ok: true, src: src0.replace(dirs + '/', dirs + m.slashSeen) };
   }
@@ -955,7 +982,7 @@
   function noOnes(p) { return p.digits.every(function (d) { return d !== 1; }); }
 
   function timeReverse(src) {
-    var m = build(src);
+    var m = build(src, { noReverse: true });
     if (!m.ok) return m;
     var p = m.parsed;
     if (!noOnes(p)) return { ok: false, error: 'Time reverse does not handle 1s yet.' };

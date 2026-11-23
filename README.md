@@ -104,9 +104,11 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 - Hectic messes (an arm swapping from under to over while the arms stay crossed, as
   in `Lr`): between the `L` throw and the `r` catch, the hand making them circles the
   middle of the other forearm, as the author juggles it. Going from under to over it
-  passes round the back of that forearm (towards the navel) and up over it; going
-  from over to under (TR hectic) it passes round the front. The other arm stays put,
+  passes round the back of that forearm (towards the navel) and up over it. The other arm stays put,
   giving a little room only if needed, and the circle flows straight into the catch.
+  A pattern whose swap goes over to under (the TR hectic messes) is shown as its
+  time reverse played backwards, so it is the same movement with time flowing the
+  other way, as the author describes it.
 
 Not in yet: multiplexes, empty hands, `I`, `-` direction changes and sebs (forward
 throws).
