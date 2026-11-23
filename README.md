@@ -48,7 +48,10 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   on, with no throwing scoop. Throws and catches are single smooth swings laid over
   the path, so the hand moves at nearly the ball's speed as it lets go. The
   crossing, the reach under the elbow and the keep-in-front push are all eased, so
-  nothing jolts (`tests/check.js` measures how hard each hand accelerates).
+  nothing jolts (`tests/check.js` measures how hard each hand accelerates). A last
+  pass blends every hand position with its neighbours in time (`flowBlur`, 0.06
+  beat), with the throw swings made a little stronger first (`throwMatch` 1.3) so
+  the hand still moves at most of the ball's speed as it lets go.
 - R, L and U give the arms at each throw and catch: crossed with the right on
   top, crossed with the left on top, or uncrossed. Crossed means both hands are
   on the other side of the body.

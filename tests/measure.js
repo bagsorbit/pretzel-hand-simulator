@@ -23,7 +23,7 @@ function f1(x) { return (Math.round(x * 10) / 10).toFixed(1); }
 
 
 var BALL_R = PH.G.ballR;
-var FOOT = { maxAcc: 20000, scoop: 16, handZ: 32, handY: 117, elbowY: 111, elbowZ: 18, elbowX: 25, topY: 127 };   // targets from the author's filmed mills mess
+var FOOT = { maxAcc: 15000, scoop: 16, handZ: 32, handY: 117, elbowY: 111, elbowZ: 18, elbowX: 25, topY: 127 };   // targets from the author's filmed mills mess
 // how far a sphere of radius rad at point q sinks into the body (torso and hips, as drawn), in cm (0 = clear)
 function bodyDepth(q, rad) {
   var worst = 0;

@@ -26,11 +26,11 @@
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 111.9, catchY: 112.3, lowY: 112,       // heights of a hand's scoop: release, catch, and its low point
     loopY: 122.2, lowAt: 0.6,                    // top of the empty hand's loop; where in the hold the low point is
-    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, swapSplit: 0.45, swapFwd: 8, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
+    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 18, swapOut: 0, swapMidT: 0.65, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
     underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
-    throwMatch: 0.9, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
+    throwMatch: 1.3, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 3.2,                       // beats per second at full speed (the author's own mills mess, filmed 2026-11-22)
     catchLag: 0.8,                  // beats from a hand's throw to its next catch
@@ -131,7 +131,7 @@
     // how high throw q peaks when every rise is scaled by sc
     function peakOf(q, sc) {
       var k = q + nOf(q) - 2, tc = catchTime(k), F = (tc - q) / BPS;
-      var a = ballOn(pose(q, true).hands[handOf(q)]), b = ballOn(pose(tc, true).hands[handOf(k)]);
+      var a = ballOn(baseAt(handOf(q), q)), b = ballOn(baseAt(handOf(k), tc));
       var gg = 8 * rawRise(F) * sc / (F * F), vy = (b[1] - a[1]) / F + gg * F / 2, tp = Math.min(F, Math.max(0, vy / gg));
       return a[1] + vy * tp - gg * tp * tp / 2;
     }
@@ -234,6 +234,17 @@
       keys[h].sort(function (u, v) { return u.t - v.t; });
     }
 
+    // Hectic swaps (the arms change over while staying crossed, e.g. Lr): as the author
+    // describes it, the hand making that throw and catch moves in towards the centre line,
+    // passes under the other forearm and comes up over it, while the other arm stays put
+    for (var si2 = 0; si2 < E; si2++) {
+      var a1 = events[si2], a2 = events[mod(si2 + 1, E)];
+      if (!(a1.st && a2.st && a1.st !== a2.st)) continue;
+      var mH = a1.hand, sT0 = a1.t, sT1 = sT0 + (mod(a2.t - sT0, P) || P);
+      keys[mH].push({ t: mod(sT0 + (sT1 - sT0) * G.swapMidT, P), pos: [-OWN[mH] * G.swapOut, G.lowY, G.handZ + G.swapFwd], own: false });
+      keys[mH].sort(function (u, v) { return u.t - v.t; });
+    }
+
     // Each hand follows one smooth looping curve through its key positions (a periodic
     // cubic spline in time), so its speed and acceleration change gradually, with no joins.
     // Its height follows scoops, as in the author's own juggling: it catches high while
@@ -326,9 +337,10 @@
     }
     // which arm is over: +1 right, -1 left. Averaged over a short window (crossEase beats
     // either side), so the arms swap over smoothly even when two events come close together
-    // Direct swaps while the arms stay crossed (the hectic messes, e.g. Lr): as in the
-    // author's reference video, the hand that was on top drops straight down first, then the
-    // other hand rises up the middle, a little in front, and comes over the top
+    // Direct swaps while the arms stay crossed (the hectic messes, e.g. Lr): the hand making
+    // that throw and catch moves around the other arm, coming up in front of it and over the
+    // top, while the other arm stays where it is and only becomes the under arm once the
+    // moving one has passed over it
     var swaps = null;
     // how far into a swap beat tb is (0..1), and which arm was on top, or null
     function swapAt(tb) {
@@ -336,12 +348,14 @@
         swaps = [];
         for (var si = 0; si < E; si++) {
           var e1 = events[si], e2 = events[mod(si + 1, E)];
-          if (e1.st && e2.st && e1.st !== e2.st) swaps.push({ t0: e1.t, t1: e1.t + (mod(e2.t - e1.t, P) || P), from: e1.st });
+          var e3 = events[mod(si + 2, E)];
+          // the other arm has until its own next event (usually its throw from under) to settle
+          if (e1.st && e2.st && e1.st !== e2.st) swaps.push({ t0: e1.t, t1: e1.t + (mod(e2.t - e1.t, P) || P), t2: e1.t + (mod(e2.t - e1.t, P) || P) + (mod(e3.t - e2.t, P) || P), from: e1.st, mover: e1.hand });
         }
       }
       for (var q = 0; q < swaps.length; q++) {
         var sw = swaps[q], t = sw.t0 + mod(tb - sw.t0, P);
-        if (t <= sw.t1) return { f: (t - sw.t0) / (sw.t1 - sw.t0), from: sw.from };
+        if (t <= sw.t2) return { f: Math.min(1, (t - sw.t0) / (sw.t1 - sw.t0)), f2: (t - sw.t0) / (sw.t2 - sw.t0), from: sw.from, mover: sw.mover, done: t > sw.t1 };
       }
       return null;
     }
@@ -350,16 +364,16 @@
       var me = h === 0 ? 1 : -1, sw = swapAt(tb);
       if (!sw) return crossW(tb) * me;
       var olap = smoother(-26, -6, splines[0][0](tb) - splines[1][0](tb));
-      if (sw.from === me) return olap * (1 - 2 * smoother(0, G.swapSplit, sw.f));     // was on top: drops first
-      return olap * (-1 + 2 * smoother(G.swapSplit, 1, sw.f));                       // comes over afterwards
+      var r0 = sw.from === me ? 1 : -1;
+      if (sw.mover === h) return sw.done ? crossW(tb) * me : olap * (r0 + (-r0 - r0) * smoother(G.swapRise0, G.swapRise1, sw.f));   // moves around the other arm
+      return olap * (r0 + (-r0 - r0) * smoother(G.swapStay, 1, sw.f2));                                    // stays, then is the other way round
     }
     // the rising hand passes in front of the other forearm
     function swapFwd(h, tb) {
-      var sw = swapAt(tb), me = h === 0 ? 1 : -1;
-      if (!sw || sw.from === me) return 0;
-      return G.swapFwd * Math.sin(Math.PI * smoother(0, 1, sw.f));
+      var sw = swapAt(tb);
+      if (!sw || sw.mover !== h) return 0;
+      return 0;   // (the forward move is in the swing key itself)
     }
-
     // How crossed the arms are, and which is on top: +1 right arm over, -1 left arm over,
     // 0 apart. It is the arm on top times how far the hands overlap sideways, averaged over
     // a short window (crossEase beats either side), so the arms cross, swap and part smoothly.
@@ -454,8 +468,9 @@
     // speed needed there, and fading smoothly to nothing T beats either side, so the hand
     // never jolts.
     var strokes = null;
+    function baseAt(h, t) { if (G.flowBlur > 0 && !G.blurSwings) { if (!flow) bakeFlow(); return flowHand(h, t); } return pose(t, true).hands[h]; }
     function handVel(h, t) {       // cm a beat, along the path without swings
-      var d = 0.01, a = pose(t - d, true).hands[h], b = pose(t + d, true).hands[h];
+      var d = 0.01, a = baseAt(h, t - d), b = baseAt(h, t + d);
       return [(b[0] - a[0]) / (2 * d), (b[1] - a[1]) / (2 * d), (b[2] - a[2]) / (2 * d)];
     }
     function capSpeed(v) {
@@ -467,7 +482,7 @@
       for (var j = 0; j < P; j++) {
         if (!flies(j)) continue;
         var h = handOf(j), k = j + nOf(j) - 2, hk = handOf(k), tc = catchTime(k), F = (tc - j) / BPS;
-        var a = pose(j, true).hands[h], b = pose(tc, true).hands[hk];
+        var a = baseAt(h, j), b = baseAt(hk, tc);
         var gg = gFor(F);
         var v = [(b[0] - a[0]) / F, (b[1] - a[1]) / F + gg * F / 2, (b[2] - a[2]) / F];   // cm/s at release
         var vl = [v[0], v[1] - gg * F, v[2]];                                              // cm/s at the catch
@@ -654,7 +669,7 @@
         if (flies(j)) {
           var k = j + nj - 2, tc = catchTime(k);
           if (tb < tc) {
-            var a = ballOn(pose(j).hands[hand]), bpt = ballOn(pose(tc).hands[handOf(k)]);
+            var a = ballOn(flowPose(j).hands[hand]), bpt = ballOn(flowPose(tc).hands[handOf(k)]);
             var F = (tc - j) / bps, tau = (tb - j) / bps, gg = gFor(F);
             var vy = (bpt[1] - a[1]) / F + gg * F / 2;
             pos = [a[0] + (bpt[0] - a[0]) * tau / F, a[1] + vy * tau - gg * tau * tau / 2, a[2] + (bpt[2] - a[2]) * tau / F];
@@ -667,8 +682,53 @@
       return res;
     }
 
+    // A last smoothing pass for flow: every hand position over the cycle (without the
+    // throw and catch swings) is worked out, then blended with its neighbours in time (a
+    // Gaussian flowBlur beats wide). The swings, already smooth, go on top afterwards, so
+    // the hand still moves at the ball's speed as it lets go; then the arms are placed.
+    var flow = null, FR = 40;
+    function bakeFlow() {
+      var n = Math.round(P * FR), raw = [[], []], i, j, c;
+      for (i = 0; i < n; i++) { var ps = pose(i / FR, !G.blurSwings); raw[0][i] = ps.hands[0]; raw[1][i] = ps.hands[1]; }
+      var sig = Math.max(1e-6, G.flowBlur * FR), R = Math.ceil(sig * 3), wts = [], ws = 0;
+      for (j = -R; j <= R; j++) { wts.push(Math.exp(-0.5 * j * j / (sig * sig))); ws += wts[wts.length - 1]; }
+      flow = raw.map(function (arr) {
+        var o = [];
+        for (i = 0; i < n; i++) {
+          var v = [0, 0, 0];
+          for (j = -R; j <= R; j++) { var q = arr[mod(i + j, n)], wt = wts[j + R] / ws; for (c = 0; c < 3; c++) v[c] += q[c] * wt; }
+          o[i] = v;
+        }
+        return o;
+      });
+    }
+    function flowHand(h, tb) {
+      var a = flow[h], n = a.length, x = mod(tb, P) * FR, i = Math.floor(x), u = x - i, out = [0, 0, 0];
+      var p0 = a[mod(i - 1, n)], p1 = a[mod(i, n)], p2 = a[mod(i + 1, n)], p3 = a[mod(i + 2, n)];
+      for (var c = 0; c < 3; c++) out[c] = herm(p1[c], (p2[c] - p0[c]) / 2, p2[c], (p3[c] - p1[c]) / 2, u);
+      return out;
+    }
+    function flowPose(tb) {
+      if (!(G.flowBlur > 0)) return pose(tb);
+      if (!flow) bakeFlow();
+      var roles = [handRole(0, tb), handRole(1, tb)], out = { w: crossW(tb), hands: [], elbows: [], shoulders: [], reach: 0 };
+      for (var h = 0; h < 2; h++) {
+        var P0 = flowHand(h, tb), so = G.blurSwings ? [0, 0, 0] : strokeAt(h, tb), top = Math.max(0, roles[h]), bot = Math.max(0, -roles[h]);
+        for (var c = 0; c < 3; c++) P0[c] += so[c];
+        var El = arm(h, P0, top, bot);
+        for (var pass = 0; pass < 3; pass++) {       // the body pushes the arm out, as in pose
+          var dep = armInBody(El, G.bodyEase);
+          if (dep <= 0) break;
+          P0[2] += dep < G.bodyEase ? dep * dep / (2 * G.bodyEase) : dep - G.bodyEase / 2;
+          El = arm(h, P0, top, bot);
+        }
+        out.hands[h] = El.hand; out.elbows[h] = El.elbow; out.shoulders[h] = El.shoulder; out.reach = Math.max(out.reach, El.reach);
+      }
+      return out;
+    }
+
     function at(tb) {
-      var ps = pose(tb);
+      var ps = flowPose(tb);
       ps.balls = ballsAt(tb, ps);
       var ei = eventAt(tb), ev = events[ei];
       var whole = Math.floor(tb / P) * P + (ev.t > mod(tb, P) + 1e-9 ? -P : 0);
