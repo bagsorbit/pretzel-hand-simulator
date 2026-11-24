@@ -26,11 +26,11 @@
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 111.9, catchY: 112.3, lowY: 112,       // heights of a hand's scoop: release, catch, and its low point
     loopY: 122.2, lowAt: 0.6,                    // top of the empty hand's loop; where in the hold the low point is
-    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 0, swapKey: 0, orbitR: 13, orbitSide: -1, orbitSideDown: -1, sharePushOther: 0.5, shareOrbitR: 16, shareOrbitRY: 10, shareLag: 0.2, shareCatchUp: 0, shareEven: 1, shareOrbit0: 0.1, shareOrbit1: 0.9, shareOrbitIn: 0.2, shareOrbitOut: 0.8, shareSwapRise0: 0.55, shareSwapRise1: 0.95, shareSwapEaseIn: 0.4, shareSwapEaseOut: 0.9, shareLift: 6, shareLiftW: 0.5, orbitXa: 0.75, centreKeys: 1, centreMin: 3,  sharePushFwd: 1, orbitElbow: 0, orbitHold: 1, orbit0: 0.1, orbit1: 0.9, orbitIn: 0.2, orbitOut: 0.8, swapOut: 0, swapUnder: 10, swapMidT: 0.4, roomBack: 0, roomDown: 0, swapClear: 2, swapEaseIn: 0.4, shareA: 0.5, shareB: 1, swapEaseOut: 0.9, swapPushFwd: 1, swapPushUp: 0.3, swapPushOther: 0.3, swapPushBack: 0.1, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
+    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 0, swapKey: 0, orbitR: 13, orbitSide: -1, orbitSideDown: -1, sharePushOther: 0.43, shareOrbitR: 14.09, shareOrbitRY: 7.36, shareLag: 0.43, shareOrbitXa: 1, shareOrbitAlong: 0.5, shareCatchUp: 7.95, shareEven: 1, shareRaise: 4.12, shareOrbit0: 0.12, shareOrbit1: 0.95, shareOrbitIn: 0.19, shareOrbitOut: 0.89, shareSwapRise0: 0.62, shareSwapRise1: 1, shareSwapEaseIn: 0.11, shareSwapEaseOut: 0.95, shareLift: 2.5, shareLiftW: 0.78, orbitXa: 0.75, centreKeys: 1, centreMin: 3,  sharePushFwd: 2, orbitElbow: 0, orbitHold: 1, orbit0: 0.1, orbit1: 0.9, orbitIn: 0.2, orbitOut: 0.8, swapOut: 0, swapUnder: 10, swapMidT: 0.4, roomBack: 0, roomDown: 0, swapClear: 2, swapEaseIn: 0.4, shareA: 0.74, shareB: 0.88, swapEaseOut: 0.9, swapPushFwd: 1, swapPushUp: 0.3, swapPushOther: 0.3, swapPushBack: 0.1, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
     underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
-    throwMatch: 1.3, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
+    throwMatch: 1.3, oneStroke: 0.1, oneOut: 10, oneIn: 13, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 3.2,                       // beats per second at full speed (the author's own mills mess, filmed 2026-11-22)
     catchLag: 0.8,                  // beats from a hand's throw to its next catch
@@ -202,6 +202,8 @@
       var h = handOf(j), s = tok(j).t, crossed = s !== 'U';
       var under = crossed && s !== (h === 0 ? 'R' : 'L');
       var far = crossed ? (under ? G.outUnder : G.outX) : G.outU;
+      // (a 1 is passed straight across from near where the hand holds it, not carried out wide first: oneOut)
+      if (nOf(j) === 1) far = Math.min(far, G.oneOut);
       var x = sideFor(h, s) * (dirOf(j) === 'i' ? G.inner : far);
       return [x, G.throwY, G.handZ];
     }
@@ -212,6 +214,10 @@
       var inc = incoming[mod(j, P)];
       var d = dirOf(inc === null ? j - 1 : inc);
       var x = sideFor(h, s) * (d === 'o' ? G.inner : far);
+      // (a 1 is caught where the other hand already is, without reaching in for it, so the
+      // hands stay apart: oneIn, how far out on its own side. Not when that hand crosses over
+      // straight after, as in the flos showers: it catches nearer the middle, on its way across)
+      if (inc !== null && nOf(inc) === 1 && !crossed && tok(j + 2).t === 'U') x = sideFor(h, s) * G.oneIn;
       return [x, G.catchY, G.handZ];
     }
 
@@ -388,7 +394,7 @@
       }
       for (var q = 0; q < swaps.length; q++) {
         var sw = swaps[q], t = sw.t0 + mod(tb - sw.t0, P);
-        if (t <= sw.t2) return { f: Math.min(1, (t - sw.t0) / (sw.t1 - sw.t0)), f2: (t - sw.t0) / (sw.t2 - sw.t0), from: sw.from, mover: sw.mover, done: t > sw.t1, t0: sw.t0, t1: sw.t1, kind: sw.kind };
+        if (t <= sw.t2) return { f: Math.min(1, (t - sw.t0) / (sw.t1 - sw.t0)), fu: (t - sw.t0) / (sw.t1 - sw.t0), fe: (sw.t2 - sw.t0) / (sw.t1 - sw.t0), f2: (t - sw.t0) / (sw.t2 - sw.t0), from: sw.from, mover: sw.mover, done: t > sw.t1, t0: sw.t0, t1: sw.t1, kind: sw.kind };
       }
       return null;
     }
@@ -402,14 +408,23 @@
       // hectic flos messes, the hand about to throw is the one that goes round)
       if (sw.mover === h) return sw.done ? crossW(tb) * me : olap * (r0 + (-r0 - r0) * smoother(swG(sw, 'swapRise0'), swG(sw, 'swapRise1'), sw.f));   // moves around the other arm
       // (the hand that has just caught, in a hectic flos change-over, rises to the top by the throw)
-      if (sw.kind === 'shared') return sw.done ? crossW(tb) * me : olap * (r0 - 2 * r0 * smoother(G.shareA, G.shareB, sw.f));
+      // (it only has to be over at the throw, so it may finish rising a little after it:
+      // shareB above 1, kept short of the next event so it joins up smoothly)
+      if (sw.kind === 'shared') {
+        var sB = Math.min(G.shareB, sw.fe), sA = Math.min(G.shareA, sB - 0.05);
+        if (sw.done && sw.fu >= sB) return crossW(tb) * me;
+        return olap * (r0 - 2 * r0 * smoother(sA, sB, sw.fu));
+      }
       return olap * (r0 + (-r0 - r0) * smoother(G.swapStay, 1, sw.f2));                                    // stays, then is the other way round
     }
     // In a hectic flos change-over both arms rise a little to do the trick, so the moving
     // hand has a shorter, quicker path round the other forearm. The lift swells smoothly
     // from shareLiftW beats before the catch to shareLiftW beats after the throw.
     function shareLift(tb) {
-      if (!G.shareLift || !swaps) return 0;
+      if (!swaps) swapAt(0);
+      // (and a pattern with these change-overs is juggled a little higher all through, for room: shareRaise)
+      var raise = G.shareRaise && swaps.some(function (sw) { return sw.kind === 'shared'; }) ? G.shareRaise : 0;
+      if (!G.shareLift) return raise;
       var best = 0;
       for (var q = 0; q < swaps.length; q++) {
         var sw = swaps[q];
@@ -419,7 +434,7 @@
         var up = smoother(a, sw.t0, t) * (1 - smoother(sw.t1, b, t));
         best = Math.max(best, up);
       }
-      return G.shareLift * best;
+      return raise + G.shareLift * best;
     }
     // the other arm gives a little room: its hand eases back towards the body and down while
     // the hectic arm comes past (the hectic arm does the travelling: see the swing key)
@@ -543,6 +558,8 @@
         var v = [(b[0] - a[0]) / F, (b[1] - a[1]) / F + gg * F / 2, (b[2] - a[2]) / F];   // cm/s at release
         var vl = [v[0], v[1] - gg * F, v[2]];                                              // cm/s at the catch
         var under = underThrows[h].some(function (u) { return u.t === j; }) ? G.underStroke : 1;
+        // a 1 is flicked across from the wrist: the hand barely moves from its spot (oneStroke)
+        if (nOf(j) === 1) under *= G.oneStroke;
         var hv = handVel(h, j), hc = handVel(hk, tc);
         strokes[h].push({ t: j, catch: false, v: capSpeed([0, 1, 2].map(function (c) { return (v[c] / BPS - hv[c]) * under * G.throwMatch; })) });
         strokes[hk].push({ t: tc, catch: true, v: capSpeed([0, 1, 2].map(function (c) { return (vl[c] / BPS - hc[c]) * G.catchGive; })) });
@@ -632,7 +649,9 @@
         if (nearCorr) P0[2] += nearAt(h, tb);
         if (!plain) { var so = strokeAt(h, tb); for (var c2 = 0; c2 < 3; c2++) P0[c2] += so[c2]; }
         if (swo && !swo.done && h === swo.mover && orbitArm) {
-          var mid = [0, 1, 2].map(function (c) { return (orbitArm.elbow[c] + orbitArm.hand[c]) / 2; });
+          // (round the middle of the other forearm; the hectic flos one may sit nearer its elbow, where the under-arm throw is made: shareOrbitAlong, 0 = elbow, 0.5 = middle)
+          var al = swo.kind === 'shared' ? G.shareOrbitAlong : 0.5;
+          var mid = [0, 1, 2].map(function (c) { return orbitArm.elbow[c] + (orbitArm.hand[c] - orbitArm.elbow[c]) * al; });
           // circle where the other forearm is as the orbit starts, so its later settling
           // doesn't drag the hectic hand about (orbitHold 1 = fully held)
           var ref = orbitRef[mod(swo.t0, P).toFixed(3)];
@@ -642,7 +661,7 @@
           var oR = swo.kind === 'shared' ? G.shareOrbitR : G.orbitR, oRy = swo.kind === 'shared' ? G.shareOrbitRY : G.orbitR;   // (the flos one is flatter: wide behind, not so deep below)
           // (late in the circle, once it is over the other forearm, it drifts sideways on
           // towards its catch, so it never stops at the top and then dashes)
-          var xs = G.orbitXa < 1 && swo.kind === 'hectic' ? smoother(G.orbitXa, 1, swo.f) : 0;
+          var xa = swG(swo, 'orbitXa'), xs = xa < 1 ? smoother(xa, 1, swo.f) : 0;
           var tgo = [mid[0] + (P0[0] - mid[0]) * xs, mid[1] + oRy * Math.sin(th), mid[2] + (rising ? G.orbitSide : G.orbitSideDown) * oR * Math.cos(th)];   // orbitSide -1: round the back, towards the navel
           var bw = smoother(0, swG(swo, 'orbitIn'), swo.f) * (1 - smoother(swG(swo, 'orbitOut'), 1, swo.f));
           for (var c3 = 0; c3 < 3; c3++) P0[c3] += (tgo[c3] - P0[c3]) * bw;
@@ -773,7 +792,8 @@
         orbitOff = true;
         swaps.forEach(function (sw) {
           var pr = pose(sw.t0 + swG(sw, 'orbitIn') * (sw.t1 - sw.t0), true), o = 1 - sw.mover;
-          orbitRef[mod(sw.t0, P).toFixed(3)] = [0, 1, 2].map(function (c) { return (pr.elbows[o][c] + pr.hands[o][c]) / 2; });
+          var al2 = sw.kind === 'shared' ? G.shareOrbitAlong : 0.5;
+          orbitRef[mod(sw.t0, P).toFixed(3)] = [0, 1, 2].map(function (c) { return pr.elbows[o][c] + (pr.hands[o][c] - pr.elbows[o][c]) * al2; });
         });
         orbitOff = false;
       }
@@ -979,13 +999,13 @@
     { group: 'Flos messes', name: 'TR flipped flos mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul' },
     { group: 'Extras (first try)', name: 'Half mess', src: 'o\\ Ru Uu : Ur Rr' },
     { group: 'Extras (first try)', name: 'Alternating half mess', src: 'o\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
-    { group: 'Extras (first try)', name: 'Mills mess with windmill', src: 'o\\ Ru Ul Ll Ul Lu : Lu Ur Rr Ur Rr' },
+    { group: 'Extras (first try)', name: 'Mills mess with windmill', src: 'o\\ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
     { group: 'Extras (first try)', name: '4 ball mills mess', src: '4 o\\ Ru Ul Ll : Lu Ur Rr' },
     { group: 'Extras (first try)', name: '423 mills mess', src: '423 o\\ Ru Ul. Ll : Lu Ur. Rr' },
     { group: 'Extras (first try)', name: '234 flos mess', src: '234 o/ Ur. Ru Uu : Ul. Lu Uu' },
     // main article, siteswap 1s (U(u) is a 1, caught straight away by the other hand)
     { group: 'Showers (siteswap 1s)', name: '414 mills mess', src: '414 o\\ R U(u)l Ll : L U(u)r Rr' },
-    { group: 'Showers (siteswap 1s)', name: 'Mills mess with shower', src: '44133 o\\ Ru U U(u)u Ul Ll : Lu U U(u)u Ur Ru' },
+    { group: 'Showers (siteswap 1s)', name: 'Mills mess with shower', src: '44133 o\\ Ru U U(u)u Ul Ll : Lu U U(u)u Ur Rr' },
     // Appendix B: building ingenious messes from hulking windmills
     { group: 'Appendix B: windmills', name: 'Under throw windmill', src: 'O\\ Lu Ul' },
     { group: 'Appendix B: windmills', name: 'Under catch windmill', src: 'O\\ Ru Ur' },

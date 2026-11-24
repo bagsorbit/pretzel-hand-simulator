@@ -10,7 +10,6 @@ crossings are easy to follow.
 Open `index.html` in a browser (it needs an internet connection the first time,
 to load three.js). Pick a pattern, then:
 
-- The badge at the top left says which arm is on top right now.
 - Under the juggler, the notation lights up letter by letter as each throw
   (capital) and catch (small letter) happens. The coloured line under each throw
   shows which hand makes it: red is the right hand, blue the left.
@@ -30,7 +29,7 @@ to load three.js). Pick a pattern, then:
   or two, the other balls' lines fade.
 - Play/Pause, step one throw or catch at a time (also the arrow keys and space),
   and a speed slider.
-- Type your own pattern in the box and press Play it (or Enter). If the slash does
+- Type your own pattern in the box and press Enter to play it. If the slash does
   not match where the first throw peaks, the page says so.
 - Pattern tools: Time reverse (the pattern played backwards: throws become catches,
   `o` and `i` swap, the siteswap follows the balls), Flip (right and left swapped),
@@ -62,6 +61,12 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   pass blends every hand position with its neighbours in time (`flowBlur`, 0.06
   beat), with the throw swings made a little stronger first (`throwMatch` 1.3) so
   the hand still moves at most of the ball's speed as it lets go.
+  A 1 is the exception: it is flicked across from the wrist, so the hand barely
+  moves from its spot (`oneStroke` 0.1: a tenth of a normal throw swing), and it
+  is passed straight across from near the middle (`oneOut`, 10 cm out) rather
+  than carried out wide first. The other hand catches it where it already is,
+  without reaching in, so the hands stay apart (`oneIn`, 13 cm out), unless it
+  crosses over straight after and catches on its way across.
 - R, L and U give the arms at each throw and catch: crossed with the right on
   top, crossed with the left on top, or uncrossed. Crossed means both hands are
   on the other side of the body.
@@ -125,7 +130,8 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 - Hectic flos messes (the arms change over between one hand's catch and the other
   hand's throw, as in `Ul Ru`): as the author juggles it, the hand about to throw
   moves diagonally back towards the body and round the other forearm, the same move
-  as the hectic mess. The other hand eases forward a little; both arms rise slightly
+  as the hectic mess. The whole pattern is juggled about 4 cm higher for room
+  (`shareRaise`); the other hand eases forward a little; both arms rise slightly more
   for the move; the catch just before it comes early (`shareLag`) to give it time,
   and that ball keeps the height of the others (`shareEven`). These have their own
   copies of the orbit settings (all named `share...`), so tuning them never moves
@@ -146,8 +152,8 @@ alternating windmill's first throw now peaks dead centre, so it fails the same c
 In the mills mess with windmill one uncrossed throw is brushed by its own forearm
 (3 cm) as that arm sweeps over on top. Since the footage changes (2026-11-22) the TR
 mills messes have a forearm sloping down just over the 10% limit. The hectic flos
-messes are not right yet: in the plain pair a ball clips the left hand at the catch
-just before the change-over, and the moving hand brushes the other forearm.
+messes clear now, but work above the heights measured in the footage, and their
+hands jolt more than the limit (about 40k).
 
 ## Footage
 

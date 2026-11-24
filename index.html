@@ -44,13 +44,6 @@ h1 { margin: 2px 0 0; font-size: 22px; font-weight: 700; letter-spacing: .2px; }
 }
 .stage.drag { cursor: grabbing; }
 .stage canvas { display: block; width: 100%; height: 100%; }
-.badge {
-  position: absolute; left: 12px; top: 12px; padding: 6px 14px; border: 3px solid var(--ink); border-radius: 999px;
-  font-weight: 700; font-size: 18px; background: var(--grey-soft); box-shadow: 0 3px 0 var(--ink); pointer-events: none;
-  transition: background-color .12s;
-}
-.badge.R { background: var(--red); }
-.badge.L { background: var(--blue); }
 .views { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px; }
 .hint { position: absolute; left: 12px; bottom: 54px; font-size: 13px; opacity: .6; pointer-events: none; }
 .mouseMode { position: absolute; left: 10px; bottom: 10px; height: 34px; padding: 0 10px; font-size: 14px; border-radius: 12px; }
@@ -119,7 +112,6 @@ select { padding-right: 10px; max-width: 100%; }
   .app { padding: 8px 12px 12px; gap: 8px; }
   h1 { font-size: 18px; }
   .stage { min-height: 52vh; }
-  .badge { font-size: 15px; top: 8px; left: 8px; padding: 4px 10px; }
   .strip { gap: 4px; }
   .tok { padding: 2px; gap: 1px; border-radius: 11px; }
   .l { min-width: 18px; font-size: 17px; line-height: 26px; border-radius: 7px; }
@@ -135,7 +127,6 @@ select { padding-right: 10px; max-width: 100%; }
 <div class="app">
   <h1>Pretzel Hand Simulator</h1>
   <div class="stage" id="stage">
-    <div class="badge" id="badge">Arms uncrossed</div>
     <div class="hint" id="hint">Drag to turn · click to pause</div>
     <div class="problem" id="problem"></div>
     <button id="mouseMode" class="mouseMode" title="Turn: drag to turn the view. Scrub: drag sideways to move through time. Click to pause (key: M)">Mouse: turn</button>
@@ -156,8 +147,7 @@ select { padding-right: 10px; max-width: 100%; }
     <label class="speed">Speed <input id="speed" type="range" min="0.05" max="1" step="0.05" value="0.35"> <span id="speedv">35%</span></label>
   </div>
   <div class="tools">
-    <input id="typed" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type a pattern, like  o\ Ru Ul Ll : Lu Ur Rr" aria-label="Type a pattern">
-    <button id="playTyped">Play it</button>
+    <input id="typed" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type a pattern and press Enter, like  o\ Ru Ul Ll : Lu Ur Rr" aria-label="Type a pattern, then press Enter to play it">
     <button id="trBtn" title="Play the pattern backwards in time">Time reverse</button>
     <button id="flipBtn" title="Swap right and left">Flip</button>
     <button id="mfBtn" title="Appendix C: move the first throw to the end and switch the red letters">Mills &harr; flos</button>
@@ -398,7 +388,7 @@ function showProblem(msg) {
 
   // ---------- patterns and notation strip ----------
   var sel = document.getElementById('pattern'), strip = document.getElementById('strip');
-  var info = document.getElementById('info'), badge = document.getElementById('badge');
+  var info = document.getElementById('info');
   var groups = {};
   var customOpt = document.createElement('option'); customOpt.value = 'custom'; customOpt.textContent = 'Your pattern'; customOpt.hidden = true;
   sel.appendChild(customOpt);
@@ -494,7 +484,6 @@ function showProblem(msg) {
 
   // typing your own, and the pattern tools
   function playTyped() { var v = typed.value.trim(); if (v) loadSrc(v, null, null); }
-  document.getElementById('playTyped').addEventListener('click', playTyped);
   typed.addEventListener('keydown', function (e) { if (e.key === 'Enter') playTyped(); });
   function after(src) { return src.replace(/^[^\/\\|]*[\/\\|]\s*/, '').replace(/\s+/g, ' ').trim(); }
   function tool(fn, label) {
@@ -652,7 +641,6 @@ function showProblem(msg) {
     else if (e.key === 'm' || e.key === 'M') toggleMode();
   });
 
-  var BADGE = { 1: ['R', 'Right arm on top'], '-1': ['L', 'Left arm on top'], 0: ['', 'Arms uncrossed'] };
   function draw() {
     if (!model) return;
     var p = model.at(beat);
@@ -682,7 +670,6 @@ function showProblem(msg) {
       if (ev.part === 'throw') el = letters[ev.token].t;
       else el = model.tokens[ev.token].cFromNext ? letters[(ev.token + 1) % N].br : letters[ev.token].c;
       if (el) el.classList.add('on');
-      var b = BADGE[p.state]; badge.className = 'badge ' + b[0]; badge.textContent = b[1];
       var pass = ((Math.floor(ev.throwIndex / N) % 2) + 2) % 2;
       var passN = Math.floor(ev.throwIndex / N);
       if (passN !== arcPass) drawArcs(passN);
