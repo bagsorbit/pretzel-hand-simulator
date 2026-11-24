@@ -1008,7 +1008,19 @@ function showProblem(msg) {
   var startSrc = PH.PATTERNS.filter(function (p) { return p.name === 'Mills mess'; })[0].src;
   try { var s = localStorage.getItem('phs-src'); if (s && PH.build(s).ok) startSrc = s; } catch (e) {}
   // test settings in the address: ?p=pattern number&t=beat (pauses there)&view=above, or ?n=notation
-  var q = new URLSearchParams(location.search);
+  // (a shared link opens the article with the pattern in its address; the page's script hands it on to
+  // this frame, and in case that doesn't happen in time, the frame also reads it from the article's own
+  // address, which it is told as its referrer: the iframe has referrerpolicy=unsafe-url. Only the
+  // circus website's address is trusted.)
+  function pageQuery() {
+    if (location.search || window.top === window.self) return location.search;
+    try {
+      var r = new URL(document.referrer);
+      if (/(^|\.)twistedorbitcircus\.com$/.test(r.hostname)) return r.search;
+    } catch (e) {}
+    return '';
+  }
+  var q = new URLSearchParams(pageQuery());
   if (q.has('p') && PH.PATTERNS[+q.get('p')]) startSrc = PH.PATTERNS[+q.get('p')].src;
   if (q.has('n')) startSrc = q.get('n');
   var openKey = q.has('key');
