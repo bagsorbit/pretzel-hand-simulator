@@ -26,7 +26,7 @@
     crossMin: 7,                    // a crossed hand is at least this far over
     throwY: 111.9, catchY: 112.3, lowY: 112,       // heights of a hand's scoop: release, catch, and its low point
     loopY: 122.2, lowAt: 0.6,                    // top of the empty hand's loop; where in the hold the low point is
-    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 0, swapKey: 0, orbitR: 13, orbitSide: -1, orbitSideDown: -1, sharePushOther: 0.43, shareOrbitR: 14.09, shareOrbitRY: 7.36, shareLag: 0.43, shareOrbitXa: 1, shareOrbitAlong: 0.5, shareCatchUp: 7.95, shareEven: 1, shareRaise: 4.12, shareOrbit0: 0.12, shareOrbit1: 0.95, shareOrbitIn: 0.19, shareOrbitOut: 0.89, shareSwapRise0: 0.62, shareSwapRise1: 1, shareSwapEaseIn: 0.11, shareSwapEaseOut: 0.95, shareLift: 2.5, shareLiftW: 0.78, orbitXa: 0.75, centreKeys: 1, centreMin: 3,  sharePushFwd: 2, orbitElbow: 0, orbitHold: 1, orbit0: 0.1, orbit1: 0.9, orbitIn: 0.2, orbitOut: 0.8, swapOut: 0, swapUnder: 10, swapMidT: 0.4, roomBack: 0, roomDown: 0, swapClear: 2, swapEaseIn: 0.4, shareA: 0.74, shareB: 0.88, swapEaseOut: 0.9, swapPushFwd: 1, swapPushUp: 0.3, swapPushOther: 0.3, swapPushBack: 0.1, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
+    topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 0, swapKey: 0, orbitR: 13, orbitSide: -1, orbitSideDown: -1, sharePushOther: 0.51, shareOrbitR: 10.53, shareOrbitRY: 7.37, shareLag: 0.46, shareOrbitXa: 1, shareOrbitAlong: 0.7, shareCatchUp: 8.08, shareEven: 1, shareRaise: 5.59, shareOrbit0: 0.09, shareOrbit1: 1.1, shareOrbitIn: 0.22, shareOrbitOut: 0.91, shareSwapRise0: 0.39, shareSwapRise1: 0.98, shareSwapEaseIn: 0.12, shareSwapEaseOut: 0.71, shareLift: 0, shareLiftW: 0.64, orbitXa: 0.75, centreKeys: 1, centreMin: 3,  sharePushFwd: 2, shareElbowIn: 1, shareElbowX: 22.48, shareElbowY: 104.01, shareElbowZ: 4.38, orbitElbow: 0, orbitHold: 1, orbit0: 0.1, orbit1: 0.9, orbitIn: 0.2, orbitOut: 0.8, swapOut: 0, swapUnder: 10, swapMidT: 0.4, roomBack: 0, roomDown: 0, swapClear: 2, swapEaseIn: 0.4, shareA: 0.47, shareB: 0.89, swapEaseOut: 0.9, swapPushFwd: 1, swapPushUp: 0.3, swapPushOther: 0.3, swapPushBack: 0.1, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
     underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
@@ -506,7 +506,7 @@
       return best;
     }
 
-    var elbowBias = [0, 0], orbitRef = {}, orbitOff = false;       // extra forward lean for an elbow (the hectic arm's, during its orbit)
+    var elbowPin = [0, 0], elbowBias = [0, 0], orbitRef = {}, orbitOff = false;       // extra forward lean for an elbow (the hectic arm's, during its orbit)
     function arm(h, P0, top, bot) {
       var own = OWN[h];
       var across = smooth(-6, 12, P0[0] * -own);
@@ -524,6 +524,9 @@
       };
       aim(G.topElbow, top * k);
       aim(G.botElbow, bot * across);
+      // (in the hectic flos change-over the moving arm's elbow stays in low by the body, as in the
+      // hectic mills: the hand goes round with the wrist, not by swinging the elbow out)
+      if (elbowPin[h] > 0) aim([G.shareElbowX, G.shareElbowY, G.shareElbowZ], elbowPin[h]);
       if (elbowBias[h]) { var pn = Math.hypot(pole[0], pole[1], pole[2]); pole = [pole[0] / pn, pole[1] / pn, pole[2] / pn + elbowBias[h]]; }
       var El = ik(S, P0, G.upper, G.fore, pole);
       El.shoulder = S;
@@ -666,7 +669,8 @@
           var bw = smoother(0, swG(swo, 'orbitIn'), swo.f) * (1 - smoother(swG(swo, 'orbitOut'), 1, swo.f));
           for (var c3 = 0; c3 < 3; c3++) P0[c3] += (tgo[c3] - P0[c3]) * bw;
           elbowBias[h] = G.orbitElbow * bw * Math.max(0, Math.cos(th));   // the elbow comes forward too, so the whole forearm passes in front
-        } else elbowBias[h] = 0;
+          elbowPin[h] = swo.kind === 'shared' ? G.shareElbowIn * bw : 0;
+        } else { elbowBias[h] = 0; elbowPin[h] = 0; }
         var El = arm(h, P0, top, bot);
         // the body pushes the arm out: if the hand or forearm comes near the torso or hips,
         // ease the hand forward so it clears, and work the arm out again. The push starts
@@ -874,6 +878,13 @@
       for (var c = 0; c < 3; c++) out[c] = herm(p1[c], (p2[c] - p0[c]) / 2, p2[c], (p3[c] - p1[c]) / 2, u);
       return out;
     }
+    // how strongly the moving arm's elbow is held in by the body (the hectic flos change-over)
+    function pinAt(h, tb) {
+      if (!(G.shareElbowIn > 0)) return 0;
+      var sw = swapAt(tb);
+      if (!sw || sw.done || sw.kind !== 'shared' || sw.mover !== h) return 0;
+      return G.shareElbowIn * smoother(0, swG(sw, 'orbitIn'), sw.f) * (1 - smoother(swG(sw, 'orbitOut'), 1, sw.f));
+    }
     function flowPose(tb) {
       if (!(G.flowBlur > 0)) return pose(tb);
       if (!flow) bakeFlow();
@@ -881,6 +892,7 @@
       for (var h = 0; h < 2; h++) {
         var P0 = flowHand(h, tb), so = G.blurSwings ? [0, 0, 0] : strokeAt(h, tb), top = Math.max(0, roles[h]), bot = Math.max(0, -roles[h]);
         for (var c = 0; c < 3; c++) P0[c] += so[c];
+        elbowPin[h] = pinAt(h, tb);
         var El = arm(h, P0, top, bot);
         for (var pass = 0; pass < 3; pass++) {       // the body pushes the arm out, as in pose
           var dep = armInBody(El, G.bodyEase);
@@ -981,31 +993,30 @@
     { group: 'Cascades', name: 'Reverse cascade', src: 'o/ Uu : Uu' },
     { group: 'Cascades', name: 'Crossed-arm cascade', src: 'o\\ Rr : Rr' },
     { group: 'Cascades', name: 'Windmill', src: 'o\\ Lu Ul' },
+    { group: 'Half messes', name: 'Half mess', src: 'o\\ Ru Uu : Ur Rr' },
+    { group: 'Half messes', name: 'Alternating half mess', src: 'o\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
     { group: 'Mills messes', name: 'Mills mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr' },
     { group: 'Mills messes', name: 'Flipped mess', src: 'o\\ Lu Ur Rr : Ru Ul Ll' },
+    { group: 'Mills messes', name: 'Flos mess', src: 'o/ Ur Ru Uu : Ul Lu Uu' },
+    { group: 'Mills messes', name: 'Flipped flos mess', src: 'o/ Ul Lu Uu : Ur Ru Uu' },
     { group: 'Mills messes', name: 'TR mills mess', src: '3 i/ Ur Rr Ru : Ul Ll Lu' },
     { group: 'Mills messes', name: 'TR flipped mess', src: '3 i/ Ul Ll Lu : Ur Rr Ru' },
-    { group: 'Mills messes', name: 'Hectic mills', src: 'o\\ Lu Ul Lr : Ru Ur Rl' },
-    { group: 'Mills messes', name: 'TR hectic mills', src: '3 i/ Ul Lr Ru : Ur Rl Lu' },
-    { group: 'Mills messes', name: 'Hectic flipped mess', src: 'o\\ Ru Ur Rl : Lu Ul Lr' },
-    { group: 'Mills messes', name: 'TR hectic flipped mess', src: '3 i/ Ur Rl Lu : Ul Lr Ru' },
-    { group: 'Flos messes', name: 'Hectic flos mess', src: 'o/ Ul Ru Uu : Ur Lu Uu' },
-    { group: 'Flos messes', name: 'Hectic flipped flos mess', src: 'o/ Ur Lu Uu : Ul Ru Uu' },
-    { group: 'Flos messes', name: 'TR hectic flos mess', src: '3 i\\ Lu Uu Ul : Ru Uu Ur' },
-    { group: 'Flos messes', name: 'TR hectic flipped flos mess', src: '3 i\\ Ru Uu Ur : Lu Uu Ul' },
-    { group: 'Flos messes', name: 'Flos mess', src: 'o/ Ur Ru Uu : Ul Lu Uu' },
-    { group: 'Flos messes', name: 'Flipped flos mess', src: 'o/ Ul Lu Uu : Ur Ru Uu' },
-    { group: 'Flos messes', name: 'TR flos mess', src: '3 i\\ Ru Uu Ul : Lu Uu Ur' },
-    { group: 'Flos messes', name: 'TR flipped flos mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul' },
-    { group: 'Extras (first try)', name: 'Half mess', src: 'o\\ Ru Uu : Ur Rr' },
-    { group: 'Extras (first try)', name: 'Alternating half mess', src: 'o\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
-    { group: 'Extras (first try)', name: 'Mills mess with windmill', src: 'o\\ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
-    { group: 'Extras (first try)', name: '4 ball mills mess', src: '4 o\\ Ru Ul Ll : Lu Ur Rr' },
-    { group: 'Extras (first try)', name: '423 mills mess', src: '423 o\\ Ru Ul. Ll : Lu Ur. Rr' },
-    { group: 'Extras (first try)', name: '234 flos mess', src: '234 o/ Ur. Ru Uu : Ul. Lu Uu' },
-    // main article, siteswap 1s (U(u) is a 1, caught straight away by the other hand)
-    { group: 'Showers (siteswap 1s)', name: '414 mills mess', src: '414 o\\ R U(u)l Ll : L U(u)r Rr' },
-    { group: 'Showers (siteswap 1s)', name: 'Mills mess with shower', src: '44133 o\\ Ru U U(u)u Ul Ll : Lu U U(u)u Ur Rr' },
+    { group: 'Mills messes', name: 'TR flos mess', src: '3 i\\ Ru Uu Ul : Lu Uu Ur' },
+    { group: 'Mills messes', name: 'TR flipped flos mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul' },
+    { group: 'Hectic messes', name: 'Hectic mills', src: 'o\\ Lu Ul Lr : Ru Ur Rl' },
+    { group: 'Hectic messes', name: 'Hectic flipped mess', src: 'o\\ Ru Ur Rl : Lu Ul Lr' },
+    { group: 'Hectic messes', name: 'Hectic flos mess', src: 'o/ Ul Ru Uu : Ur Lu Uu' },
+    { group: 'Hectic messes', name: 'Hectic flipped flos mess', src: 'o/ Ur Lu Uu : Ul Ru Uu' },
+    { group: 'Hectic messes', name: 'TR hectic mills', src: '3 i/ Ul Lr Ru : Ur Rl Lu' },
+    { group: 'Hectic messes', name: 'TR hectic flipped mess', src: '3 i/ Ur Rl Lu : Ul Lr Ru' },
+    { group: 'Hectic messes', name: 'TR hectic flos mess', src: '3 i\\ Lu Uu Ul : Ru Uu Ur' },
+    { group: 'Hectic messes', name: 'TR hectic flipped flos mess', src: '3 i\\ Ru Uu Ur : Lu Uu Ul' },
+    { group: 'Other mills mess variations', name: 'Mills mess with windmill', src: 'o\\ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
+    { group: 'Other mills mess variations', name: 'Mills mess with shower', src: '44133 o\\ Ru U U(u)u Ul Ll : Lu U U(u)u Ur Rr' },
+    { group: 'Siteswap variations', name: '4 ball mills mess', src: '4 o\\ Ru Ul Ll : Lu Ur Rr' },
+    { group: 'Siteswap variations', name: '423 mills mess', src: '423 o\\ Ru Ul. Ll : Lu Ur. Rr' },
+    { group: 'Siteswap variations', name: '414 mills mess', src: '414 o\\ R U(u)l Ll : L U(u)r Rr' },
+    { group: 'Siteswap variations', name: '234 flos mess', src: '234 o/ Ur. Ru Uu : Ul. Lu Uu' },
     // Appendix B: building ingenious messes from hulking windmills
     { group: 'Appendix B: windmills', name: 'Under throw windmill', src: 'O\\ Lu Ul' },
     { group: 'Appendix B: windmills', name: 'Under catch windmill', src: 'O\\ Ru Ur' },

@@ -700,7 +700,7 @@ function showProblem(msg) {
     requestAnimationFrame(frame);
   }
 
-  var startSrc = PH.PATTERNS[4].src;
+  var startSrc = PH.PATTERNS.filter(function (p) { return p.name === 'Mills mess'; })[0].src;
   try { var s = localStorage.getItem('phs-src'); if (s && PH.build(s).ok) startSrc = s; } catch (e) {}
   // test settings in the address: ?p=pattern number&t=beat (pauses there)&view=above, or ?n=notation
   var q = new URLSearchParams(location.search);

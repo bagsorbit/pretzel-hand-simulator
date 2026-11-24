@@ -130,7 +130,9 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 - Hectic flos messes (the arms change over between one hand's catch and the other
   hand's throw, as in `Ul Ru`): as the author juggles it, the hand about to throw
   moves diagonally back towards the body and round the other forearm, the same move
-  as the hectic mess. The whole pattern is juggled about 4 cm higher for room
+  as the hectic mess. It is a wrist move: the moving arm's elbow is held in low by
+  the body (`shareElbowIn`), as in the hectic mills, and the hand circles tightly.
+  The whole pattern is juggled about 6 cm higher for room
   (`shareRaise`); the other hand eases forward a little; both arms rise slightly more
   for the move; the catch just before it comes early (`shareLag`) to give it time,
   and that ball keeps the height of the others (`shareEven`). These have their own
@@ -186,5 +188,5 @@ the check: `jsc -e 'var OVERRIDES={outUnder:28}' tests/check.js`.
 `tests/search-flos.js` does the same for the hectic flos change-over settings only,
 scored on clearance, jolts, how low the hands go and how even the ball heights are.
 
-`tests/phone.html` shows the page in a phone-sized frame. Adding `?p=4&t=1.5&view=above`
+`tests/phone.html` shows the page in a phone-sized frame. Adding `?p=6&t=1.5&view=above`
 to the page address opens pattern 4 paused at beat 1.5, seen from above.

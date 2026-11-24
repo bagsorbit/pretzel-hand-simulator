@@ -15,6 +15,7 @@ var RANGES = {
   shareRaise: [0, 10], shareLag: [0.15, 0.8], shareA: [0.05, 0.8], shareB: [0.7, 1], sharePushOther: [0.2, 0.8], sharePushFwd: [0, 2],
   shareOrbitR: [10, 20], shareOrbitRY: [6, 16], shareLift: [0, 12], shareLiftW: [0.2, 1], shareCatchUp: [-4, 10],
   shareOrbitXa: [0.2, 1], shareOrbitAlong: [0.2, 0.7], shareOrbit0: [0, 0.3], shareOrbit1: [0.7, 1.1], shareOrbitIn: [0.05, 0.4], shareOrbitOut: [0.6, 0.95],
+  shareElbowIn: [0, 1], shareElbowX: [12, 26], shareElbowY: [98, 114], shareElbowZ: [0, 16],
   shareSwapRise0: [0.3, 0.7], shareSwapRise1: [0.8, 1], shareSwapEaseIn: [0.1, 0.6], shareSwapEaseOut: [0.7, 1]
 };
 var PATS = [['Hectic flos mess', 'Flos mess'], ['Hectic flipped flos mess', 'Flipped flos mess']].map(function (pr) {
@@ -36,6 +37,7 @@ PATS.forEach(function (P) {
   P.spread = Math.max.apply(null, pk) - Math.min.apply(null, pk);
   var rc = reach(r.m); P.far = rc.far; P.carry = rc.carry;
   P.rms = rmsAcc(r.m);
+  P.elbow = elbowOut(r.m);
 });
 // how far across the body the hands go, and the most any hand carries on outwards past
 // the spot where it caught (a hand should meet the ball, not be swept on past it)
@@ -51,6 +53,9 @@ function reach(m) {
   });
   return { far: far, carry: carry };
 }
+// how far out to the side the elbows go (the hectic flos move is a wrist move, so its elbows
+// should stay as close in as in the plain flos)
+function elbowOut(m) { var mx = 0; for (var t = 0; t < m.period; t += 0.02) m.at(t).elbows.forEach(function (e) { mx = Math.max(mx, Math.abs(e[0])); }); return mx; }
 // how smooth the hands are over the whole cycle: the root mean square of their
 // acceleration (a stop-and-go anywhere shows up here, not only the single worst jolt)
 function rmsAcc(m) {
@@ -97,12 +102,14 @@ function score(x, perBeat, show) {
     f += Math.max(0, even - P.spread - 1) * 2;
     var rc = reach(r.m);
     f += Math.max(0, rc.far - P.far - 1) * 2 + Math.max(0, rc.carry - P.carry - 1) * 2;
+    var eo = elbowOut(r.m);
+    f += Math.max(0, eo - P.elbow - 1) * 2;
     if (f > 0) fails++;
     s += f;
     if (show) notes.push(P.pt.name + ': forearm gap ' + r.minFore.toFixed(1) + ', ball clearance ' + r.minBall.toFixed(1) + ', hand to forearm ' + r.minHandFore.toFixed(1) +
       ', jolt ' + Math.round(r.maxAcc / 1000) + 'k, smoothness ' + (rms / P.rms).toFixed(2) + 'x plain, lowest hand ' + lowY.toFixed(0) + ' (plain ' + P.low.toFixed(0) + '), peaks ' + pk[0].toFixed(0) + ' to ' + pk[pk.length - 1].toFixed(0) + ' (plain spread ' + P.spread.toFixed(0) + ')' +
       ', hands across ' + rc.far.toFixed(0) + ' (plain ' + P.far.toFixed(0) + '), carry past a catch ' + rc.carry.toFixed(0) + ' (plain ' + P.carry.toFixed(0) + ')' +
-      ', wrong top ' + r.wrongTop + ', into body ' + r.inBody.toFixed(1));
+      ', elbow out ' + eo.toFixed(1) + ' (plain ' + P.elbow.toFixed(1) + ')' + ', wrong top ' + r.wrongTop + ', into body ' + r.inBody.toFixed(1));
   });
   if (show) notes.forEach(function (n) { print('  ' + n); });
   return { s: s, fails: fails };
