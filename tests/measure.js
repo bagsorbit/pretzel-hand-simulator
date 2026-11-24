@@ -38,7 +38,7 @@ function measure(pt, perBeat) {
   var G = PH.G, m = PH.build(pt.src);
   if (!m.ok) return { error: m.error };
   var r = { m: m, minFore: 1e9, minHand: 1e9, minHandFore: 1e9, maxReach: 0, wrongTop: 0, minElbowBody: 1e9, worstT: 0,
-            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash || /O/.test(m.parsed.dirs),   // (an O throw goes outside to outside, so it peaks on the centre line: the key says O doesn't go by the slash)
+            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash || /O/.test(m.parsed.dirs) || !!m.turn,   // (an O throw goes outside to outside, so it peaks on the centre line: the key says O doesn't go by the slash)
            
             maxAcc: 0, accT: 0, yMin: [1e9, 1e9], yMax: [-1e9, -1e9], handZ: 0, handY: 0, elbowY: 0, elbowZ: 0, elbowX: 0, topY: 0, crossed: 0 };
   // every ball should arc across a little, not go straight up and down
@@ -56,6 +56,12 @@ function measure(pt, perBeat) {
   var steps = m.period * perBeat, prev = [], dts = 1 / (perBeat * m.bps);
   for (var i = 0; i < steps; i++) {
     var t = i / perBeat, p = m.at(t);
+    // a turning pattern (Mike's mess, sebs) is checked in the juggler's own frame: turn it back
+    if (p.yaw) {
+      var cy = Math.cos(-p.yaw), sy = Math.sin(-p.yaw), un = function (q) { return [q[0] * cy + q[2] * sy, q[1], -q[0] * sy + q[2] * cy]; };
+      p.hands = p.hands.map(un); p.elbows = p.elbows.map(un); p.shoulders = p.shoulders.map(un);
+      p.balls = p.balls.map(function (b) { var c = {}; for (var k in b) c[k] = b[k]; c.pos = un(b.pos); return c; });
+    }
     var R = { s: p.shoulders[0], e: p.elbows[0], h: p.hands[0] }, L = { s: p.shoulders[1], e: p.elbows[1], h: p.hands[1] };
     var ff = segDist(R.e, R.h, L.e, L.h);
     if (ff.d < r.minFore) { r.minFore = ff.d; r.worstT = t; }

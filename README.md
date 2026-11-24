@@ -38,9 +38,10 @@ to load three.js). Pick a pattern, then:
   the result is in the list, its name is shown. `tests/transforms.js` checks all
   three against the pairs published in the article.
 
-The list has the cascades and eight base messes, some extras from the main article
-(including the shower patterns with siteswap 1s), the Appendix B windmill patterns,
-and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
+The list follows the article: all of Appendix A in its order (with the confirmed
+typos fixed), then the main article's sebs and siteswap patterns, Appendix B, and
+Appendix C's butterfly loop Rubenstein's Revenges (117 patterns; patterns that appear
+twice in the article are listed once).
 
 ## How the notation is turned into movement (engine.js)
 
@@ -67,6 +68,8 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   than carried out wide first. The other hand catches it where it already is,
   without reaching in, so the hands stay apart (`oneIn`, 13 cm out), unless it
   crosses over straight after and catches on its way across.
+  A thrown 2 (`2T`) is a little pop over the other arm, so it rises a set 18 cm
+  (`popRise`), as low as still clears that arm, instead of following real gravity.
 - R, L and U give the arms at each throw and catch: crossed with the right on
   top, crossed with the left on top, or uncrossed. Crossed means both hands are
   on the other side of the body.
@@ -145,8 +148,21 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
   hands throw on the left) is moved sideways as a whole, so it sits in front of the
   middle of the body (`centreKeys`).
 
-Not in yet: multiplexes, empty hands, `I`, `-` direction changes and sebs (forward
-throws).
+Not in yet: multiplexes (listed, but they show a message) and empty hands. First tries,
+to be corrected by eye: `-` direction changes (the butterfly messes: the directions
+listed before the slash apply throw by throw), `I` columns (thrown and caught straight up: right,
+centre and left columns, `colX` out; a ball that comes back to its own hand, as in the 4
+ball Boston mess, goes up a centre column just over on the other hand's side, `colIn`
+out, so four columns; a hand throws from the spot where it caught, carrying nothing), an `L` start (built as the mirror image of the same pattern
+starting with the right hand), patterns with no slash or directions (outside throws),
+and the 2 ball messes (their 2s are thrown).
+
+Turning patterns: in Mike's mess (45°) and sebs (80°) each half is done at one side of
+the body and the whole juggler turns towards it, passing through facing the front
+between halves (the pattern's `turn`). The arms keep their own movement relative to the
+body, and the balls fly between the turned hands. The check looks at them in the
+juggler's own frame, and doesn't test their slash. Sebs has the same letters as the
+mills mess; only its slash (`o/`) and the turn tell them apart.
 
 Open questions: since the footage changes (2026-11-22) the TR
 mills messes have a forearm sloping down just over the 10% limit. The hectic flos

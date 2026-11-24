@@ -234,16 +234,17 @@ function showProblem(msg) {
 
   // body
   var shirt = toon(0xb9a6ff), skin = toon(0xffd8b5), pants = toon(0x6c6fb0), glove = toon(0xffffff), inkToon = toon(INK);
+  var bodyGroup = new THREE.Group(); scene.add(bodyGroup);   // turns about the spine in Mike's mess and sebs
   function ellipsoid(sx, sy, sz, mat, pos) {
     var geo = new THREE.SphereGeometry(1, 32, 24);
     var m = new THREE.Mesh(geo, mat); m.scale.set(sx, sy, sz); m.position.set(pos[0], pos[1], pos[2]);
-    m.castShadow = m.receiveShadow = true; scene.add(m);
-    var o = new THREE.Mesh(geo, inkMat); o.scale.set(sx + OUT, sy + OUT, sz + OUT); o.position.copy(m.position); scene.add(o);
+    m.castShadow = m.receiveShadow = true; bodyGroup.add(m);
+    var o = new THREE.Mesh(geo, inkMat); o.scale.set(sx + OUT, sy + OUT, sz + OUT); o.position.copy(m.position); bodyGroup.add(o);
   }
   ellipsoid(17, 30, 12, shirt, [0, 113, 0]);
   ellipsoid(15.5, 11, 10.5, pants, [0, 89, 0]);
-  var neck = limb(5.5, 5.5, skin); placeLimb(neck, [0, 138, 0], [0, 150, 0]);
-  var headGroup = new THREE.Group(); scene.add(headGroup);   // hidden in the juggler's-eyes view
+  var neck = limb(5.5, 5.5, skin); placeLimb(neck, [0, 138, 0], [0, 150, 0]); bodyGroup.add(neck);
+  var headGroup = new THREE.Group(); bodyGroup.add(headGroup);   // hidden in the juggler's-eyes view
   var head = sphere(13, skin, headGroup); head.position.set(0, 160, 1);
   var hair = new THREE.Mesh(new THREE.SphereGeometry(13.8, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.42), inkToon);
   hair.position.set(0, 160.5, -0.5); hair.rotation.x = -0.35; headGroup.add(hair);
@@ -251,7 +252,7 @@ function showProblem(msg) {
     var eye = new THREE.Mesh(new THREE.SphereGeometry(1.7, 12, 10), inkToon); eye.position.set(s * 4.6, 162, 12.6); headGroup.add(eye);
     var cheek = new THREE.Mesh(new THREE.CircleGeometry(2.2, 16), new THREE.MeshBasicMaterial({ color: 0xffb3b3 }));
     cheek.position.set(s * 7.6, 157.5, 11.4); cheek.rotation.y = s * 0.55; headGroup.add(cheek);
-    var leg = limb(7, 6, pants); placeLimb(leg, [s * 8, 90, 0], [s * 10, 12, 2]);
+    var leg = limb(7, 6, pants); placeLimb(leg, [s * 8, 90, 0], [s * 10, 12, 2]); bodyGroup.add(leg);
     ellipsoid(6, 4, 9, inkToon, [s * 10, 8, 6]);
   });
   var smile = new THREE.Mesh(new THREE.TorusGeometry(4, 0.75, 8, 20, Math.PI), inkToon);
@@ -281,12 +282,13 @@ function showProblem(msg) {
     eyes: { eyes: true }
   };
   var cam = { az: 0, el: 0.08, dist: 185, ty: 124 }, camGoal = null;
+  var bodyYaw = 0;
   var eyesOn = false, baseFov = 34;
   function placeCamera() {
     headGroup.visible = !eyesOn;
     var fov = eyesOn ? 78 : baseFov;
     if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
-    if (eyesOn) { camera.position.set(0, 163, 13); camera.lookAt(0, 120, 42); return; }
+    if (eyesOn) { var cy = Math.cos(bodyYaw), sy = Math.sin(bodyYaw); camera.position.set(13 * sy, 163, 13 * cy); camera.lookAt(42 * sy, 120, 42 * cy); return; }
     var ce = Math.cos(cam.el);
     camera.position.set(Math.sin(cam.az) * ce * cam.dist, cam.ty + Math.sin(cam.el) * cam.dist, 12 + Math.cos(cam.az) * ce * cam.dist);
     camera.lookAt(0, cam.ty, 12);
@@ -420,10 +422,11 @@ function showProblem(msg) {
     typed.value = m.parsed.src;
     strip.innerHTML = ''; letters = []; tiles = [];
     var chip = document.createElement('span'); chip.className = 'chip';
-    chip.textContent = m.parsed.src.match(/^[^RLU]*/)[0].trim(); strip.appendChild(chip);
+    var pp = m.parsed; chip.textContent = ((pp.head ? pp.head + ' ' : '') + (pp.slash || pp.lstart ? pp.dirs + (pp.lstart ? 'L' : '') + pp.slash : '')).trim(); strip.appendChild(chip);
     var group = 0;
     m.tokens.forEach(function (t, k) {
       if (t.group !== group) { var sp = document.createElement('span'); sp.className = 'sep'; sp.textContent = ':'; strip.appendChild(sp); group = t.group; }
+      if (t.dash) { var sd = document.createElement('span'); sd.className = 'sep'; sd.textContent = '–'; strip.appendChild(sd); }
       var tile = document.createElement('span'); tile.className = 'tok';
       var cell = { t: letterSpan(t.t, ''), br: null, c: null };
       tile.appendChild(cell.t);
@@ -644,6 +647,7 @@ function showProblem(msg) {
   function draw() {
     if (!model) return;
     var p = model.at(beat);
+    bodyGroup.rotation.y = p.yaw || 0; bodyYaw = p.yaw || 0;
     for (var h = 0; h < 2; h++) {
       var A = arms[h], S = p.shoulders[h], E = p.elbows[h], H = p.hands[h];
       A.shoulder.position.set(S[0], S[1], S[2]);
@@ -677,7 +681,7 @@ function showProblem(msg) {
         lastPass = pass;
         [0].concat(GHOSTS).forEach(function (r) {
           (rounds ? rounds[r].tiles : r === 0 ? tiles : []).forEach(function (t, k) {
-            var hand = (((pass + r) * model.tokens.length + k) % 2 + 2) % 2;
+            var hand = (((pass + r) * model.tokens.length + k + (model.leftStart ? 1 : 0)) % 2 + 2) % 2;   // (an L start begins with the left hand)
             t.classList.toggle('hR', hand === 0); t.classList.toggle('hL', hand === 1);
           });
         });
