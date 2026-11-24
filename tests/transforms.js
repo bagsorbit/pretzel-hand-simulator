@@ -25,12 +25,11 @@ var r = PH.millsFlos(PH.PATTERNS.filter(function (p) { return p.name === '423 mi
 print((r.ok && /^234 o\\ Ul\. Lu Uu : Ur\. Ru Uu$/.test(r.src) ? 'ok   ' : (bad++, 'FAIL ')) + 'Mills/flos of 423 mills mess -> ' + (r.ok ? r.src : r.error) + ' (expected 234 o\\ Ul. Lu Uu : Ur. Ru Uu)');
 // the article's other pairs, now that time reverse handles everything
 [['Hectic mills', 'TR hectic mills'], ['Hectic flipped mess', 'TR hectic flipped mess'], ['Hectic flos mess', 'TR hectic flos mess'],
- ['Hectic flipped flos mess', 'TR hectic flipped flos mess'], ['4 ball mills mess', '4 ball TR mills mess'],
+ ['Hectic flipped flos mess', 'TR hectic flipped flos mess'],
  ['Butterfly basic mess Opp1', 'Butterfly TR basic mess Opp3'], ['Butterfly basic mess Opp2', 'Butterfly TR basic mess Opp2'],
  ["Rubenstein's Revenge, butterfly loop", "TR Rubenstein's Revenge, butterfly loop"]].forEach(function (pr) { expect('Time reverse', PH.timeReverse, pr[0], pr[1]); });
 expect('Flip', PH.flip, 'Under throw windmill with shower', 'Under catch windmill with shower');
-[['Clockwise windmill (under throws)', 'Anticlockwise windmill (under throws)'], ['Crossed-arm cascade, right arm on top', 'Crossed-arm cascade, left arm on top'],
- ['Half mess', 'Half mess, left hand starts'], ['Less than half a mess (1:1:1:1)', 'Less than half a mess, left hand starts']].forEach(function (pr) { expect('Mirror', PH.mirror, pr[0], pr[1]); expect('Mirror', PH.mirror, pr[1], pr[0]); });
+[['Clockwise windmill (under throws)', 'Anticlockwise windmill (under throws)'], ['Half mess', 'Half mess, left hand starts'], ['Less than half a mess (1:1:1:1)', 'Less than half a mess, left hand starts']].forEach(function (pr) { expect('Mirror', PH.mirror, pr[0], pr[1]); expect('Mirror', PH.mirror, pr[1], pr[0]); });
 expect('Flip', PH.flip, 'Half mess, left hand starts', 'Half mess, left arm on top, left hand starts');
 // every pattern: reversing twice, flipping twice, cycling right round, and a ball on then off
 // give back the same pattern

@@ -63,8 +63,10 @@ to load three.js). Pick a pattern, then:
 
 The list follows the article: all of Appendix A in its order (with the confirmed
 typos fixed), then the main article's sebs and siteswap patterns, Appendix B, and
-Appendix C's butterfly loop Rubenstein's Revenges (117 patterns; patterns that appear
-twice in the article are listed once).
+Appendix C's butterfly loop Rubenstein's Revenges (106 patterns; patterns that appear
+twice in the article are listed once; the crossed arm cascade and the alternating windmill
+are listed once each, their mirror images being a press of Mirror away; the article's 2 and
+4 ball time reverses are left out, being the 3 ball ones with a ball fewer or more).
 
 ## How the notation is turned into movement (engine.js)
 
