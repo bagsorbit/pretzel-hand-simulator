@@ -30,7 +30,7 @@
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
     underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
-    throwMatch: 1.3, oneStroke: 0.1, ballLane: 6, ballLaneStep: 1, leanPow: 0.7, maxBalls: 5, oWide: 18, oLift: 16, oNarrow: 0.7, ballGap: 0.5, colStep: 18, popRise: 18, oneOut: 10, oneIn: 13, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
+    throwMatch: 1.3, oneStroke: 0.1, ballLane: 6, ballLaneStep: 1, leanPow: 0.7, maxBalls: 5, oWide: 18, oLift: 16, oNarrow: 0.7, ballGap: 0.5, colStep: 18, popRise: 18, oneOut: 10, oneIn: 13, onePass: 0, passY: 116, passWin: 0.45, passGap: 4, palmWin: 0.45, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 3.2,                       // beats per second at full speed (the author's own mills mess, filmed 2026-11-22)
     catchLag: 0.8,                  // beats from a hand's throw to its next catch
@@ -107,7 +107,7 @@
     function mx(q) { return [-q[0], q[1], q[2]]; }
     function mirror(ps) {
       var o = {}; for (var k in ps) o[k] = ps[k];
-      ['hands', 'elbows', 'shoulders'].forEach(function (k) { if (ps[k]) o[k] = [mx(ps[k][1]), mx(ps[k][0])]; });
+      ['hands', 'elbows', 'shoulders', 'palms'].forEach(function (k) { if (ps[k]) o[k] = [mx(ps[k][1]), mx(ps[k][0])]; });
       if (typeof ps.w === 'number') o.w = -ps.w;
       if (ps.yaw) o.yaw = -ps.yaw;
       if (ps.balls) o.balls = ps.balls.map(function (b) { var c = {}; for (var q in b) c[q] = b[q]; c.pos = mx(b.pos); if (b.from !== undefined) c.from = 1 - b.from; if (b.to !== undefined) c.to = 1 - b.to; return c; });
@@ -116,6 +116,7 @@
     }
     var model = {}; for (var k in inner) model[k] = inner[k];
     model.parsed = p; model.tokens = p.tokens; model.leftStart = true;
+    if (inner.slashSeen) model.slashSeen = inner.slashSeen === '/' ? '\\' : '/';   // (the first throw, mirrored back, goes the other way)
     model.at = function (tb) { return mirror(inner.at(tb)); };
     model.pose = function (tb, plain) { return mirror(inner.pose(tb, plain)); };
     return model;
@@ -244,6 +245,9 @@
       var far = crossed ? (under ? G.outUnder : G.outX) : G.outU;
       // (a 1 is passed straight across from near where the hand holds it, not carried out wide first: oneOut)
       if (nOf(j) === 1) far = Math.min(far, G.oneOut);
+      // (with the arms crossed a 1 is passed straight to the other hand: the wrists twist and the
+      // hands come briefly together near the middle, onePass out each)
+      if (nOf(j) === 1 && crossed) far = G.onePass;
       if (dirOf(j) === 'O' && MIXED_O) far += G.oWide;   // (tennis: the O ball goes round the outside of the others)
       var x = sideFor(h, s) * (dirOf(j) === 'i' ? G.inner : far) * (MIXED_O ? G.oNarrow : 1);
       if (dirOf(j) === 'I') x = columnOf(j);
@@ -277,6 +281,7 @@
       // hands stay apart: oneIn, how far out on its own side. Not when that hand crosses over
       // straight after, as in the flos showers: it catches nearer the middle, on its way across)
       if (inc !== null && nOf(inc) === 1 && !crossed && tok(j + 2).t === 'U') x = sideFor(h, s) * G.oneIn;
+      if (inc !== null && nOf(inc) === 1 && tok(inc).t !== 'U') x = sideFor(h, s) * G.onePass;   // (a crossed 1 is passed hand to hand)
       return [x, G.catchY, G.handZ];
     }
 
@@ -557,6 +562,21 @@
         else if (wideThrow && tc === tt) underThrows[hh].push({ t: catchTime(j), w: G.underCatch });
       }
     }
+    // 1s passed hand to hand with the arms crossed: the thrower at its throw and the catcher at
+    // its catch come to the same height (passY), eased in and out over passWin beats
+    var passes = [[], []];
+    for (j = 0; j < P; j++) if (nOf(j) === 1 && tok(j).t !== 'U') {
+      passes[handOf(j)].push(j);
+      passes[1 - handOf(j)].push(j + G.oneFlight);
+    }
+    function passPull(h, tb) {
+      var best = 0, list = passes[h];
+      for (var i = 0; i < list.length; i++) {
+        var d = Math.abs(mod(tb - list[i] + P / 2, P) - P / 2);
+        best = Math.max(best, 1 - smoother(0, G.passWin, d));
+      }
+      return best;
+    }
     // how strongly hand h is reaching under the other arm's elbow at beat tb (1 at the throw or catch)
     function underPull(h, tb) {
       var best = 0, list = underThrows[h];
@@ -695,6 +715,9 @@
         P0[1] += top * G.topLift - bot * G.botDrop;
         P0[2] += top * G.topZ + bot * G.botZ;
         P0[1] += shareLift(tb);
+        // a 1 passed with the arms crossed: both hands come briefly to the same height to meet
+        var pw = passPull(h, tb);
+        if (pw > 0) P0[1] += (G.passY + (top - bot) * G.passGap / 2 - P0[1]) * pw;   // (the top wrist stays just over the other)
         if (bot > 0 && topEl) {
           var e = topEl.elbow;
           // an under-the-arm throw is made just below and slightly in front of the top arm's elbow
@@ -891,6 +914,8 @@
 
     var bps = BPS, g = G.g;
     function ballOn(hp) { return [hp[0], hp[1] + G.handR * 0.55 + G.ballR * 0.6, hp[2]]; }
+    // (a ball in the hand sits in the palm, whichever way the palm faces)
+    function ballIn(ps, h) { var hp = ps.hands[h], pm = ps.palms ? ps.palms[h] : [0, 1, 0], d = G.handR * 0.55 + G.ballR * 0.6; return [hp[0] + pm[0] * d, hp[1] + pm[1] * d, hp[2] + pm[2] * d]; }
     // Which way a throw's arc leans (from -1, back, to 1, forward). Where the arcs of
     // neighbouring throws would meet (most patterns with 4 or 5 balls, and a few with 3, like
     // the half shower and some butterflies), each arc leans a little forward or back, as real
@@ -916,7 +941,7 @@
         var key = mod(j, P);
         if (fl[key]) return fl[key];
         var nj = nOf(j), k = j + nj - 2, tc = catchTime(k), j0 = mod(j, P), tc0 = tc - (j - j0);
-        var a = ballOn(flowPose(j0).hands[handOf(j)]), b = ballOn(flowPose(tc0).hands[handOf(k)]);
+        var a = ballIn(flowPose(j0), handOf(j)), b = ballIn(flowPose(tc0), handOf(k));
         var F = (tc0 - j0) / bps, gg = gFor(F, j0), vy = (b[1] - a[1]) / F + gg * F / 2;
         return (fl[key] = { j0: j0, tc: tc0, a: a, b: b, F: F, gg: gg, vy: vy });
       }
@@ -1016,7 +1041,7 @@
         if (flies(j)) {
           var k = j + nj - 2, tc = catchTime(k);
           if (tb < tc) {
-            var a = ballOn(flowPose(j).hands[hand]), bpt = ballOn(flowPose(tc).hands[handOf(k)]);
+            var a = ballIn(flowPose(j), hand), bpt = ballIn(flowPose(tc), handOf(k));
             var F = (tc - j) / bps, tau = (tb - j) / bps, gg = gFor(F, j);
             var vy = (bpt[1] - a[1]) / F + gg * F / 2;
             pos = [a[0] + (bpt[0] - a[0]) * tau / F, a[1] + vy * tau - gg * tau * tau / 2, a[2] + (bpt[2] - a[2]) * tau / F];
@@ -1024,8 +1049,8 @@
             if (balls >= 3 && G.ballLane) pos[2] += leanCm() * laneOf(j) * leanShape(tau / F);
             res.push({ pos: pos, col: colAt(j), fly: true, from: hand, to: handOf(k), t0: j, t1: tc });
             continue;
-          } else pos = ballOn(poseNow.hands[handOf(k)]);
-        } else pos = ballOn(poseNow.hands[hand]);
+          } else pos = ballIn(poseNow, handOf(k));
+        } else pos = ballIn(poseNow, hand);
         res.push({ pos: pos, col: colAt(j) });
       }
       return res;
@@ -1101,10 +1126,34 @@
     function flowPose(tb) {
       var o = flowPoseBody(tb), ya = yawAt(tb);
       o.yaw = ya;
-      if (!ya) return o;
-      var c = Math.cos(ya), sn = Math.sin(ya);
-      ['hands', 'elbows', 'shoulders'].forEach(function (k) { o[k] = o[k].map(function (q) { return turnPt(q, c, sn); }); });
+      if (ya) {
+        var c = Math.cos(ya), sn = Math.sin(ya);
+        ['hands', 'elbows', 'shoulders'].forEach(function (k) { o[k] = o[k].map(function (q) { return turnPt(q, c, sn); }); });
+      }
+      o.palms = [palmAt(0, tb, o), palmAt(1, tb, o)];
       return o;
+    }
+    // Which way each palm faces: up, holding the ball, except around a 1, when the hand that
+    // throws it and the hand that catches it briefly turn a quarter turn about the forearm,
+    // always the same way: the thumb rolls over the top and inwards (as it would towards the
+    // middle with the arm on its own side), wherever the hand is. Eased in and out over palmWin
+    // beats either side of the throw and the catch.
+    var oneEvents = null;
+    function palmAt(h, tb, ps) {
+      if (!oneEvents) {
+        oneEvents = [[], []];
+        for (var q = 0; q < P; q++) if (nOf(q) === 1) { oneEvents[handOf(q)].push(q); oneEvents[1 - handOf(q)].push(q + G.oneFlight); }
+      }
+      var w = 0, list = oneEvents[h];
+      for (var i = 0; i < list.length; i++) w = Math.max(w, 1 - smoother(0, G.palmWin, Math.abs(mod(tb - list[i] + P / 2, P) - P / 2)));
+      if (!w) return [0, 1, 0];
+      // the forearm, elbow to hand, and the palm turned a quarter turn about it (right hand:
+      // up x forearm; the left hand, its mirror image: forearm x up)
+      var Hh = ps.hands[h], E = ps.elbows[h], a = [Hh[0] - E[0], Hh[1] - E[1], Hh[2] - E[2]];
+      var t = h === 0 ? [a[2], 0, -a[0]] : [-a[2], 0, a[0]], tl = Math.hypot(t[0], t[1], t[2]) || 1;
+      t = [t[0] / tl, 0, t[2] / tl];
+      var ang = w * Math.PI / 2, v = [t[0] * Math.sin(ang), Math.cos(ang), t[2] * Math.sin(ang)];
+      return v;
     }
     function flowPoseBody(tb) {
       if (!(G.flowBlur > 0)) return pose(tb);
@@ -1146,17 +1195,16 @@
       var dg = p.digits[j % D];
       if (p.tokens[j].hold && dg !== 2) notes.push('throw ' + (j + 1) + ' has a hold dot but the siteswap has a ' + dg + ' there');
     }
+    // The slash points the way the first throw goes (its top towards where the ball travels):
+    // \ for a first throw travelling to the juggler's left, / to the right. Taken from the first
+    // right-hand throw that flies; columns, which go straight up, have no slash of their own.
     var slashSeen = null;
     for (j = 0; j < P && slashSeen === null; j++) {
-      if (handOf(j) !== 0) continue;
-      var t0 = tok(j);
-      if (!flies(j)) { slashSeen = sideFor(0, t0.t) < 0 ? '/' : '\\'; break; }
+      if (handOf(j) !== 0 || !flies(j)) continue;
       var k = j + nOf(j) - 2, tc = catchTime(k);
-      var a0 = pose(j).hands[0], b0 = pose(tc).hands[handOf(k)];
-      var F = (tc - j) / bps, gs = gFor(F, j), vy = (b0[1] - a0[1]) / F + gs * F / 2, tp = Math.min(F, vy / gs);
-      var xp = a0[0] + (b0[0] - a0[0]) * tp / F;
-      slashSeen = xp < 0 ? '/' : '\\';
-      break;
+      var dxs = pose(tc).hands[handOf(k)][0] - pose(j).hands[0][0];
+      if (Math.abs(dxs) < 3) break;
+      slashSeen = dxs < 0 ? '/' : '\\';
     }
 
     var model = {
@@ -1178,7 +1226,7 @@
           model.reversedFrom = rv.src;
           model.at = function (tb) {
             var own = at(tb), ps = srcM.at(C - tb);
-            own.hands = ps.hands; own.elbows = ps.elbows; own.shoulders = ps.shoulders; own.w = ps.w; own.reach = ps.reach; own.yaw = ps.yaw;
+            own.hands = ps.hands; own.elbows = ps.elbows; own.shoulders = ps.shoulders; own.w = ps.w; own.reach = ps.reach; own.yaw = ps.yaw; own.palms = ps.palms;
             own.balls = ps.balls.map(function (b) {
               if (!b.fly) return b;
               return { pos: b.pos, col: b.col, fly: true, from: b.to, to: b.from, t0: C - b.t1, t1: C - b.t0 };
@@ -1212,9 +1260,9 @@
   var PATTERNS = [
     // Appendix A: list of patterns, in its order (with the typos fixed that the author confirmed)
     { group: 'Basic cascades', name: 'Cascade', src: 'i\\ Uu : Uu' },
-    { group: 'Basic cascades', name: 'Reverse cascade', src: 'o/ Uu : Uu' },
-    { group: 'Basic cascades', name: 'Half shower', src: 'O/ Uu Uu' },
-    { group: 'Basic cascades', name: 'Tennis', src: 'Oii/ Uu : Uu' },
+    { group: 'Basic cascades', name: 'Reverse cascade', src: 'o\\ Uu : Uu' },
+    { group: 'Basic cascades', name: 'Half shower', src: 'O\\ Uu Uu' },
+    { group: 'Basic cascades', name: 'Tennis', src: 'Oii\\ Uu : Uu' },
     { group: 'Basic cascades', name: 'Crossed-arm cascade, right arm on top', src: 'Rr : Rr' },
     { group: 'Basic cascades', name: 'Crossed-arm cascade, left arm on top', src: 'Ll : Ll' },
     { group: 'Basic cascades', name: 'Clockwise windmill (under throws)', src: 'Lu Ul' },
@@ -1225,29 +1273,29 @@
     { group: 'Basic cascades', name: 'Continuous under-arm throws', src: 'Lu : Ru' },
     { group: 'Alternating windmills', name: 'Clockwise alternating windmill', src: 'Ru Ul Lu Ur' },
     { group: 'Alternating windmills', name: 'Anticlockwise alternating windmill', src: 'Ur Ru Ul Lu' },
-    { group: 'Half messes (2:2)', name: 'Half mess', src: 'o\\ Ru Uu : Ur Rr' },
-    { group: 'Half messes (2:2)', name: 'Half mess, left arm on top', src: 'o\\ Lu Uu : Ul Ll' },
+    { group: 'Half messes (2:2)', name: 'Half mess', src: 'o/ Ru Uu : Ur Rr' },
+    { group: 'Half messes (2:2)', name: 'Half mess, left arm on top', src: 'o/ Lu Uu : Ul Ll' },
     { group: 'Half messes (2:2)', name: 'Half mess, left hand starts', src: 'oL\\ Lu Uu : Ul Ll' },
     { group: 'Half messes (2:2)', name: 'Half mess, left arm on top, left hand starts', src: 'oL\\ Ru Uu : Ur Rr' },
     { group: 'Half messes (2:2)', name: 'Inside half mess', src: '3 i\\ Ru Uu : Ur Rr' },
     { group: 'Half messes (2:2)', name: 'Inside half mess, left arm on top', src: '3 i\\ Lu Uu : Ul Ll' },
-    { group: 'Half messes (2:2)', name: 'Inside half mess, left hand starts', src: '3 iL\\ Lu Uu : Ul Ll' },
-    { group: 'Half messes (2:2)', name: 'Inside half mess, left arm on top, left hand starts', src: '3 iL\\ Ru Uu : Ur Rr' },
-    { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess', src: 'o\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
-    { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess, left arm first', src: 'o\\ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
+    { group: 'Half messes (2:2)', name: 'Inside half mess, left hand starts', src: '3 iL/ Lu Uu : Ul Ll' },
+    { group: 'Half messes (2:2)', name: 'Inside half mess, left arm on top, left hand starts', src: '3 iL/ Ru Uu : Ur Rr' },
+    { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess', src: 'o/ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
+    { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess, left arm first', src: 'o/ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
     { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess, left hand starts', src: 'oL\\ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
     { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess, left arm first, left hand starts', src: 'oL\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
     { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess', src: '3 i\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
     { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left arm first', src: '3 i\\ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
-    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left hand starts', src: '3 iL\\ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
-    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left arm first, left hand starts', src: '3 iL\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
+    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left hand starts', src: '3 iL/ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
+    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left arm first, left hand starts', src: '3 iL/ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
     { group: 'Less than half a mess', name: 'Less than half a mess (1:1:1:1)', src: 'Rr : Rl : Ll : Lr' },
     { group: 'Less than half a mess', name: 'Less than half a mess, left hand starts', src: 'L\\ Ll : Lr : Rr : Rl' },
     { group: 'Less than half a mess', name: 'Alternating less than half a mess (1:1:1:1:1:1)', src: 'Rr : Rr : Rl : Ll : Ll : Lr' },
-    { group: 'Mills messes (3:3)', name: 'Mills mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr' },
-    { group: 'Mills messes (3:3)', name: 'Flipped mess', src: 'o\\ Lu Ur Rr : Ru Ul Ll' },
-    { group: 'Mills messes (3:3)', name: 'Flos mess', src: 'o/ Ur Ru Uu : Ul Lu Uu' },
-    { group: 'Mills messes (3:3)', name: 'Flipped flos mess', src: 'o/ Ul Lu Uu : Ur Ru Uu' },
+    { group: 'Mills messes (3:3)', name: 'Mills mess', src: 'o/ Ru Ul Ll : Lu Ur Rr' },
+    { group: 'Mills messes (3:3)', name: 'Flipped mess', src: 'o/ Lu Ur Rr : Ru Ul Ll' },
+    { group: 'Mills messes (3:3)', name: 'Flos mess', src: 'o\\ Ur Ru Uu : Ul Lu Uu' },
+    { group: 'Mills messes (3:3)', name: 'Flipped flos mess', src: 'o\\ Ul Lu Uu : Ur Ru Uu' },
     { group: 'Mills messes (3:3)', name: 'TR mills mess', src: '3 i/ Ur Rr Ru : Ul Ll Lu' },
     { group: 'Mills messes (3:3)', name: 'TR flipped mess', src: '3 i/ Ul Ll Lu : Ur Rr Ru' },
     { group: 'Mills messes (3:3)', name: 'TR flos mess', src: '3 i\\ Ru Uu Ul : Lu Uu Ur' },
@@ -1260,76 +1308,76 @@
     { group: 'Mills messes (3:3)', name: '4 ball TR flipped mess', src: '4 i\\ Lu Ur Rr : Ru Ul Ll' },
     { group: 'Mills messes (3:3)', name: '4 ball TR flos mess', src: '4 i/ Ul Lu Uu : Ur Ru Uu' },
     { group: 'Mills messes (3:3)', name: '4 ball TR flipped flos mess', src: '4 i/ Ur Ru Uu : Ul Lu Uu' },
-    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp1', src: '3 ioo\\ Ru - Ul Ll : Lu - Ur Rr' },
-    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp1,2', src: '3 iio\\ Ru Ul - Ll : Lu Ur - Rr' },
-    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp2', src: '3 oio\\ Ru - Ul - Ll : Lu - Ur - Rr' },
-    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp2,3', src: '3 oii\\ Ru - Ul Ll : Lu - Ur Rr' },
-    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp3', src: '3 ooi\\ Ru Ul - Ll : Lu Ur - Rr' },
-    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp1', src: '3 ioo\\ Lu - Ur Rr : Ru - Ul Ll' },
-    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp1,2', src: '3 iio\\ Lu Ur - Rr : Ru Ul - Ll' },
-    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp2', src: '3 oio\\ Lu - Ur - Rr : Ru - Ul - Ll' },
-    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp2,3', src: '3 oii\\ Lu - Ur Rr : Ru - Ul Ll' },
-    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp3', src: '3 ooi\\ Lu Ur - Rr : Ru Ul - Ll' },
-    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp1', src: '3 oii/ Ur - Rr Ru : Ul - Ll Lu' },
-    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp1,2', src: '3 ooi/ Ur Rr - Ru : Ul Ll - Lu' },
+    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp1', src: '3 ioo/ Ru - Ul Ll : Lu - Ur Rr' },
+    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp1,2', src: '3 iio/ Ru Ul - Ll : Lu Ur - Rr' },
+    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp2', src: '3 oio/ Ru - Ul - Ll : Lu - Ur - Rr' },
+    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp2,3', src: '3 oii/ Ru - Ul Ll : Lu - Ur Rr' },
+    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp3', src: '3 ooi/ Ru Ul - Ll : Lu Ur - Rr' },
+    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp1', src: '3 ioo/ Lu - Ur Rr : Ru - Ul Ll' },
+    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp1,2', src: '3 iio/ Lu Ur - Rr : Ru Ul - Ll' },
+    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp2', src: '3 oio/ Lu - Ur - Rr : Ru - Ul - Ll' },
+    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp2,3', src: '3 oii/ Lu - Ur Rr : Ru - Ul Ll' },
+    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp3', src: '3 ooi/ Lu Ur - Rr : Ru Ul - Ll' },
+    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp1', src: '3 oii\\ Ur - Rr Ru : Ul - Ll Lu' },
+    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp1,2', src: '3 ooi\\ Ur Rr - Ru : Ul Ll - Lu' },
     { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp2', src: '3 ioi/ Ur - Rr - Ru : Ul - Ll - Lu' },
     { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp2,3', src: '3 ioo/ Ur - Rr Ru : Ul - Ll Lu' },
     { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp3', src: '3 iio/ Ur Rr - Ru : Ul Ll - Lu' },
-    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp1', src: '3 oii/ Ul - Ll Lu : Ur - Rr Ru' },
-    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp1,2', src: '3 ooi/ Ul Ll - Lu : Ur Rr - Ru' },
+    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp1', src: '3 oii\\ Ul - Ll Lu : Ur - Rr Ru' },
+    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp1,2', src: '3 ooi\\ Ul Ll - Lu : Ur Rr - Ru' },
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp2', src: '3 ioi/ Ul - Ll - Lu : Ur - Rr - Ru' },
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp2,3', src: '3 ioo/ Ul - Ll Lu : Ur - Rr Ru' },
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp3', src: '3 iio/ Ul Ll - Lu : Ur Rr - Ru' },
-    { group: 'Hectic messes', name: 'Hectic mills', src: 'o\\ Lu Ul Lr : Ru Ur Rl' },
-    { group: 'Hectic messes', name: 'Hectic flipped mess', src: 'o\\ Ru Ur Rl : Lu Ul Lr' },
-    { group: 'Hectic messes', name: 'Hectic flos mess', src: 'o/ Ul Ru Uu : Ur Lu Uu' },
-    { group: 'Hectic messes', name: 'Hectic flipped flos mess', src: 'o/ Ur Lu Uu : Ul Ru Uu' },
+    { group: 'Hectic messes', name: 'Hectic mills', src: 'o/ Lu Ul Lr : Ru Ur Rl' },
+    { group: 'Hectic messes', name: 'Hectic flipped mess', src: 'o/ Ru Ur Rl : Lu Ul Lr' },
+    { group: 'Hectic messes', name: 'Hectic flos mess', src: 'o\\ Ul Ru Uu : Ur Lu Uu' },
+    { group: 'Hectic messes', name: 'Hectic flipped flos mess', src: 'o\\ Ur Lu Uu : Ul Ru Uu' },
     { group: 'Hectic messes', name: 'TR hectic mills', src: '3 i/ Ul Lr Ru : Ur Rl Lu' },
     { group: 'Hectic messes', name: 'TR hectic flipped mess', src: '3 i/ Ur Rl Lu : Ul Lr Ru' },
     { group: 'Hectic messes', name: 'TR hectic flos mess', src: '3 i\\ Lu Uu Ul : Ru Uu Ur' },
     { group: 'Hectic messes', name: 'TR hectic flipped flos mess', src: '3 i\\ Ru Uu Ur : Lu Uu Ul' },
-    { group: 'Other mills mess extensions and variations', name: 'Mills mess with windmill (5bt mills with extra windmills)', src: 'o\\ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
-    { group: 'Other mills mess extensions and variations', name: 'Mills mess with extra crossed arms', src: 'o\\ Ru Ul Ll : Ll : Ll : Lu Ur Rr : Rr : Rr' },
-    { group: 'Other mills mess extensions and variations', name: 'Mills mess with shower', src: '44133 o\\ Ru U U(u)u Ul Ll : Lu U U(u)u Ur Rr' },
-    { group: 'Other mills mess extensions and variations', name: "Rubenstein's Revenge", src: '22335 o\\ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr' },
+    { group: 'Other mills mess extensions and variations', name: 'Mills mess with windmill (5bt mills with extra windmills)', src: 'o/ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
+    { group: 'Other mills mess extensions and variations', name: 'Mills mess with extra crossed arms', src: 'o/ Ru Ul Ll : Ll : Ll : Lu Ur Rr : Rr : Rr' },
+    { group: 'Other mills mess extensions and variations', name: 'Mills mess with shower', src: '44133 o/ Ru U U(u)u Ul Ll : Lu U U(u)u Ur Rr' },
+    { group: 'Other mills mess extensions and variations', name: "Rubenstein's Revenge", src: '22335 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr' },
     { group: 'Other mills mess extensions and variations', name: "TR Rubenstein's Revenge", src: '52233 i/ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu' },
-    { group: 'Other mills mess extensions and variations', name: "Flos Rubenstein's Revenge", src: '52233 o/ Ul Lu. Ur. Ru Uu : Ur Ru. Ul. Lu Uu' },
+    { group: 'Other mills mess extensions and variations', name: "Flos Rubenstein's Revenge", src: '52233 o\\ Ul Lu. Ur. Ru Uu : Ur Ru. Ul. Lu Uu' },
     { group: 'Other mills mess extensions and variations', name: "TR flos Rubenstein's Revenge", src: '33522 i\\ Lu Uu Ul Lu. Ur. : Ru Uu Ur Ru. Ul.' },
-    { group: 'Other mills mess extensions and variations', name: "Alt Rubenstein's Revenge", src: '35223 o\\ Ru Ur Ru. Ul. Ll : Lu Ul Lu. Ur. Rr' },
+    { group: 'Other mills mess extensions and variations', name: "Alt Rubenstein's Revenge", src: '35223 o/ Ru Ur Ru. Ul. Ll : Lu Ul Lu. Ur. Rr' },
     { group: 'Other mills mess extensions and variations', name: "TR alt Rubenstein's Revenge", src: '35223 i/ Ur Rr Ru. Ul. Lu : Ul Ll Lu. Ur. Ru' },
     { group: 'Other mills mess extensions and variations', name: '3 ball Boston mess', src: '3 I/ Uu Uu Ur : Rr Rr Ru : Uu Uu Ul : Ll Ll Lu' },
     { group: 'Other mills mess extensions and variations', name: '4 ball Boston mess', src: '4 I/ Uu Uu Ul Lu : Uu Uu Ur Ru' },
     // from the main article: the sebs mess and siteswap sections (patterns not already above)
-    { group: 'Sebs mess and siteswaps', name: 'Sebs mess', src: 'o/ Ru Ul Ll : Lu Ur Rr', turn: 80 },
-    { group: 'Sebs mess and siteswaps', name: '4 ball mills mess', src: '4 o\\ Ru Ul Ll : Lu Ur Rr' },
-    { group: 'Sebs mess and siteswaps', name: '423 mills mess', src: '423 o\\ Ru Ul. Ll : Lu Ur. Rr' },
-    { group: 'Sebs mess and siteswaps', name: '414 mills mess', src: '414 o\\ R U(u)l Ll : L U(u)r Rr' },
-    { group: 'Sebs mess and siteswaps', name: '234 flos mess', src: '234 o/ Ur. Ru Uu : Ul. Lu Uu' },
-    { group: 'Sebs mess and siteswaps', name: '[32T] sebs mess', src: '[32T] o/ Ru Ul Ll : Lu Ur Rr', turn: 80 },
-    { group: 'Sebs mess and siteswaps', name: '24[54] flos mess', src: '24[54] o/ Ur. Ru Uu : Ul. Lu Uu' },
+    { group: 'Sebs mess and siteswaps', name: 'Sebs mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 80 },
+    { group: 'Sebs mess and siteswaps', name: '4 ball mills mess', src: '4 o/ Ru Ul Ll : Lu Ur Rr' },
+    { group: 'Sebs mess and siteswaps', name: '423 mills mess', src: '423 o/ Ru Ul. Ll : Lu Ur. Rr' },
+    { group: 'Sebs mess and siteswaps', name: '414 mills mess', src: '414 o/ R U(u)l Ll : L U(u)r Rr' },
+    { group: 'Sebs mess and siteswaps', name: '234 flos mess', src: '234 o\\ Ur. Ru Uu : Ul. Lu Uu' },
+    { group: 'Sebs mess and siteswaps', name: '[32T] sebs mess', src: '[32T] o\\ Ru Ul Ll : Lu Ur Rr', turn: 80 },
+    { group: 'Sebs mess and siteswaps', name: '24[54] flos mess', src: '24[54] o\\ Ur. Ru Uu : Ul. Lu Uu' },
     // Appendix B: building ingenious messes from hulking windmills
-    { group: 'Appendix B: windmills', name: 'Under throw windmill', src: 'O\\ Lu Ul' },
-    { group: 'Appendix B: windmills', name: 'Under catch windmill', src: 'O\\ Ru Ur' },
-    { group: 'Appendix B: windmills', name: 'Alternating windmill', src: 'O\\ Ru Ul Lu Ur' },
-    { group: 'Appendix B: windmills', name: 'Flip flop flos mess', src: 'o/ Ul Lu Ur Ru Uu : Ur Ru Ul Lu Uu' },
-    { group: 'Appendix B: windmills', name: 'Under throw 4233 windmill', src: '4233 O\\ Lu Ul. Lu Ul' },
-    { group: 'Appendix B: windmills', name: '34233 flos mess', src: '34233 o/ Ur Ru Ur. Ru Uu : Ul Lu Ul. Lu Uu' },
-    { group: 'Appendix B: windmills', name: 'Under throw 342T3 windmill', src: '342T3 O\\ Lu Ul Lu Ul' },
-    { group: 'Appendix B: windmills', name: '342T33 mills mess', src: '342T33 o\\ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
-    { group: 'Appendix B: windmills', name: '5223 alternating windmill', src: '5223 O/ Ur Ru. Ul. Lu' },
-    { group: 'Appendix B: windmills', name: "Mike's mess", src: '225 o\\ Ru. Ul. Ll : Lu. Ur. Rr', turn: 45 },
-    { group: 'Appendix B: windmills', name: 'Under throw windmill with shower', src: '4413 O/ Ul L U(u)l Lu' },
-    { group: 'Appendix B: windmills', name: 'Under catch windmill with shower', src: '4413 O/ Ur R U(u)r Ru' },
-    { group: 'Appendix B: windmills', name: '44133 flos mess', src: '44133 o/ Ur R U(u)r Ru Uu : Ul L U(u)l Lu Uu' },
-    { group: 'Appendix B: windmills', name: '44133 flipped flos mess', src: '44133 o/ Ul L U(u)l Lu Uu : Ur R U(u)r Ru Uu' },
-    { group: 'Appendix B: windmills', name: 'Alternating windmill with showers', src: '4413 O/ Ur R U(u)l Lu Ul L U(u)r Ru' },
-    { group: 'Appendix B: windmills', name: 'Alternating windmill with showers mess', src: '441344133 o/ Ur R U(u)l Lu Ul L U(u)r Ru Uu : Ul L U(u)r Ru Ur R U(u)l Lu Uu' },
+    { group: 'Appendix B: windmills', name: 'Under throw windmill', src: 'O/ Lu Ul' },
+    { group: 'Appendix B: windmills', name: 'Under catch windmill', src: 'O/ Ru Ur' },
+    { group: 'Appendix B: windmills', name: 'Alternating windmill', src: 'O/ Ru Ul Lu Ur' },
+    { group: 'Appendix B: windmills', name: 'Flip flop flos mess', src: 'o\\ Ul Lu Ur Ru Uu : Ur Ru Ul Lu Uu' },
+    { group: 'Appendix B: windmills', name: 'Under throw 4233 windmill', src: '4233 O/ Lu Ul. Lu Ul' },
+    { group: 'Appendix B: windmills', name: '34233 flos mess', src: '34233 o\\ Ur Ru Ur. Ru Uu : Ul Lu Ul. Lu Uu' },
+    { group: 'Appendix B: windmills', name: 'Under throw 342T3 windmill', src: '342T3 O/ Lu Ul Lu Ul' },
+    { group: 'Appendix B: windmills', name: '342T33 mills mess', src: '342T33 o/ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
+    { group: 'Appendix B: windmills', name: '5223 alternating windmill', src: '5223 O\\ Ur Ru. Ul. Lu' },
+    { group: 'Appendix B: windmills', name: "Mike's mess", src: '225 o/ Ru. Ul. Ll : Lu. Ur. Rr', turn: 45 },
+    { group: 'Appendix B: windmills', name: 'Under throw windmill with shower', src: '4413 O\\ Ul L U(u)l Lu' },
+    { group: 'Appendix B: windmills', name: 'Under catch windmill with shower', src: '4413 O\\ Ur R U(u)r Ru' },
+    { group: 'Appendix B: windmills', name: '44133 flos mess', src: '44133 o\\ Ur R U(u)r Ru Uu : Ul L U(u)l Lu Uu' },
+    { group: 'Appendix B: windmills', name: '44133 flipped flos mess', src: '44133 o\\ Ul L U(u)l Lu Uu : Ur R U(u)r Ru Uu' },
+    { group: 'Appendix B: windmills', name: 'Alternating windmill with showers', src: '4413 O\\ Ur R U(u)l Lu Ul L U(u)r Ru' },
+    { group: 'Appendix B: windmills', name: 'Alternating windmill with showers mess', src: '441344133 o\\ Ur R U(u)l Lu Ul L U(u)r Ru Uu : Ul L U(u)r Ru Ur R U(u)l Lu Uu' },
     // Appendix C: the six butterfly loop Rubenstein's Revenges (the six pure ones are above)
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "Rubenstein's Revenge, butterfly loop", src: '22335 o\\ Lu. Ur. Ru Ur Rr : Ru. Ul. Lu Ul Ll' },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "Rubenstein's Revenge, butterfly loop", src: '22335 o/ Lu. Ur. Ru Ur Rr : Ru. Ul. Lu Ul Ll' },
     { group: "Appendix C: butterfly loop Rubenstein's", name: "TR Rubenstein's Revenge, butterfly loop", src: '52233 i/ Ur Ru. Ul. Ll Lu : Ul Lu. Ur. Rr Ru' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "Alt Rubenstein's Revenge, butterfly loop", src: '35223 o\\ Lu Ul Lu. Ur. Rr : Ru Ur Ru. Ul. Ll' },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "Alt Rubenstein's Revenge, butterfly loop", src: '35223 o/ Lu Ul Lu. Ur. Rr : Ru Ur Ru. Ul. Ll' },
     { group: "Appendix C: butterfly loop Rubenstein's", name: "TR alt Rubenstein's Revenge, butterfly loop", src: '35223 i/ Ul Ll Lu. Ur. Ru : Ur Rr Ru. Ul. Lu' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "Flos Rubenstein's Revenge, butterfly loop", src: '52233 o/ Ur Ru. Ul. Lu Uu : Ul Lu. Ur. Ru Uu' },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "Flos Rubenstein's Revenge, butterfly loop", src: '52233 o\\ Ur Ru. Ul. Lu Uu : Ul Lu. Ur. Ru Uu' },
     { group: "Appendix C: butterfly loop Rubenstein's", name: "TR flos Rubenstein's Revenge, butterfly loop", src: '33522 i\\ Ru Uu Ur Ru. Ul. : Lu Uu Ul Lu. Ur.' }
   ];
 
@@ -1392,6 +1440,19 @@
     var m = build(src, { noReverse: true });
     if (!m.ok) return { ok: false, error: m.error };
     return { ok: true, src: m.parsed.src };
+  }
+  // compose, then give it the slash its first throw calls for (pointing where that throw goes)
+  function composeSlashed(np, digits, active) {
+    var r = compose(np, digits, active);
+    if (!r.ok) return r;
+    var mm = build(r.src, { noReverse: true });
+    if (mm.ok && mm.slashSeen && mm.slashSeen !== np.slash) {
+      var np2 = {}; for (var k in np) np2[k] = np[k];
+      np2.slash = mm.slashSeen;
+      var r2 = compose(np2, digits, active);
+      if (r2.ok) return r2;
+    }
+    return r;
   }
   // Cycle the siteswap: the digits move along one throw against the letters, so a different
   // throw leads the arc (the article: a 423 mills can also be done as a 234 or a 342 mills)
@@ -1462,15 +1523,8 @@
     var dirStr = dirs.slice(0, Rn).join('');
     var anyIn = /i/.test(dirStr);
     var np = { tokens: tokens, dirs: dirStr, lstart: p.lstart, slash: '/', head: anyIn ? '3' : p.head };
-    var first = tokens[0].t, mixed = Rn > 1 || /[OI]/.test(dirStr);
-    np.slash = first === 'U' ? '/' : '\\';
-    var r = compose(np, digits.slice(0, Dn), active.slice(0, Dn));
-    if (!r.ok) return r;
-    if (!mixed && !p.lstart) {   // let the first throw's peak decide, as the cascades need
-      var mm = build(r.src, { noReverse: true });
-      if (mm.ok && mm.slashSeen && mm.slashSeen !== np.slash) { np.slash = mm.slashSeen; r = compose(np, digits.slice(0, Dn), active.slice(0, Dn)); }
-    }
-    return r;
+    np.slash = '/';
+    return composeSlashed(np, digits.slice(0, Dn), active.slice(0, Dn));
   }
 
   // Flip: swap right and left in every letter; everything else stays as written
@@ -1480,7 +1534,7 @@
     var p = m.parsed, sw = { R: 'L', L: 'R', U: 'U', r: 'l', l: 'r', u: 'u' };
     var np = {}; for (var k in p) np[k] = p[k];
     np.tokens = p.tokens.map(function (t) { var c = {}; for (var q in t) c[q] = t[q]; c.t = sw[t.t]; c.c = sw[t.c]; if (t.br) c.br = sw[t.br]; return c; });
-    return compose(np, p.digits, p.active);
+    return p.slash ? composeSlashed(np, p.digits, p.active) : compose(np, p.digits, p.active);
   }
 
   // Mirror image: the right hand does what the left did and the other way round, with right
@@ -1494,13 +1548,13 @@
     var np = {}; for (var k in p) np[k] = p[k];
     np.tokens = p.tokens.map(function (t) { var c = {}; for (var q in t) c[q] = t[q]; c.t = sw[t.t]; c.c = sw[t.c]; if (t.br) c.br = sw[t.br]; return c; });
     np.lstart = !p.lstart;
-    if (!np.slash) np.slash = np.tokens[0].t === 'U' ? '/' : '\\';
-    var r = compose(np, p.digits, p.active);
+    if (!np.slash) np.slash = '/';
+    var r = composeSlashed(np, p.digits, p.active);
     if (!r.ok) return r;
     if (np.lstart) {   // (no need for the L if starting with the right hand gives the same pattern)
       var plain = {}; for (var k2 in np) plain[k2] = np[k2];
       plain.lstart = false; plain.slash = p.slash;
-      var r2 = compose(plain, p.digits, p.active);
+      var r2 = p.slash ? composeSlashed(plain, p.digits, p.active) : compose(plain, p.digits, p.active);
       if (r2.ok && sameKey(r2.src) === sameKey(r.src)) r = r2;
     }
     if (sameKey(r.src) === sameKey(src)) return { ok: false, error: 'This pattern is its own mirror image.' };

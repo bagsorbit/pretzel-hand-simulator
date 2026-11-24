@@ -30,7 +30,7 @@ to load three.js). Pick a pattern, then:
 - Play/Pause, step one throw or catch at a time (also the arrow keys and space),
   and a speed slider.
 - Type your own pattern in the box and press Enter to play it. If the slash does
-  not match where the first throw peaks, the page says so.
+  not point the way the first throw goes, the page says so (the pattern plays the same).
 - Pattern tools, written back in the same notation (dashes, L start, hold dots and 1
   brackets kept). Time reverse, Flip, Mirror and the Mills/Flos switch are switches: each lights up
   while it's on, they can be combined, and they apply to the pattern chosen from the list
@@ -91,8 +91,21 @@ twice in the article are listed once).
   than carried out wide first. The other hand catches it where it already is,
   without reaching in, so the hands stay apart (`oneIn`, 13 cm out), unless it
   crosses over straight after and catches on its way across.
+  With the arms crossed a 1 is passed straight from hand to hand instead: the wrists
+  twist and the hands come briefly together at the middle, just touching (`onePass` 0,
+  brought to about the same height, `passY`, with the top wrist `passGap` 4 cm over the
+  other, eased in and out over `passWin` beats).
+  Around every 1, crossed or not, the throwing and catching hands briefly turn a quarter
+  turn about the forearm (`palmWin` beats either side), always the same way: the thumb rolls
+  over the top and inwards, as it would with the arm on its own side. Uncrossed, the palms
+  then face each other. The ball sits in the palm. The hands
+  are drawn a little flattened, like a cupped palm, so you can see which way they face.
   A thrown 2 (`2T`) is a little pop over the other arm, so it rises a set 18 cm
   (`popRise`), as low as still clears that arm, instead of following real gravity.
+- The slash points the way the first throw goes (its top towards where the ball travels:
+  `/` to the juggler's right, `\` to the left). This turns round the article's slash for
+  outside patterns (the mills mess is written `o/` here, sebs `o\`); inside patterns are
+  unchanged. It changes nothing about the movement.
 - R, L and U give the arms at each throw and catch: crossed with the right on
   top, crossed with the left on top, or uncrossed. Crossed means both hands are
   on the other side of the body.

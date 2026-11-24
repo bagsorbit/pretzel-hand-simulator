@@ -22,7 +22,7 @@ TR.forEach(function (pr) { expect('Time reverse', PH.timeReverse, pr[0], pr[1]);
   expect('Mills/flos', PH.millsFlos, pr[0], pr[1]);
 });
 var r = PH.millsFlos(PH.PATTERNS.filter(function (p) { return p.name === '423 mills mess'; })[0].src);
-print((r.ok && /^234 o\/ Ul\. Lu Uu : Ur\. Ru Uu$/.test(r.src) ? 'ok   ' : (bad++, 'FAIL ')) + 'Mills/flos of 423 mills mess -> ' + (r.ok ? r.src : r.error) + ' (expected 234 o/ Ul. Lu Uu : Ur. Ru Uu)');
+print((r.ok && /^234 o\\ Ul\. Lu Uu : Ur\. Ru Uu$/.test(r.src) ? 'ok   ' : (bad++, 'FAIL ')) + 'Mills/flos of 423 mills mess -> ' + (r.ok ? r.src : r.error) + ' (expected 234 o\\ Ul. Lu Uu : Ur. Ru Uu)');
 // the article's other pairs, now that time reverse handles everything
 [['Hectic mills', 'TR hectic mills'], ['Hectic flipped mess', 'TR hectic flipped mess'], ['Hectic flos mess', 'TR hectic flos mess'],
  ['Hectic flipped flos mess', 'TR hectic flipped flos mess'], ['4 ball mills mess', '4 ball TR mills mess'],
