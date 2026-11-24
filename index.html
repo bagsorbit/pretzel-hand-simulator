@@ -63,7 +63,8 @@ button:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; transform:
 .stripBox { position: relative; flex-shrink: 0; }
 .leftBtns { position: absolute; left: 0; bottom: 6px; display: flex; gap: 6px; }
 .roundBtn { width: 40px; height: 40px; border-radius: 50%; padding: 0; background: var(--card); box-shadow: 0 0 0 8px var(--paper); }
-.roundBtn svg { width: 18px; height: 18px; }
+.roundBtn { display: flex; align-items: center; justify-content: center; line-height: 0; }   /* the icon dead centre, whatever the browser */
+.roundBtn svg { width: 18px; height: 18px; display: block; flex: none; }
 .roundBtn[hidden] { display: none; }
 .hideBtn { display: none; }                         /* only on a phone */
 .hideBtn svg { transition: transform .15s; }
