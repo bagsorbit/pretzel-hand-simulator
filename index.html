@@ -59,6 +59,22 @@ button[aria-pressed="true"] { background: var(--sun); }
 .learn button { height: 34px; min-width: 52px; padding: 0 8px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .learn .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); display: inline-block; }
 .views button { height: 34px; padding: 0 10px; font-size: 14px; border-radius: 12px; }
+.stripBox { position: relative; flex-shrink: 0; }
+.keyBtn { position: absolute; right: 0; bottom: 6px; width: 40px; height: 40px; border-radius: 50%; padding: 0; font: 700 22px inherit; font-family: inherit; font-style: italic; background: var(--card); box-shadow: 0 0 0 8px var(--paper); }
+.keyDlg { width: min(680px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 3px solid var(--ink); border-radius: 20px; background: var(--card); color: var(--ink); font-family: inherit; }
+.keyDlg::backdrop { background: rgba(45, 42, 74, .35); }
+.keyHead { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 8px; border-bottom: 2px solid var(--grey-soft); position: sticky; top: 0; background: var(--card); }
+.keyHead h2 { margin: 0; font-size: 20px; }
+.keyClose { width: 36px; height: 36px; border-radius: 50%; padding: 0; font-size: 22px; }
+.keyBody { padding: 4px 16px 16px; font-size: 15px; line-height: 1.45; }
+.keyBody h3 { font-size: 16px; margin: 14px 0 6px; }
+.keyBody p { margin: 6px 0; }
+.keyTable { border-collapse: collapse; width: 100%; }
+.keyTable td { padding: 5px 6px; vertical-align: top; border-top: 1px solid var(--grey-soft); }
+.keyTable td:first-child { white-space: nowrap; width: 1%; }
+.keyTable .sym { font: 700 17px ui-monospace, "SF Mono", Menlo, Consolas, monospace; text-align: center; }
+.keyTable .l { min-width: 24px; font-size: 18px; line-height: 26px; }
+.keyBody .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 .strip { display: flex; flex-wrap: nowrap; overflow: hidden; align-items: center; justify-content: center; gap: 6px; min-height: 52px; position: relative; padding-top: 80px; }
 .strip.wrapped { padding-top: 0; flex-wrap: wrap; }
 .strip .ghost { opacity: .3; filter: grayscale(1); flex-shrink: 0; }
@@ -138,7 +154,10 @@ select { padding-right: 10px; max-width: 100%; }
       <button data-view="eyes">Juggler's eyes</button>
     </div>
   </div>
-  <div class="strip" id="strip" aria-label="Notation"></div>
+  <div class="stripBox">
+    <div class="strip" id="strip" aria-label="Notation"></div>
+    <button id="keyBtn" class="keyBtn" aria-haspopup="dialog" title="How to read the notation">i</button>
+  </div>
   <div class="controls">
     <select id="pattern" aria-label="Pattern"></select>
     <button id="play" aria-label="Pause">Pause</button>
@@ -155,6 +174,46 @@ select { padding-right: 10px; max-width: 100%; }
   <div class="msg" id="msg"></div>
   <div class="info" id="info"></div>
 </div>
+
+<dialog id="keyDlg" class="keyDlg" aria-labelledby="keyTitle">
+  <div class="keyHead"><h2 id="keyTitle">Reading Pretzel Hand</h2><button id="keyClose" class="keyClose" aria-label="Close">&times;</button></div>
+  <div class="keyBody">
+    <section id="keyThis"></section>
+    <section>
+      <h3>The letters</h3>
+      <p>Each box is one throw and the catch that comes after it, made by the same hand. The hands take turns, starting with the right hand. The coloured line under a box shows which hand: <span class="key R"></span> right, <span class="key L"></span> left.</p>
+      <table class="keyTable">
+        <tr><td><b class="l R">R</b> <b class="l R c">r</b></td><td>Arms crossed, <b>right arm on top</b>.</td></tr>
+        <tr><td><b class="l L">L</b> <b class="l L c">l</b></td><td>Arms crossed, <b>left arm on top</b>.</td></tr>
+        <tr><td><b class="l U">U</b> <b class="l U c">u</b></td><td>Arms <b>uncrossed</b>.</td></tr>
+      </table>
+      <p>A capital letter is the throw; a small letter is the catch. Crossed means both hands are over on the other side of the body. If it's the other arm that's on top, this hand is underneath: an under-the-arm throw or catch.</p>
+    </section>
+    <section>
+      <h3>Between the boxes</h3>
+      <table class="keyTable">
+        <tr><td class="sym">:</td><td>Change side: the next throws are made on the other side of the body.</td></tr>
+        <tr><td class="sym">&ndash;</td><td>Change of direction on the same side (outside to inside, or back), as in the butterfly messes.</td></tr>
+        <tr><td class="sym">.</td><td>A held 2: the ball stays in the hand rather than being thrown.</td></tr>
+        <tr><td class="sym">U(u)</td><td>A 1: the ball goes straight across to the other hand, which catches it (the letter in brackets). The throw just before it has no catch letter of its own.</td></tr>
+      </table>
+    </section>
+    <section>
+      <h3>Before the letters</h3>
+      <table class="keyTable">
+        <tr><td class="sym">423</td><td>The siteswap: how long each throw stays in the air, throw by throw. With no number the pattern is all 3s. A single number, like 4, is the number of balls. A <b>T</b> after a 2 means that 2 is thrown, not held.</td></tr>
+        <tr><td class="sym">o</td><td>Outside throws: from the side of the pattern in to the middle.</td></tr>
+        <tr><td class="sym">i</td><td>Inside throws: from the middle out to the side.</td></tr>
+        <tr><td class="sym">O</td><td>Outside to outside: right across the pattern.</td></tr>
+        <tr><td class="sym">I</td><td>Columns: straight up, caught where it was thrown.</td></tr>
+        <tr><td class="sym">ioo</td><td>Several direction letters take turns, throw by throw.</td></tr>
+        <tr><td class="sym">L</td><td>Just before the slash: the pattern starts with the left hand.</td></tr>
+        <tr><td class="sym">\ /</td><td>The side of the body the first throw peaks on. It's a guide, not a change to the pattern: in the mills family it always follows the first throw letter (crossed <b>\</b>, uncrossed <b>/</b>), so it adds nothing the letters don't say. It means more in two places: the basic cascades, and sebs, which has the mills letters with <b>/</b> and is juggled at the sides.</td></tr>
+      </table>
+      <p>"TR" in a name means time reverse: the pattern you'd see if you filmed another one and played it backwards.</p>
+    </section>
+  </div>
+</dialog>
 
 <script>
 // if anything goes wrong, say so in the blue box rather than leaving it empty
@@ -408,6 +467,43 @@ function showProblem(msg) {
   }
   function esc(t) { return String(t).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
   // play a notation string; name is its name in the list, if it has one
+  // the key: what each symbol means, and the current pattern taken apart pair by pair
+  var keyDlg = document.getElementById('keyDlg');
+  var HAND = ['right', 'left'], STATE = { R: 'arms crossed, right arm on top', L: 'arms crossed, left arm on top', U: 'arms uncrossed' };
+  function stateFor(letter, h) {
+    var L = letter.toUpperCase();
+    if (L === 'U') return 'with the arms uncrossed';
+    var mine = (h === 0 ? 'R' : 'L') === L;
+    return mine ? 'with its arm on top' : 'under the other arm';
+  }
+  var DIRW = { o: 'an outside throw (from the side in to the middle)', i: 'an inside throw (from the middle out to the side)', O: 'an outside-to-outside throw (right across)', I: 'a column (straight up)' };
+  function fillKey() {
+    var box = document.getElementById('keyThis');
+    if (!model) { box.innerHTML = ''; return; }
+    var pp = model.parsed, N = model.tokens.length, rows = [];
+    var lead = pp.lstart ? 1 : 0;
+    model.tokens.forEach(function (t, k) {
+      var h = (k + lead) % 2, d = model.digit(k), dir = pp.dirs[k % pp.dirs.length];
+      var what;
+      if (t.br) what = HAND[h] + ' hand throws a <b>1</b> ' + stateFor(t.t, h) + ': it goes straight across to the ' + HAND[1 - h] + ' hand, which catches it ' + stateFor(t.br, 1 - h);
+      else if (d === 2 && !pp.active[k % pp.digits.length]) what = HAND[h] + ' hand <b>holds</b> its ball (a 2) ' + stateFor(t.t, h);
+      else what = HAND[h] + ' hand throws a <b>' + d + '</b>, ' + DIRW[dir] + ', ' + stateFor(t.t, h);
+      what += t.cFromNext ? '' : '; then catches ' + stateFor(t.c, h);
+      what = what.charAt(0).toUpperCase() + what.slice(1) + '.';
+      if (t.dash) rows.push('<tr><td class="sym">&ndash;</td><td>Change of direction.</td></tr>');
+      rows.push('<tr><td><b class="l ' + t.t + '">' + esc(t.text) + '</b></td><td>' + what + '</td></tr>');
+      var nx = model.tokens[k + 1];
+      if (nx && nx.group !== t.group) rows.push('<tr><td class="sym">:</td><td>Change side.</td></tr>');
+    });
+    var head = [];
+    head.push(model.balls + ' balls' + (pp.head ? ', siteswap ' + esc(pp.head) : ' (all 3s)'));
+    head.push(pp.lstart ? 'starts with the left hand' : 'starts with the right hand');
+    box.innerHTML = '<h3>This pattern' + (current && current.name ? ': ' + esc(current.name) : '') + '</h3><p><b class="mono">' + esc(pp.src) + '</b> &middot; ' + head.join(', ') + '.</p><table class="keyTable keyThis">' + rows.join('') + '</table>';
+  }
+  document.getElementById('keyBtn').addEventListener('click', function () { fillKey(); if (keyDlg.showModal) keyDlg.showModal(); else keyDlg.setAttribute('open', ''); });
+  document.getElementById('keyClose').addEventListener('click', function () { keyDlg.close(); });
+  keyDlg.addEventListener('click', function (e) { if (e.target === keyDlg) keyDlg.close(); });
+
   function loadSrc(src, name, note) {
     var m = PH.build(src);
     if (!m.ok) { msg.innerHTML = '<span class="err">' + esc(m.error) + '</span>'; return false; }
@@ -710,7 +806,9 @@ function showProblem(msg) {
   var q = new URLSearchParams(location.search);
   if (q.has('p') && PH.PATTERNS[+q.get('p')]) startSrc = PH.PATTERNS[+q.get('p')].src;
   if (q.has('n')) startSrc = q.get('n');
-  if (!loadSrc(startSrc, null, null)) load(4);
+  var openKey = q.has('key');
+  if (!loadSrc(startSrc, null, null)) loadSrc(PH.PATTERNS.filter(function (p) { return p.name === 'Mills mess'; })[0].src, null, null);
+  if (openKey) { fillKey(); if (keyDlg.showModal) keyDlg.showModal(); }
   if (q.has('t')) { beat = +q.get('t'); setPlaying(false); }
   if (q.has('view') && VIEWS[q.get('view')]) { setView(q.get('view')); if (camGoal) { cam.az = camGoal.az; cam.el = camGoal.el; cam.dist = camGoal.dist; cam.ty = camGoal.ty; camGoal = null; } }
   resize(); placeCamera();

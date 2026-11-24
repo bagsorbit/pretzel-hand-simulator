@@ -30,7 +30,7 @@
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
     underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
-    throwMatch: 1.3, oneStroke: 0.1, colX: 18, colIn: 9, popRise: 18, oneOut: 10, oneIn: 13, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
+    throwMatch: 1.3, oneStroke: 0.1, colStep: 18, popRise: 18, oneOut: 10, oneIn: 13, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 3.2,                       // beats per second at full speed (the author's own mills mess, filmed 2026-11-22)
     catchLag: 0.8,                  // beats from a hand's throw to its next catch
@@ -248,12 +248,14 @@
     function columnOf(j) {
       var h = handOf(j), k = j + nOf(j) - 2;
       var sT = sideFor(h, tok(j).t), sC = sideFor(handOf(k), tok(k).c.toUpperCase());
-      if (sT === sC) return sT * G.colX;
       // (a ball that comes back to the hand that threw it, as in the 4 ball Boston mess, goes up
       // a centre column just over on the other hand's side, so there are four columns in all:
       // the throwing hand is still the nearer one, uncrossed, and the other hand passes across it
-      // to its own centre column before the catch, so the arms cross as the letters say)
-      return nOf(j) % 2 === 0 ? -OWN[h] * G.colIn : 0;
+      // to its own centre column before the catch, so the arms cross as the letters say).
+      // Neighbouring columns are always colStep apart, so they are evenly spaced.
+      var four = nOf(j) % 2 === 0;
+      if (sT === sC) return sT * G.colStep * (four ? 1.5 : 1);
+      return four ? -OWN[h] * G.colStep / 2 : 0;
     }
     function catchKey(j) {
       var h = handOf(j), s = tok(j).c.toUpperCase(), crossed = s !== 'U';

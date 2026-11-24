@@ -151,9 +151,10 @@ twice in the article are listed once).
 Not in yet: multiplexes (listed, but they show a message) and empty hands. First tries,
 to be corrected by eye: `-` direction changes (the butterfly messes: the directions
 listed before the slash apply throw by throw), `I` columns (thrown and caught straight up: right,
-centre and left columns, `colX` out; a ball that comes back to its own hand, as in the 4
-ball Boston mess, goes up a centre column just over on the other hand's side, `colIn`
-out, so four columns; a hand throws from the spot where it caught, carrying nothing), an `L` start (built as the mirror image of the same pattern
+centre and left columns; a ball that comes back to its own hand, as in the 4 ball Boston
+mess, goes up a centre column just over on the other hand's side, so four columns;
+neighbouring columns are always `colStep` 18 cm apart; a hand throws from the spot where
+it caught, carrying nothing), an `L` start (built as the mirror image of the same pattern
 starting with the right hand), patterns with no slash or directions (outside throws),
 and the 2 ball messes (their 2s are thrown).
 
@@ -199,6 +200,9 @@ the check: `jsc -e 'var OVERRIDES={outUnder:28}' tests/check.js`.
 
 `tests/search-flos.js` does the same for the hectic flos change-over settings only,
 scored on clearance, jolts, how low the hands go and how even the ball heights are.
+
+The round i button by the letters opens the key: the current pattern taken apart pair by
+pair in plain words, then what every symbol means (`?key` in the address opens it).
 
 `tests/phone.html` shows the page in a phone-sized frame. Adding `?p=6&t=1.5&view=above`
 to the page address opens pattern 4 paused at beat 1.5, seen from above.
