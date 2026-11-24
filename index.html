@@ -155,7 +155,7 @@ select { padding-right: 10px; max-width: 100%; }
   body.controls-hidden .controls, body.controls-hidden .tools, body.controls-hidden .tools2,
   body.controls-hidden .msg, body.controls-hidden .info { display: none; }
   .views button[data-view] { display: none; }
-  .viewCycle { display: flex; }
+  .viewCycle { display: inline-flex; align-items: center; justify-content: center; line-height: 1; padding-top: 2px; }
   .app { padding: 8px 12px 12px; gap: 8px; }
   h1 { font-size: 18px; }
   .stage { min-height: 52vh; }
@@ -420,7 +420,7 @@ function showProblem(msg) {
     });
   }
   // on a phone one button steps through the views, saying which one is on
-  var VIEW_ORDER = ['front', 'above', 'side', 'eyes'], VIEW_NAME = { front: 'Front', above: 'Above', side: 'Side', eyes: "Juggler's eyes" }, viewNow = 'front';
+  var VIEW_ORDER = ['front', 'above', 'side', 'eyes'], VIEW_NAME = { front: 'Front', above: 'Above', side: 'Side', eyes: 'POV' }   /* (POV: the juggler's eyes, short enough for a phone) */, viewNow = 'front';
   document.getElementById('viewCycle').addEventListener('click', function (e) {
     e.stopPropagation();
     setView(VIEW_ORDER[(VIEW_ORDER.indexOf(viewNow) + 1) % VIEW_ORDER.length]);
