@@ -55,6 +55,7 @@ button, select {
 }
 button:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 button[aria-pressed="true"] { background: var(--sun); }
+button:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
 .learn { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; max-height: calc(100% - 64px); overflow-y: auto; padding: 2px 2px 4px; }
 .learn button { height: 34px; min-width: 52px; padding: 0 8px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .learn .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); display: inline-block; }
@@ -86,6 +87,7 @@ button[aria-pressed="true"] { background: var(--sun); }
 .arcs { position: absolute; left: 0; top: 0; width: 100%; height: 80px; pointer-events: none; overflow: hidden; }
 .strip.wrapped .arcs { display: none; }
 .arcs text { font: 700 15px inherit; font-family: inherit; fill: var(--ink); text-anchor: middle; }
+.arcs .arcDir { fill: #b5651d; }
 .strip, .controls, .tools, .msg, .info, h1 { flex-shrink: 0; }   /* the page scrolls instead of squashing these */
 .chip { font-weight: 700; font-size: 22px; padding: 0 4px; }
 .sep { font-weight: 700; font-size: 26px; padding: 0 1px; }
@@ -104,6 +106,16 @@ button[aria-pressed="true"] { background: var(--sun); }
 .hold { font-weight: 700; font-size: 22px; margin-left: -2px; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 select { padding-right: 10px; max-width: 100%; }
+#pattern { flex: 1 1 200px; min-width: 0; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; margin-left: -3px; }
+.seg button:first-child { border-radius: 12px 0 0 12px; margin-left: 0; }
+.seg button:last-child { border-radius: 0 12px 12px 0; }
+.seg button[aria-pressed="true"] { background: var(--sun); opacity: 1; }
+#famCascade { cursor: default; }
+.stepper { display: flex; align-items: center; gap: 6px; }
+.stepper button { width: 42px; padding: 0; font-size: 24px; line-height: 1; flex: none; }
+.stepper output { min-width: 26px; height: 40px; display: grid; place-items: center; font-size: 24px; font-weight: 700; }
 .speed { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .speed input { width: 130px; accent-color: var(--ink); }
 .info { font-size: 15px; line-height: 1.4; opacity: .85; }
@@ -163,13 +175,24 @@ select { padding-right: 10px; max-width: 100%; }
     <button id="play" aria-label="Pause">Pause</button>
     <button id="back" aria-label="Step back">&#9664;</button>
     <button id="fwd" aria-label="Step forward">&#9654;</button>
+    <div class="stepper" role="group" aria-label="Balls">
+      <button type="button" id="lessBtn" aria-label="One ball fewer" title="One ball fewer: every throw one lower">&minus;</button>
+      <output id="ballCount" aria-live="polite" title="Balls">3</output>
+      <button type="button" id="moreBtn" aria-label="One ball more" title="One ball more: every throw one higher">+</button>
+    </div>
     <label class="speed">Speed <input id="speed" type="range" min="0.05" max="1" step="0.05" value="0.35"> <span id="speedv">35%</span></label>
   </div>
   <div class="tools">
     <input id="typed" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Type a pattern and press Enter, like  o\ Ru Ul Ll : Lu Ur Rr" aria-label="Type a pattern, then press Enter to play it">
     <button id="trBtn" title="Play the pattern backwards in time">Time reverse</button>
     <button id="flipBtn" title="Swap right and left">Flip</button>
-    <button id="mfBtn" title="Appendix C: move the first throw to the end and switch the red letters">Mills &harr; flos</button>
+    <button id="mirBtn" title="The mirror image: clockwise and anticlockwise swap, right arm on top becomes left arm on top">Mirror</button>
+    <div class="seg" id="mfSeg" role="group" aria-label="Mills or flos">
+      <button type="button" id="famCascade" tabindex="-1" title="Neither a mills nor a flos mess">Cascade</button>
+      <button type="button" id="famMills" title="Show it as a mills mess (Appendix C's conversion)">Mills</button>
+      <button type="button" id="famFlos" title="Show it as a flos mess (Appendix C's conversion)">Flos</button>
+    </div>
+    <button id="cycBtn" title="Move the siteswap along one throw, so a different throw leads (423 → 234 → 342)">Cycle siteswap</button>
   </div>
   <div class="msg" id="msg"></div>
   <div class="info" id="info"></div>
@@ -206,7 +229,7 @@ select { padding-right: 10px; max-width: 100%; }
         <tr><td class="sym">i</td><td>Inside throws: from the middle out to the side.</td></tr>
         <tr><td class="sym">O</td><td>Outside to outside: right across the pattern.</td></tr>
         <tr><td class="sym">I</td><td>Columns: straight up, caught where it was thrown.</td></tr>
-        <tr><td class="sym">ioo</td><td>Several direction letters take turns, throw by throw.</td></tr>
+        <tr><td class="sym">ioo</td><td>Several direction letters take turns, throw by throw. Each throw's own direction is shown after its number, above the letters.</td></tr>
         <tr><td class="sym">L</td><td>Just before the slash: the pattern starts with the left hand.</td></tr>
         <tr><td class="sym">\ /</td><td>The side of the body the first throw peaks on. It's a guide, not a change to the pattern: in the mills family it always follows the first throw letter (crossed <b>\</b>, uncrossed <b>/</b>), so it adds nothing the letters don't say. It means more in two places: the basic cascades, and sebs, which has the mills letters with <b>/</b> and is juggled at the sides.</td></tr>
       </table>
@@ -504,13 +527,60 @@ function showProblem(msg) {
   document.getElementById('keyClose').addEventListener('click', function () { keyDlg.close(); });
   keyDlg.addEventListener('click', function (e) { if (e.target === keyDlg) keyDlg.close(); });
 
-  function loadSrc(src, name, note) {
-    var m = PH.build(src);
+  // turn: carried over from the pattern a tool started from, so a pattern juggled at the sides
+  // (sebs, Mike's mess) stays at the sides when it is flipped, reversed or given more balls
+  // The pattern tools Time reverse, Flip, Mirror and Mills <-> flos are switches: each lights
+  // up while it's on, and they apply to the pattern chosen (from the list or typed), in that
+  // order: mills/flos, flip, mirror, time reverse. Choosing a pattern turns them all off;
+  // Cycle siteswap and the ball count change the chosen pattern and leave them as they are.
+  var base = null, mods = { mf: false, flip: false, mir: false, tr: false };
+  var MODS = [['mf', null, function (s) { return PH.millsFlos(s); }, 'mills ↔ flos version'], ['flip', 'flipBtn', function (s) { return PH.flip(s); }, 'flipped version'],
+              ['mir', 'mirBtn', function (s) { return PH.mirror(s); }, 'mirror image'], ['tr', 'trBtn', function (s) { return PH.timeReverse(s); }, 'time reverse']];
+  function withMods(src, md) {
+    var r = { ok: true, src: src };
+    for (var i = 0; i < MODS.length && r.ok; i++) if (md[MODS[i][0]]) r = MODS[i][2](r.src);
+    return r;
+  }
+  function anyMod(md) { return MODS.some(function (x) { return md[x[0]]; }); }
+  function loadSrc(src, name, note, turn, keep) {
+    var m = PH.build(src, turn ? { turn: turn } : undefined);
     if (!m.ok) { msg.innerHTML = '<span class="err">' + esc(m.error) + '</span>'; return false; }
     var idx = -1;
     PH.PATTERNS.forEach(function (pt, i) { if (pt.src === src) idx = i; });
+    if (!name && idx >= 0) name = PH.PATTERNS[idx].name;   // (the article lists some patterns twice: use the one written exactly so)
     if (!name) { var f = PH.findPattern(src); if (f) name = f.name; }
-    current = { src: src, name: name || null };
+    current = { src: src, name: name || null, turn: m.turn || 0 };
+    if (!keep) { base = { src: src, name: name || null, turn: m.turn || 0 }; mods = { mf: false, flip: false, mir: false, tr: false }; }
+    document.getElementById('ballCount').textContent = m.balls;
+    // light the switches that are on, and grey out the tools that can't be used here (the
+    // reason shows as the button's tip)
+    var checks = MODS.filter(function (x) { return x[1]; }).map(function (x) {
+      var md = {}; for (var k in mods) md[k] = mods[k]; md[x[0]] = !md[x[0]];
+      var b = document.getElementById(x[1]); b.setAttribute('aria-pressed', mods[x[0]] ? 'true' : 'false');
+      return [x[1], mods[x[0]] ? { ok: true } : withMods(base.src, md)];
+    });
+    // Cascade | Mills | Flos: lit for what the pattern on show is; pressing the other one of
+    // Mills and Flos converts it (Appendix C), pressing it again converts back
+    var fam = PH.family(src) || 'cascade';
+    var mdF = {}; for (var kf in mods) mdF[kf] = mods[kf]; mdF.mf = !mdF.mf;
+    var conv = withMods(base.src, mdF), convFam = conv.ok ? PH.family(conv.src) : null;
+    [['famCascade', 'cascade'], ['famMills', 'mills'], ['famFlos', 'flos']].forEach(function (x) {
+      var b = document.getElementById(x[0]);
+      b.setAttribute('aria-pressed', fam === x[1] ? 'true' : 'false');
+      if (x[1] === 'cascade') { b.disabled = fam !== 'cascade'; return; }
+      if (!b.dataset.tip) b.dataset.tip = b.title;
+      var can = fam === x[1] || (conv.ok && convFam === x[1]);
+      b.disabled = !can;
+      b.title = can ? b.dataset.tip : (fam === 'cascade' ? 'This is neither a mills nor a flos mess.' : (conv.ok ? 'Appendix C\'s conversion doesn\'t give a ' + x[1] + ' mess here.' : conv.error));
+    });
+    function onBase(fn) { var r = fn(base.src); return r.ok ? withMods(r.src, mods) : r; }
+    checks.push(['cycBtn', onBase(PH.cycleSiteswap)], ['lessBtn', onBase(function (s) { return PH.addBalls(s, -1); })], ['moreBtn', onBase(function (s) { return PH.addBalls(s, 1); })]);
+    checks.forEach(function (x) {
+      var b = document.getElementById(x[0]);
+      if (!b.dataset.tip) b.dataset.tip = b.title;
+      b.disabled = !x[1].ok;
+      b.title = x[1].ok ? b.dataset.tip : x[1].error;
+    });
     model = m; beat = 0; lastEvent = -1; lastPass = -1;
     makeLearn(m.balls);
     sel.value = idx >= 0 ? String(idx) : 'custom';
@@ -567,7 +637,10 @@ function showProblem(msg) {
       'Seen from the front, the juggler’s right arm is on your left.';
     var notes = [];
     if (note) notes.push(note);
-    if (m.slashSeen !== m.parsed.slash && m.parsed.slash !== '|') {
+    // (nothing to check with no slash written, O throws and columns that peak on the centre line, mixed directions
+    // (the butterflies, whose slash follows the first letter while the first throw may peak on the other side), or
+    // patterns juggled at the sides)
+    if (m.parsed.slash && m.slashSeen !== m.parsed.slash && m.parsed.slash !== '|' && !/[OI]/.test(m.parsed.dirs) && !/io|oi/.test(m.parsed.dirs) && !m.turn) {
       var side = m.slashSeen === '/' ? 'right' : 'left';
       if (idx >= 0) notes.push('Open question: the article writes <b>' + esc(m.parsed.slash) + '</b> here, but in the simulator the first throw peaks on the ' +
         side + '. The simulator may have this kind of throw wrong.');
@@ -585,18 +658,47 @@ function showProblem(msg) {
   function playTyped() { var v = typed.value.trim(); if (v) loadSrc(v, null, null); }
   typed.addEventListener('keydown', function (e) { if (e.key === 'Enter') playTyped(); });
   function after(src) { return src.replace(/^[^\/\\|]*[\/\\|]\s*/, '').replace(/\s+/g, ' ').trim(); }
-  function tool(fn, label) {
-    if (!current) return;
-    var from = current.name || 'this pattern', r = fn(current.src);
-    if (!r.ok) { msg.innerHTML = '<span class="err">' + esc(label) + ': ' + esc(r.error) + '</span>'; return; }
+  // show the chosen pattern with the switches that are on
+  function showMods() {
+    var r = withMods(base.src, mods);
+    if (!r.ok) { msg.innerHTML = '<span class="err">' + esc(r.error) + '</span>'; return false; }
+    if (!anyMod(mods)) return loadSrc(base.src, base.name, null, base.turn, true);
     var f = PH.findPattern(r.src);
-    if (f) loadSrc(f.src, f.name, esc(label) + ' of ' + esc(from) + ' is <b>' + esc(f.name) + '</b>' +
-      (after(f.src) !== after(r.src) ? ' (worked out as ' + esc(r.src) + ', the same pattern started from another throw)' : '') + '.');
-    else loadSrc(r.src, null, esc(label) + ' of ' + esc(from) + ': <b>' + esc(r.src) + '</b>. It is not in the list.');
+    if (f && !f.turn !== !base.turn) f = null;   // (sebs has the mills letters: don't name a pattern at the sides after one in front, or the other way round)
+    var on = MODS.filter(function (x) { return mods[x[0]]; }).map(function (x) { return x[0] === 'mf' ? (PH.family(r.src) || 'mills ↔ flos') + ' version' : x[3]; });
+    on = on.length > 1 ? on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1] : on[0];
+    var note = 'Showing the ' + esc(on) + ' of ' + esc(base.name || base.src) + (f ? '' : ', which is not in the list') + '.';
+    return f ? loadSrc(f.src, f.name, note, f.turn || base.turn, true) : loadSrc(r.src, null, note, base.turn, true);
   }
-  document.getElementById('trBtn').addEventListener('click', function () { tool(PH.timeReverse, 'Time reverse'); });
-  document.getElementById('flipBtn').addEventListener('click', function () { tool(PH.flip, 'Flip'); });
-  document.getElementById('mfBtn').addEventListener('click', function () { tool(PH.millsFlos, 'Mills to flos'); });
+  [['famMills', 'mills'], ['famFlos', 'flos']].forEach(function (x) {
+    document.getElementById(x[0]).addEventListener('click', function () {
+      if (!base || (PH.family(current.src) || 'cascade') === x[1]) return;
+      mods.mf = !mods.mf;
+      if (!showMods()) mods.mf = !mods.mf;
+    });
+  });
+  MODS.forEach(function (x) {
+    if (!x[1]) return;
+    document.getElementById(x[1]).addEventListener('click', function () {
+      if (!base) return;
+      mods[x[0]] = !mods[x[0]];
+      if (!showMods()) { mods[x[0]] = !mods[x[0]]; }
+    });
+  });
+  // change the chosen pattern itself, keeping the switches
+  function changeBase(fn) {
+    if (!base) return;
+    var r = fn(base.src);
+    if (!r.ok) { msg.innerHTML = '<span class="err">' + esc(r.error) + '</span>'; return; }
+    var f = PH.findPattern(r.src);
+    if (f && !f.turn !== !base.turn) f = null;
+    var old = base;
+    base = { src: f ? f.src : r.src, name: f ? f.name : null, turn: f ? (f.turn || base.turn) : base.turn };
+    if (!showMods()) base = old;
+  }
+  document.getElementById('cycBtn').addEventListener('click', function () { changeBase(PH.cycleSiteswap); });
+  document.getElementById('lessBtn').addEventListener('click', function () { changeBase(function (s) { return PH.addBalls(s, -1); }); });
+  document.getElementById('moreBtn').addEventListener('click', function () { changeBase(function (s) { return PH.addBalls(s, 1); }); });
 
   // ---------- throw lines ----------
   // Above the notation, a line from each throw to the throw where that ball is next thrown
@@ -677,6 +779,13 @@ function showProblem(msg) {
         var q = at(k), tile = q.L.t.parentNode, tr = tile.getBoundingClientRect();
         var tx = document.createElementNS(SVGNS, 'text');
         tx.setAttribute('x', tr.left + tr.width / 2 - sr.left); tx.setAttribute('y', base + 18); tx.textContent = n;
+        // where the directions change from throw to throw (tennis's Oii, the butterflies), each
+        // throw's own direction goes after its number: o outside, i inside, O outside to outside, I column
+        var dirs = model.parsed.dirs;
+        if (dirs.length > 1) {
+          var ds = document.createElementNS(SVGNS, 'tspan'); ds.setAttribute('class', 'arcDir');
+          ds.setAttribute('dx', '1'); ds.textContent = dirs[((j % dirs.length) + dirs.length) % dirs.length]; tx.appendChild(ds);
+        }
         if (!real) tx.setAttribute('opacity', '0.3');
         arcSvg.appendChild(tx);
       }
@@ -809,6 +918,7 @@ function showProblem(msg) {
   var openKey = q.has('key');
   if (!loadSrc(startSrc, null, null)) loadSrc(PH.PATTERNS.filter(function (p) { return p.name === 'Mills mess'; })[0].src, null, null);
   if (openKey) { fillKey(); if (keyDlg.showModal) keyDlg.showModal(); }
+  if (q.has('do')) { var btn = document.getElementById(q.get('do')); if (btn && btn.tagName === 'BUTTON') btn.click(); }   // (testing: ?do=famFlos presses a button)
   if (q.has('t')) { beat = +q.get('t'); setPlaying(false); }
   if (q.has('view') && VIEWS[q.get('view')]) { setView(q.get('view')); if (camGoal) { cam.az = camGoal.az; cam.el = camGoal.el; cam.dist = camGoal.dist; cam.ty = camGoal.ty; camGoal = null; } }
   resize(); placeCamera();

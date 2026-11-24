@@ -38,7 +38,7 @@ function measure(pt, perBeat) {
   var G = PH.G, m = PH.build(pt.src);
   if (!m.ok) return { error: m.error };
   var r = { m: m, minFore: 1e9, minHand: 1e9, minHandFore: 1e9, maxReach: 0, wrongTop: 0, minElbowBody: 1e9, worstT: 0,
-            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash || /O/.test(m.parsed.dirs) || !!m.turn,   // (an O throw goes outside to outside, so it peaks on the centre line: the key says O doesn't go by the slash)
+            minBall: 1e9, ballT: 0, minBB: 1e9, bbT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash || !m.parsed.slash || /[OI]/.test(m.parsed.dirs) || /io|oi/.test(m.parsed.dirs) || !!m.turn,   // (an O throw goes outside to outside, so it peaks on the centre line: the key says O doesn't go by the slash)
            
             maxAcc: 0, accT: 0, yMin: [1e9, 1e9], yMax: [-1e9, -1e9], handZ: 0, handY: 0, elbowY: 0, elbowZ: 0, elbowX: 0, topY: 0, crossed: 0 };
   // every ball should arc across a little, not go straight up and down
@@ -80,6 +80,13 @@ function measure(pt, perBeat) {
         if (d < r.minBall) { r.minBall = d; r.ballT = t; }
       });
     });
+    // balls in the air never pass through each other (gap between their surfaces; balls just
+    // thrown or about to be caught are near a hand that may hold another, so are left out)
+    var fl = p.balls.filter(function (b) { return b.fly && t - b.t0 > 0.1 && b.t1 - t > 0.1; });
+    for (var bi = 0; bi < fl.length; bi++) for (var bj = bi + 1; bj < fl.length; bj++) {
+      var dd = len(sub(fl[bi].pos, fl[bj].pos)) - 2 * BALL_R;
+      if (dd < r.minBB) { r.minBB = dd; r.bbT = t; }
+    }
     // the bottom hand never goes behind the top arm's elbow when it is close to it
     if (Math.abs(p.w) > 0.4) {
       var TA = p.w > 0 ? R : L, BA = p.w > 0 ? L : R;

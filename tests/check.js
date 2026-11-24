@@ -20,6 +20,7 @@ PH.PATTERNS.forEach(function (pt) {
   if (r.minHandFore < G.handR + G.foreR - G.graze) msgs.push('hand touches other forearm: ' + f1(r.minHandFore));
   if (r.maxReach > 0.995) msgs.push('arm cannot reach: ' + f1(r.maxReach * 100) + '%');
   if (r.minBall < -G.graze) msgs.push('ball goes through an arm: ' + f1(r.minBall) + ' cm at beat ' + f1(r.ballT));
+  if (r.minBB < 0) msgs.push('balls collide in the air: ' + f1(r.minBB) + ' cm at beat ' + f1(r.bbT));
   if (r.wrongTop) msgs.push('wrong arm in front at ' + r.wrongTop + ' samples');
   if (r.minElbowBody < 0) msgs.push('elbow inside body');
   if (r.inBody > 0.5) msgs.push('hand or forearm goes ' + f1(r.inBody) + ' cm into the body at beat ' + f1(r.inBodyT));
@@ -41,7 +42,7 @@ PH.PATTERNS.forEach(function (pt) {
   if (r.crossed && r.topY > FOOT.topY) msgs.push('top hand goes up to ' + f1(r.topY) + ' cm while crossed (footage: up to ' + FOOT.topY + ')');
   }
   print((msgs.length ? 'WARN ' : 'ok   ') + pt.name + '  balls ' + m.balls + ', forearm gap ' + f1(r.minFore) +
-    ', jolt ' + Math.round(r.maxAcc) + ', in front ' + f1(r.handZ) + ', hands at ' + f1(r.handY) + ', elbows at ' + f1(r.elbowY) + '/' + f1(r.elbowZ) + ', elbow out ' + f1(r.elbowX) + ', top hand ' + f1(r.topY) + ', ball clearance ' + f1(r.minBall) + ', hand gap ' + f1(r.minHand) + ', into body ' + f1(r.inBody) + ', arc ' + f1(r.minArc) + ', reach ' + f1(r.maxReach * 100) + '%, forearm down ' +
+    ', jolt ' + Math.round(r.maxAcc) + ', in front ' + f1(r.handZ) + ', hands at ' + f1(r.handY) + ', elbows at ' + f1(r.elbowY) + '/' + f1(r.elbowZ) + ', elbow out ' + f1(r.elbowX) + ', top hand ' + f1(r.topY) + ', ball clearance ' + f1(r.minBall) + ', ball gap ' + (r.minBB < 1e8 ? f1(r.minBB) : '-') + ', hand gap ' + f1(r.minHand) + ', into body ' + f1(r.inBody) + ', arc ' + f1(r.minArc) + ', reach ' + f1(r.maxReach * 100) + '%, forearm down ' +
     Math.round(100 * r.down / r.samples) + '%' + (m.notes.length ? '  [' + m.notes.join('; ') + ']' : ''));
   msgs.forEach(function (s) { print('       ' + s); });
   if (msgs.length) bad++;

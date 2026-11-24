@@ -30,7 +30,7 @@
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
     underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
-    throwMatch: 1.3, oneStroke: 0.1, colStep: 18, popRise: 18, oneOut: 10, oneIn: 13, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
+    throwMatch: 1.3, oneStroke: 0.1, ballLane: 6, ballLaneStep: 1, leanPow: 0.7, maxBalls: 5, oWide: 18, oLift: 16, oNarrow: 0.7, ballGap: 0.5, colStep: 18, popRise: 18, oneOut: 10, oneIn: 13, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 3.2,                       // beats per second at full speed (the author's own mills mess, filmed 2026-11-22)
     catchLag: 0.8,                  // beats from a hand's throw to its next catch
@@ -141,6 +141,10 @@
     function tok(j) { return p.tokens[mod(j, N)]; }
     function nOf(j) { return n[mod(j, P)]; }
     function dirOf(j) { return p.dirs[mod(j, p.dirs.length)]; }
+    // an O throw mixed with other throws (tennis) goes over the top of the others' arcs and
+    // wide of them, as in a reverse cascade, only as much as it needs to stay clear (oLift, oWide);
+    // the whole pattern is drawn in a little (oNarrow), so it isn't so wide
+    var MIXED_O = /O/.test(p.dirs) && /[io]/.test(p.dirs);
     function flies(j) { var v = nOf(j); return v >= 3 || v === 1 || (v === 2 && act[mod(j, P)]); }
     for (j = 0; j < P; j++) {
       var is1 = nOf(j) === 1, br = !!tok(j).br;
@@ -171,6 +175,8 @@
     // (a 3 or higher whose flight is cut short only because it is caught early for a hectic
     // flos change-over keeps the evened-out height of the others, not real gravity: shareEven)
     function gFor(F, j) {
+      // (tennis: the O ball goes over the top of the others, oLift cm higher)
+      if (j !== undefined && G.oLift > 0 && MIXED_O && dirOf(j) === 'O') { var base0 = gFor(F); return 8 * (base0 * F * F / 8 + G.oLift) / (F * F); }
       // (a thrown 2 is a little pop over the other arm: it rises popRise cm, as low as still clears it)
       if (j !== undefined && G.popRise > 0 && nOf(j) === 2 && act[mod(j, P)]) return 8 * G.popRise / (F * F);
       var even = j !== undefined && G.shareEven && nOf(j) >= 3 && shareCatchK(j + nOf(j) - 2);
@@ -238,7 +244,8 @@
       var far = crossed ? (under ? G.outUnder : G.outX) : G.outU;
       // (a 1 is passed straight across from near where the hand holds it, not carried out wide first: oneOut)
       if (nOf(j) === 1) far = Math.min(far, G.oneOut);
-      var x = sideFor(h, s) * (dirOf(j) === 'i' ? G.inner : far);
+      if (dirOf(j) === 'O' && MIXED_O) far += G.oWide;   // (tennis: the O ball goes round the outside of the others)
+      var x = sideFor(h, s) * (dirOf(j) === 'i' ? G.inner : far) * (MIXED_O ? G.oNarrow : 1);
       if (dirOf(j) === 'I') x = columnOf(j);
       return [x, G.throwY, G.handZ];
     }
@@ -263,7 +270,8 @@
       var far = crossed ? (under ? G.outUnder : G.outX) : G.outU;
       var inc = incoming[mod(j, P)];
       var d = dirOf(inc === null ? j - 1 : inc);
-      var x = sideFor(h, s) * (d === 'o' ? G.inner : far);
+      if (d === 'O' && MIXED_O) far += G.oWide;
+      var x = sideFor(h, s) * (d === 'o' ? G.inner : far) * (MIXED_O ? G.oNarrow : 1);
       if (d === 'I' && inc !== null) x = columnOf(inc);   // (a column comes straight down where it went up)
       // (a 1 is caught where the other hand already is, without reaching in for it, so the
       // hands stay apart: oneIn, how far out on its own side. Not when that hand crosses over
@@ -883,6 +891,121 @@
 
     var bps = BPS, g = G.g;
     function ballOn(hp) { return [hp[0], hp[1] + G.handR * 0.55 + G.ballR * 0.6, hp[2]]; }
+    // Which way a throw's arc leans (from -1, back, to 1, forward). Where the arcs of
+    // neighbouring throws would meet (most patterns with 4 or 5 balls, and a few with 3, like
+    // the half shower and some butterflies), each arc leans a little forward or back, as real
+    // jugglers' arcs do: up to leanCm at the top, none at the ends. A 3 ball pattern that is
+    // already clear isn't touched. The leans are chosen once per pattern: each throw tries each lean in turn, keeping
+    // whichever leaves the balls furthest apart, until nothing better is found.
+    var laneTab = null;
+    // (how far along its lean an arc is, from 0 at the throw to 1 at the top and back to 0 at the
+    // catch; leanPow below 1 leans sooner after the throw)
+    function leanShape(f) { return Math.pow(Math.max(0, Math.sin(Math.PI * f)), G.leanPow); }
+    function leanCm() { return G.ballLane + G.ballLaneStep * Math.max(0, balls - 3); }   // (the most an arc leans, at its top)
+    function laneOf(j) {
+      if (!laneTab) laneTab = chooseLanes();
+      return laneTab[mod(j, P)];
+    }
+    function chooseLanes() {
+      var none = []; for (var q = 0; q < P; q++) none.push(0);
+      if (balls < 3 || !G.ballLane) return none;
+      var Lw = leanCm(), R2 = 2 * G.ballR;
+      // every flight in the cycle, as it would be with no lean
+      var fl = {};
+      function flight(j) {
+        var key = mod(j, P);
+        if (fl[key]) return fl[key];
+        var nj = nOf(j), k = j + nj - 2, tc = catchTime(k), j0 = mod(j, P), tc0 = tc - (j - j0);
+        var a = ballOn(flowPose(j0).hands[handOf(j)]), b = ballOn(flowPose(tc0).hands[handOf(k)]);
+        var F = (tc0 - j0) / bps, gg = gFor(F, j0), vy = (b[1] - a[1]) / F + gg * F / 2;
+        return (fl[key] = { j0: j0, tc: tc0, a: a, b: b, F: F, gg: gg, vy: vy });
+      }
+      function at(f, tb) {   // tb measured from that flight's own throw
+        var tau = tb / bps;
+        return [f.a[0] + (f.b[0] - f.a[0]) * tau / f.F, f.a[1] + f.vy * tau - f.gg * tau * tau / 2, f.a[2] + (f.b[2] - f.a[2]) * tau / f.F, leanShape(tau / f.F)];
+      }
+      // pairs of balls in the air at the same moment, and balls near an arm, sampled over the cycle
+      var pairs = [], arms = [];
+      for (var t = 0; t < P; t += 0.05) {
+        var live = [], ps = null;
+        for (var j = Math.floor(t) - maxN - 1; j <= Math.floor(t); j++) {
+          if (!flies(j)) continue;
+          var f = flight(j), since = t - j, len = f.tc - f.j0;
+          if (since <= 0.1 || since >= len - 0.1) continue;
+          live.push({ i: f.j0, p: at(f, since), from: handOf(j), to: handOf(j + nOf(j) - 2), since: since, left: len - since });
+        }
+        for (var u = 0; u < live.length; u++) {
+          for (var v = u + 1; v < live.length; v++) {
+            var A = live[u].p, B = live[v].p, dxy = (A[0] - B[0]) * (A[0] - B[0]) + (A[1] - B[1]) * (A[1] - B[1]);
+            if (dxy > 400) continue;   // (more than 20 cm apart already)
+            pairs.push([dxy, A[2] - B[2], A[3], B[3], live[u].i, live[v].i]);
+          }
+          // (the forearms, except the hand that has just thrown or is about to catch this ball)
+          for (var hh = 0; hh < 2; hh++) {
+            if ((hh === live[u].from && live[u].since < 0.2) || (hh === live[u].to && live[u].left < 0.2)) continue;
+            if (!ps) ps = flowPose(t);
+            var E = ps.elbows[hh], H = ps.hands[hh], Q = live[u].p;
+            var mx = (E[0] + H[0]) / 2 - Q[0], my = (E[1] + H[1]) / 2 - Q[1], mz = (E[2] + H[2]) / 2 - Q[2];
+            if (mx * mx + my * my + mz * mz > 900) continue;
+            arms.push([Q, live[u].i, E, H]);
+          }
+        }
+      }
+      if (!pairs.length) return none;
+      function segGap(Q, E, H) {
+        var dx = H[0] - E[0], dy = H[1] - E[1], dz = H[2] - E[2], L2 = dx * dx + dy * dy + dz * dz;
+        var tt = L2 ? Math.max(0, Math.min(1, ((Q[0] - E[0]) * dx + (Q[1] - E[1]) * dy + (Q[2] - E[2]) * dz) / L2)) : 0;
+        var px = E[0] + dx * tt - Q[0], py = E[1] + dy * tt - Q[1], pz = E[2] + dz * tt - Q[2];
+        return Math.sqrt(px * px + py * py + pz * pz) - G.foreR - G.ballR + G.graze;
+      }
+      function ballGap(l) {
+        var worst = 1e9;
+        for (var q = 0; q < pairs.length; q++) {
+          var pr = pairs[q], dz = pr[1] + Lw * (l[pr[4]] * pr[2] - l[pr[5]] * pr[3]);
+          var d = Math.sqrt(pr[0] + dz * dz) - R2;
+          if (d < worst) worst = d;
+        }
+        return worst;
+      }
+      // (with 3 balls, only where balls would meet: a pattern already clear is left as it is)
+      if (balls === 3 && ballGap(none) >= G.ballGap) return none;
+      // how badly balls overlap each other and the arms, summed (smaller is better), with the
+      // closest gap to break ties
+      function score(l) {
+        var bad = 0, worst = 1e9, q, d;
+        for (q = 0; q < pairs.length; q++) {
+          var pr = pairs[q], dz = pr[1] + Lw * (l[pr[4]] * pr[2] - l[pr[5]] * pr[3]);
+          d = Math.sqrt(pr[0] + dz * dz) - R2;
+          if (d < 0) bad += d * d;
+          if (d < worst) worst = d;
+        }
+        for (q = 0; q < arms.length; q++) {
+          var ar = arms[q], Q = ar[0], Qz = [Q[0], Q[1], Q[2] + Lw * l[ar[1]] * Q[3]];
+          d = segGap(Qz, ar[2], ar[3]);
+          if (d < 0) bad += d * d;
+          if (d < worst) worst = d;
+        }
+        return -bad + 0.001 * worst;
+      }
+      var tries = [[], [], []];
+      for (q = 0; q < P; q++) { tries[0].push(handOf(q) === 0 ? 1 : -1); tries[1].push(P % 3 === 0 ? mod(q, 3) - 1 : 0); tries[2].push(0); }
+      var best = none, bestS = -1e9, STEPS = [-1, -0.5, 0, 0.5, 1];
+      tries.forEach(function (l0) {
+        var l = l0.slice(), sc = score(l);
+        for (var pass = 0; pass < 8; pass++) {
+          var better = false;
+          for (var q2 = 0; q2 < P; q2++) {
+            if (!flies(q2)) continue;
+            var keep = l[q2];
+            STEPS.forEach(function (v) { l[q2] = v; var s2 = score(l); if (s2 > sc + 1e-6) { sc = s2; keep = v; better = true; } });
+            l[q2] = keep;
+          }
+          if (!better) break;
+        }
+        if (sc > bestS) { bestS = sc; best = l; }
+      });
+      return best;
+    }
     function ballsAt(tb, poseNow) {
       var res = [];
       var j0 = Math.floor(tb) - maxN - 1;
@@ -897,6 +1020,8 @@
             var F = (tc - j) / bps, tau = (tb - j) / bps, gg = gFor(F, j);
             var vy = (bpt[1] - a[1]) / F + gg * F / 2;
             pos = [a[0] + (bpt[0] - a[0]) * tau / F, a[1] + vy * tau - gg * tau * tau / 2, a[2] + (bpt[2] - a[2]) * tau / F];
+            // (where arcs would meet, each leans a little forward or back: see laneOf)
+            if (balls >= 3 && G.ballLane) pos[2] += leanCm() * laneOf(j) * leanShape(tau / F);
             res.push({ pos: pos, col: colAt(j), fly: true, from: hand, to: handOf(k), t0: j, t1: tc });
             continue;
           } else pos = ballOn(poseNow.hands[handOf(k)]);
@@ -1237,41 +1362,149 @@
   function tokenText(t, c, hold) { return t + c + (hold ? '.' : ''); }
   function noOnes(p) { return p.digits.every(function (d) { return d !== 1; }); }
 
+  // Writes a pattern's notation again with new siteswap digits, keeping everything else as it
+  // was written (directions, L start, slash, sides, dashes): a 2 that is held gets its dot, and a
+  // 1 gets its brackets, the throw before it losing its own catch letter (the 1's catcher's).
+  // If the digits don't fit the letters evenly, the letters are written out again until they do.
+  function compose(p, digits, active) {
+    var N = p.tokens.length, D = digits.length, L = N % D === 0 ? N : lcm(N, D);
+    if (digits.every(function (x) { return x === 2; })) active = digits.map(function () { return true; });   // (all 2s are thrown: no dots)
+    function tk(j) { return p.tokens[mod(j, N)]; }
+    function dg(j) { return digits[mod(j, D)]; }
+    var parts = [], lastGroup = null;
+    for (var j = 0; j < L; j++) {
+      var t = tk(j), d = dg(j), round = Math.floor(j / N);
+      var g = round + ':' + t.group;
+      if (lastGroup !== null && g !== lastGroup) parts.push(':');
+      else if (t.dash && j) parts.push('-');
+      lastGroup = g;
+      var text = t.t + (d === 1 ? '(' + tk(j - 1).c + ')' : '') + (dg(j + 1) === 1 ? '' : t.c) + (d === 2 && !active[mod(j, D)] ? '.' : '');
+      parts.push(text);
+    }
+    var same = digits.every(function (x) { return x === digits[0]; });
+    var head;
+    if (same && digits[0] === 2) head = '2';
+    else if (same) head = digits[0] === 3 && !p.head ? '' : String(digits[0]);
+    else head = digits.map(function (x, i) { return x + (x === 2 && active[i] ? 'T' : ''); }).join('');
+    var lead = p.slash || p.lstart ? p.dirs + (p.lstart ? 'L' : '') + p.slash : (p.dirs !== 'o' ? p.dirs : '');
+    var src = [head, lead, parts.join(' ')].filter(Boolean).join(' ').replace(/ ([\/\\|]) /, '$1 ');
+    src = src.replace(/([oiOIL]+)? ?([\/\\|]) /, function (m0, dd, sl) { return (dd || '') + sl + ' '; });
+    var m = build(src, { noReverse: true });
+    if (!m.ok) return { ok: false, error: m.error };
+    return { ok: true, src: m.parsed.src };
+  }
+  // Cycle the siteswap: the digits move along one throw against the letters, so a different
+  // throw leads the arc (the article: a 423 mills can also be done as a 234 or a 342 mills)
+  function cycleSiteswap(src) {
+    var m = build(src, { noReverse: true });
+    if (!m.ok) return m;
+    var p = m.parsed, d = p.digits;
+    if (d.every(function (x) { return x === d[0]; })) return { ok: false, error: 'Nothing to cycle: every throw is a ' + d[0] + '.' };
+    return compose(p, d.slice(1).concat(d[0]), p.active.slice(1).concat(p.active[0]));
+  }
+  // Add (or take away) balls: the same number is added to every digit, which always gives a
+  // siteswap that works, with that many more balls. The letters stay as they are.
+  function addBalls(src, k) {
+    var m = build(src, { noReverse: true });
+    if (!m.ok) return m;
+    var p = m.parsed, d = p.digits.map(function (x) { return x + k; });
+    if (d.some(function (x) { return x < 1; })) return { ok: false, error: 'Can\'t take a ball away: a throw would become a 0, and empty hands aren\'t in the simulator yet.' };
+    if (d.some(function (x) { return x > 9; })) return { ok: false, error: 'That would need a throw higher than 9.' };
+    var nb = d.reduce(function (a, b) { return a + b; }, 0) / d.length;
+    if (k > 0 && nb > G.maxBalls) return { ok: false, error: 'The simulator goes up to ' + G.maxBalls + ' balls.' };
+    return compose(p, d, d.map(function (x, i) { return x === 2 && p.active[i] && k === 0; }));
+  }
+
+  // Time reverse (Appendix C): played backwards, each catch becomes a throw and each throw a
+  // catch. "3 o| Af Ba Cb : Dc Ed Fe" becomes "3 i| Fa Ef De : Cd Bc Ab": the new pair q is the
+  // old pair -q turned round, and each new throw is on the side of the ball it throws (the old
+  // throw that landed there: with 3s, the old throw -q-1, as that example shows). Each hand keeps its own moves. The ball leaving a new throw is
+  // the one that landed there, so it keeps that old throw's height; inside and outside swap.
+  // Works with 1s, held and thrown 2s, dashes, columns and an L start.
   function timeReverse(src) {
     var m = build(src, { noReverse: true });
     if (!m.ok) return m;
-    var p = m.parsed;
-    if (!noOnes(p)) return { ok: false, error: 'Time reverse does not handle 1s yet.' };
-    var N = p.tokens.length, D = p.digits.length, P = m.period;
-    // played backwards, each catch becomes a throw and each throw a catch. The new throw m is
-    // the old catch k = -m; the ball leaving there is the one that landed there, so it keeps
-    // that throw's height, and its direction swaps (a catch out wide becomes a throw from outside)
-    var swap = { o: 'i', i: 'o', O: 'O' };
-    var tokens = [], digits = [], active = [], dirs = '';
-    function incomingTo(k) {
-      for (var i = k - 6; i <= k + 1; i++) { var n = m.digit(i); if ((n >= 3 || (n === 2 && p.active[((i % D) + D) % D])) && i + n - 2 === k) return i; }
+    var p = m.parsed, N = p.tokens.length, D = p.digits.length, P = m.period, R = p.dirs.length;
+    var swap = { o: 'i', i: 'o', O: 'O', I: 'I' };
+    function act(i) { return !!p.active[mod(i, D)]; }
+    function incomingTo(k) {   // (a held 2 "lands" where it was, so it is its own incoming throw)
+      for (var i = k - 10; i <= k + 1; i++) if (i + m.digit(i) - 2 === k) return i;
       return null;
     }
-    for (var q = 0; q < P; q++) {
-      var k = ((-q) % P + P) % P, inc = incomingTo(k);
-      var d = inc === null ? 2 : m.digit(inc);
-      var act = inc !== null && d === 2;
-      if (q < N) tokens.push(tokenText(p.tokens[k % N].c.toUpperCase(), p.tokens[k % N].t.toLowerCase(), d === 2 && !act));
-      if (q < D) { digits.push(d); active.push(act); }
-      if (q < p.dirs.length) dirs += swap[p.dirs[(inc === null ? k : inc) % N % p.dirs.length]] || 'o';
+    var L = P, toks = [], digits = [], active = [], dirs = [], grp = [];
+    for (var q = 0; q < L; q++) {
+      var k = mod(-q, P), old = p.tokens[mod(k, N)], inc = incomingTo(k);
+      var d = m.digit(inc);
+      toks.push({ t: old.c.toUpperCase(), c: old.t.toLowerCase() });
+      digits.push(d); active.push(d === 2 && act(inc));
+      dirs.push(swap[p.dirs[mod(inc, R)]]);
+      grp.push(Math.floor(mod(inc, P) / N) * 1000 + p.tokens[mod(inc, N)].group);   // (a reversed throw is on the side of the ball it throws)
     }
-    var gs = groupSizes(p);
-    return write(digits, active, dirs, tokens, gs.every(function (x) { return x === gs[0]; }) ? gs : [N], false);
+    // start at the first side change that falls on a right-hand throw (or the first one at all)
+    var start = 0, starts = [];
+    for (q = 0; q < L; q++) if (grp[q] !== grp[mod(q - 1, L)]) starts.push(q);
+    var even = starts.filter(function (x) { return x % 2 === 0; });
+    if (even.length) start = even.indexOf(0) >= 0 ? 0 : even[0];
+    function rot(a) { return a.slice(start).concat(a.slice(0, start)); }
+    toks = rot(toks); digits = rot(digits); active = rot(active); dirs = rot(dirs); grp = rot(grp);
+    // the smallest repeat of the digits, directions and letters
+    function period(a, eq) { for (var n = 1; n <= a.length; n++) { if (a.length % n) continue; var ok = true; for (var i = n; i < a.length && ok; i++) ok = eq(a[i], a[i - n]); if (ok) return n; } return a.length; }
+    var Dn = period(digits.map(function (x, i) { return x + (active[i] ? 'T' : ''); }), function (a, b) { return a === b; });
+    var Rn = period(dirs, function (a, b) { return a === b; });
+    var Nn = period(toks.map(function (t, i) { return t.t + t.c + '|' + (grp[i] !== grp[mod(i - 1, L)]); }), function (a, b) { return a === b; });
+    Nn = Math.max(Nn, Math.min(N, L)); if (L % Nn) Nn = L;
+    var g = 0, tokens = [];
+    for (q = 0; q < Nn; q++) {
+      if (q && grp[q] !== grp[q - 1]) g++;
+      var dash = q > 0 && grp[q] === grp[q - 1] && dirs[q] !== dirs[q - 1] && /[io]/.test(dirs[q] + dirs[q - 1]) && Rn > 1;
+      tokens.push({ t: toks[q].t, c: toks[q].c, group: g, dash: dash });
+    }
+    var dirStr = dirs.slice(0, Rn).join('');
+    var anyIn = /i/.test(dirStr);
+    var np = { tokens: tokens, dirs: dirStr, lstart: p.lstart, slash: '/', head: anyIn ? '3' : p.head };
+    var first = tokens[0].t, mixed = Rn > 1 || /[OI]/.test(dirStr);
+    np.slash = first === 'U' ? '/' : '\\';
+    var r = compose(np, digits.slice(0, Dn), active.slice(0, Dn));
+    if (!r.ok) return r;
+    if (!mixed && !p.lstart) {   // let the first throw's peak decide, as the cascades need
+      var mm = build(r.src, { noReverse: true });
+      if (mm.ok && mm.slashSeen && mm.slashSeen !== np.slash) { np.slash = mm.slashSeen; r = compose(np, digits.slice(0, Dn), active.slice(0, Dn)); }
+    }
+    return r;
   }
 
+  // Flip: swap right and left in every letter; everything else stays as written
   function flip(src) {
-    var m = build(src);
+    var m = build(src, { noReverse: true });
     if (!m.ok) return m;
     var p = m.parsed, sw = { R: 'L', L: 'R', U: 'U', r: 'l', l: 'r', u: 'u' };
-    var tokens = p.tokens.map(function (t) {
-      return sw[t.t] + (t.br ? '(' + sw[t.br] + ')' : '') + (t.cFromNext ? '' : sw[t.c]) + (t.hold ? '.' : '');
-    });
-    return write(p.digits, p.active, p.dirs, tokens, groupSizes(p), !/^\s*[0-9]/.test(p.src));
+    var np = {}; for (var k in p) np[k] = p[k];
+    np.tokens = p.tokens.map(function (t) { var c = {}; for (var q in t) c[q] = t[q]; c.t = sw[t.t]; c.c = sw[t.c]; if (t.br) c.br = sw[t.br]; return c; });
+    return compose(np, p.digits, p.active);
+  }
+
+  // Mirror image: the right hand does what the left did and the other way round, with right
+  // and left swapped in the letters too (clockwise becomes anticlockwise, right arm on top
+  // becomes left arm on top). Written by swapping the letters and starting with the other hand
+  // (the L start); if it's the same pattern either way round, the L is left off.
+  function mirror(src) {
+    var m = build(src, { noReverse: true });
+    if (!m.ok) return m;
+    var p = m.parsed, sw = { R: 'L', L: 'R', U: 'U', r: 'l', l: 'r', u: 'u' };
+    var np = {}; for (var k in p) np[k] = p[k];
+    np.tokens = p.tokens.map(function (t) { var c = {}; for (var q in t) c[q] = t[q]; c.t = sw[t.t]; c.c = sw[t.c]; if (t.br) c.br = sw[t.br]; return c; });
+    np.lstart = !p.lstart;
+    if (!np.slash) np.slash = np.tokens[0].t === 'U' ? '/' : '\\';
+    var r = compose(np, p.digits, p.active);
+    if (!r.ok) return r;
+    if (np.lstart) {   // (no need for the L if starting with the right hand gives the same pattern)
+      var plain = {}; for (var k2 in np) plain[k2] = np[k2];
+      plain.lstart = false; plain.slash = p.slash;
+      var r2 = compose(plain, p.digits, p.active);
+      if (r2.ok && sameKey(r2.src) === sameKey(r.src)) r = r2;
+    }
+    if (sameKey(r.src) === sameKey(src)) return { ok: false, error: 'This pattern is its own mirror image.' };
+    return r;
   }
 
   // Appendix C: move the first throw and catch to the end, then switch the red letters (the first
@@ -1280,8 +1513,15 @@
     var m = build(src);
     if (!m.ok) return m;
     var p = m.parsed;
+    // (an inside pattern: convert the pattern it's the time reverse of, then reverse back)
+    if (/^i+$/.test(p.dirs)) {
+      var r1 = timeReverse(src), r2 = r1.ok ? millsFlos(r1.src) : r1;
+      return r2.ok ? timeReverse(r2.src) : r2;
+    }
     if (!noOnes(p)) return { ok: false, error: 'Mills/flos conversion does not handle 1s yet.' };
     var N = p.tokens.length, gs = groupSizes(p);
+    if (p.dirs !== 'o' || gs.length < 2 || p.lstart || gs.some(function (x) { return x < 2; }))
+      return { ok: false, error: 'Appendix C\'s mills/flos conversion is for outside patterns made of halves on each side, like the mills and flos messes.' };
     var t = p.tokens.map(function (x) { return { t: x.t, c: x.c, hold: x.hold, redT: false, redC: false }; });
     var at = 0;
     gs.forEach(function (size) { t[at].redT = true; t[at + size - 1].redC = true; at += size; });
@@ -1303,6 +1543,40 @@
     return write(digits, active, p.dirs, t.map(function (x) { return tokenText(x.t, x.c, x.hold); }), gs, !/^\s*[0-9]/.test(p.src));
   }
 
+  // Mills or flos? (Appendix C: in an outside mills mess each half starts and ends with a crossed
+  // throw, in a flos mess with an uncrossed one.) An inside pattern goes by the pattern it's the
+  // time reverse of. Anything else (cascades, windmills, half messes, butterflies...) is neither.
+  function family(src, depth) {
+    var m = build(src, { noReverse: true });
+    if (!m.ok) return null;
+    var p = m.parsed;
+    if (/^i+$/.test(p.dirs) && !depth) { var r = timeReverse(src); return r.ok ? family(r.src, 1) : null; }
+    if (!/^[oi]+$/.test(p.dirs)) return null;   // (the butterflies, mixing o and i, go by their letters)
+    function judge(groups) {
+      groups = groups.filter(function (g) { return g.length >= 2; });
+      if (groups.length < 2) return null;
+      var ends = groups.map(function (g) { return [g[0] !== 'U', g[g.length - 1] !== 'U']; });
+      if (ends.every(function (e) { return e[0] && e[1]; })) return 'mills';
+      if (ends.every(function (e) { return !e[0] && !e[1]; })) return 'flos';
+      return null;
+    }
+    // as written...
+    var groups = [], cur = null;
+    p.tokens.forEach(function (t) { if (!cur || cur.g !== t.group) { cur = { g: t.group, ts: [] }; groups.push(cur); } cur.ts.push(t.t); });
+    var f = judge(groups.map(function (g) { return g.ts; }));
+    if (f) return f;
+    // ...or, for a pattern written in two halves, split into equal halves from any right-hand
+    // throw (so where the colon was put, as in a time reverse, doesn't matter)
+    var T = p.tokens.map(function (t) { return t.t; }), N = T.length;
+    if (groups.length !== 2 || N % 2 || N < 4) return null;
+    for (var r = 0; r < N; r += 2) {
+      var rot = T.slice(r).concat(T.slice(0, r));
+      f = judge([rot.slice(0, N / 2), rot.slice(N / 2)]);
+      if (f) return f;
+    }
+    return null;
+  }
+
   // the same pattern? (same throws, catches, heights and directions, from any right-hand start)
   function sameKey(src) {
     var m = build(src);
@@ -1310,10 +1584,12 @@
     var p = m.parsed, P = m.period, seq = [];
     for (var j = 0; j < P; j++) {
       var tk = p.tokens[j % p.tokens.length];
-      seq.push(tk.t + (tk.br || '') + tk.c + m.digit(j) + p.dirs[(j % p.tokens.length) % p.dirs.length]);
+      seq.push(tk.t + (tk.br || '') + tk.c + m.digit(j) + (p.active[j % p.digits.length] ? 'T' : '') + p.dirs[j % p.dirs.length]);
     }
+    // (compared from every right-hand throw: in a pattern that starts with the left hand,
+    // those are the odd ones)
     var best = null;
-    for (var r = 0; r < P; r += 2) {
+    for (var r = p.lstart ? 1 : 0; r < P; r += 2) {
       var k = seq.slice(r).concat(seq.slice(0, r)).join(' ');
       if (best === null || k < best) best = k;
     }
@@ -1327,7 +1603,8 @@
   }
 
   var PH = { G: G, parse: parse, build: build, ik: ik, PATTERNS: PATTERNS,
-             timeReverse: timeReverse, flip: flip, millsFlos: millsFlos, sameKey: sameKey, findPattern: findPattern };
+             timeReverse: timeReverse, flip: flip, millsFlos: millsFlos, sameKey: sameKey, findPattern: findPattern,
+             cycleSiteswap: cycleSiteswap, addBalls: addBalls, compose: compose, mirror: mirror, family: family };
   if (typeof module !== 'undefined' && module.exports) module.exports = PH;
   root.PH = PH;
 })(typeof window !== 'undefined' ? window : this);

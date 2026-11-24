@@ -31,12 +31,35 @@ to load three.js). Pick a pattern, then:
   and a speed slider.
 - Type your own pattern in the box and press Enter to play it. If the slash does
   not match where the first throw peaks, the page says so.
-- Pattern tools: Time reverse (the pattern played backwards: throws become catches,
-  `o` and `i` swap, the siteswap follows the balls), Flip (right and left swapped),
-  and Mills ↔ flos (Appendix C: move the first throw to the end and switch the red
-  letters, the first throw and last catch of each half; the digits rotate too). If
-  the result is in the list, its name is shown. `tests/transforms.js` checks all
-  three against the pairs published in the article.
+- Pattern tools, written back in the same notation (dashes, L start, hold dots and 1
+  brackets kept). Time reverse, Flip, Mirror and the Mills/Flos switch are switches: each lights up
+  while it's on, they can be combined, and they apply to the pattern chosen from the list
+  or typed (in the order mills ↔ flos, flip, mirror, time reverse). Choosing a pattern
+  turns them off; Cycle siteswap and the − 3 + ball count change the chosen pattern and
+  keep the switches.
+  - Time reverse: the pattern played backwards, by Appendix C's rule (`Af Ba Cb : Dc Ed
+    Fe` becomes `Fa Ef De : Cd Bc Ab`): throws become catches, `o` and `i` swap, each ball
+    keeps its height, each hand keeps its own moves. Works on every pattern but the
+    multiplexes.
+  - Flip: right and left swapped in every letter.
+  - Mirror: the mirror image (the hands swap over as well as the letters), so clockwise
+    and anticlockwise swap and right arm on top becomes left arm on top. Greyed out for a
+    pattern that is its own mirror image, like the mills mess.
+  - Cascade | Mills | Flos: lit for what the pattern on show is (Appendix C: in a mills mess
+    each half starts and ends with a crossed throw, in a flos mess with an uncrossed one; an
+    inside pattern goes by the pattern it's the time reverse of; anything else is lit as
+    Cascade). Pressing the other of Mills and Flos converts it by Appendix C's rule (move the
+    first throw to the end and switch the red letters, the first throw and last catch of each
+    half; the digits rotate too); an inside pattern is converted by way of its time reverse.
+  - Cycle siteswap: the digits move along one throw against the letters, so another throw
+    leads (423 → 234 → 342 mills).
+  - − 3 + (by the arrows): every digit one lower or higher, which always gives a siteswap that
+    works. Taking a ball away stops before a throw would become a 0.
+  A tool that can't be used on the current pattern is greyed out, with the reason as its
+  tip. A pattern juggled at the sides (sebs, Mike's mess) stays at the sides. If the
+  result is in the list, its name is shown. `tests/transforms.js` checks the tools against
+  the pairs published in the article, and that every pattern comes back to itself after
+  reversing twice, flipping twice, cycling right round, and a ball on and off.
 
 The list follows the article: all of Appendix A in its order (with the confirmed
 typos fixed), then the main article's sebs and siteswap patterns, Appendix B, and
@@ -157,6 +180,26 @@ neighbouring columns are always `colStep` 18 cm apart; a hand throws from the sp
 it caught, carrying nothing), an `L` start (built as the mirror image of the same pattern
 starting with the right hand), patterns with no slash or directions (outside throws),
 and the 2 ball messes (their 2s are thrown).
+
+Balls in the air keep apart. Where the arcs of neighbouring throws would meet (most
+patterns with 4 or 5 balls, and a few with 3, like the half shower, tennis and some
+butterflies), each arc leans a little forward or back, as real jugglers' arcs do: up to
+`ballLane` 6 cm at the top (1 cm more for each ball over 3), none at the ends. Each
+pattern's leans are chosen once, by trying each throw's lean in turn and keeping whichever
+leaves the balls clearest of each other and of the forearms. A 3 ball pattern whose balls
+already keep apart isn't touched. The page goes up to 5 balls (`maxBalls`).
+
+In tennis (`Oii`), the `O` ball goes over the top of the other two and wide of them, as in a
+reverse cascade: an `O` throw mixed with other directions is thrown and caught further out
+(`oWide`) and peaks `oLift` 16 cm higher, the least that keeps it clear of the balls landing
+where it's thrown from; the whole pattern is drawn in (`oNarrow` 0.7), so its widest ball is
+about 31 cm out from the middle.
+
+Where a pattern's directions change from throw to throw (tennis, the butterflies), each
+throw's own direction letter is shown after its number on the throw lines.
+
+`tests/check.js` now also reports balls meeting in the air, and `tests/sweep.js` checks
+every pattern at every ball count from 2 to 5 for collisions of all kinds.
 
 Turning patterns: in Mike's mess (45°) and sebs (80°) each half is done at one side of
 the body and the whole juggler turns towards it, passing through facing the front
