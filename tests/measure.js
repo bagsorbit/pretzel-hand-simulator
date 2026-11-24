@@ -38,7 +38,8 @@ function measure(pt, perBeat) {
   var G = PH.G, m = PH.build(pt.src);
   if (!m.ok) return { error: m.error };
   var r = { m: m, minFore: 1e9, minHand: 1e9, minHandFore: 1e9, maxReach: 0, wrongTop: 0, minElbowBody: 1e9, worstT: 0,
-            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash,
+            minBall: 1e9, ballT: 0, down: 0, samples: 0, behind: 0, inBody: 0, inBodyT: 0, slashOk: m.slashSeen === m.parsed.slash || /O/.test(m.parsed.dirs),   // (an O throw goes outside to outside, so it peaks on the centre line: the key says O doesn't go by the slash)
+           
             maxAcc: 0, accT: 0, yMin: [1e9, 1e9], yMax: [-1e9, -1e9], handZ: 0, handY: 0, elbowY: 0, elbowZ: 0, elbowX: 0, topY: 0, crossed: 0 };
   // every ball should arc across a little, not go straight up and down
   r.minArc = 1e9; r.underZ = 0;

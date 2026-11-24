@@ -103,7 +103,8 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 - A 1, written `U(u)`, is caught by the other hand a quarter beat after it is thrown
   ("throw, throw, catch, catch"); the bracket letter is that catch, and the throw
   before it has no catch letter of its own.
-- `O` throws go from the outside and are caught outside.
+- `O` throws go from the outside and are caught outside, so they peak on the centre
+  line. The article's key says `O` doesn't go by the slash, so the check doesn't test it.
 - Patterns with more balls are juggled faster, so they stay compact: a 4-ball
   pattern runs at about 1.5 times the tempo of a 3-ball one. The base tempo is 3.2
   beats a second, the author's own mills mess.
@@ -147,15 +148,10 @@ and Appendix C's six Rubenstein's Revenges with their butterfly-loop versions.
 Not in yet: multiplexes, empty hands, `I`, `-` direction changes and sebs (forward
 throws).
 
-Open questions: four `O` windmills (under throw windmill, under throw 4233 and 342T3
-windmills, 5223 alternating windmill) come out with the first throw peaking on the
-other side from the written slash, which suggests `O` is modelled wrongly; the
-alternating windmill's first throw now peaks dead centre, so it fails the same check.
-In the mills mess with windmill one uncrossed throw is brushed by its own forearm
-(3 cm) as that arm sweeps over on top. Since the footage changes (2026-11-22) the TR
+Open questions: since the footage changes (2026-11-22) the TR
 mills messes have a forearm sloping down just over the 10% limit. The hectic flos
 messes clear now, but work above the heights measured in the footage, and their
-hands jolt more than the limit (about 40k).
+hands jolt more than the limit (about 18k).
 
 ## Footage
 
