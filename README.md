@@ -259,6 +259,13 @@ the check: `jsc -e 'var OVERRIDES={outUnder:28}' tests/check.js`.
 `tests/search-flos.js` does the same for the hectic flos change-over settings only,
 scored on clearance, jolts, how low the hands go and how even the ball heights are.
 
+The share button (by the ball count) gives a link to the pattern on show: on a phone the share
+sheet, on a computer it copies the link. The link points at the article on the circus website
+(`HOME_PAGE`), jumps to the simulator there (`#simulator`) and carries the pattern as `?n=` (plus
+`&turn=` for a pattern juggled at the sides that isn't in the list). The site's embed hands the
+query on to the simulator, and opening the GitHub Pages address directly goes to the website,
+keeping the pattern.
+
 The round i button by the letters opens the key: the current pattern taken apart pair by
 pair in plain words, then what every symbol means (`?key` in the address opens it).
 
