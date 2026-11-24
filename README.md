@@ -263,7 +263,7 @@ At the left end of the letters: a fullscreen button (where the browser allows it
 phone, an arrow that tucks the controls away to give the juggler more room. On a phone the four
 view buttons become one that steps through them. The share button (under Flos) gives a link to the pattern on show: on a phone the share
 sheet, on a computer it copies the link. The link points at the article on the circus website
-(`HOME_PAGE`), jumps to the simulator there (`#simulator`) and carries the pattern as `?n=` (plus
+(`HOME_PAGE`), jumps straight to the simulator there (`#phs`, the frame it sits in) and carries the pattern as `?n=` (plus
 `&turn=` for a pattern juggled at the sides that isn't in the list). The site's embed hands the
 query on to the simulator, and opening the GitHub Pages address directly goes to the website,
 keeping the pattern.

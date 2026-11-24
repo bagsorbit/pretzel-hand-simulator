@@ -974,15 +974,15 @@ function showProblem(msg) {
   }
 
   // Share: a link to the pattern on show. It points at the article on the circus website, where
-  // the simulator lives (its embed hands the ?n=... on to the simulator), and jumps to the
-  // simulator. Opened straight from GitHub rather than inside the website, the page goes to the
+  // the simulator lives (its embed hands the ?n=... on to the simulator), and jumps straight to
+  // the simulator itself (#phs, the frame it sits in). Opened straight from GitHub rather than inside the website, the page goes to the
   // website, keeping the pattern. Phones and tablets get the share sheet; computers copy the link.
   var HOME_PAGE = 'https://twistedorbitcircus.com/2020/03/26/pretzel-hand-a-juggling-notation/';
   var ON_PAGES = location.hostname === 'bagsorbit.github.io';
-  if (ON_PAGES && window.top === window.self) location.replace(HOME_PAGE + location.search + '#simulator');
+  if (ON_PAGES && window.top === window.self) location.replace(HOME_PAGE + location.search + '#phs');
   function shareUrl() {
     var qs = 'n=' + encodeURIComponent(current.src) + (current.turn && !(PH.findPattern(current.src) || {}).turn ? '&turn=' + current.turn : '');
-    return (ON_PAGES ? HOME_PAGE : location.origin + location.pathname) + '?' + qs + (ON_PAGES ? '#simulator' : '');
+    return (ON_PAGES ? HOME_PAGE : location.origin + location.pathname) + '?' + qs + (ON_PAGES ? '#phs' : '');
   }
   var shareBtn = document.getElementById('shareBtn');
   var touchScreen = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
