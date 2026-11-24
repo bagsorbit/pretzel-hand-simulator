@@ -265,7 +265,7 @@ select { padding-right: 10px; max-width: 100%; }
         <tr><td class="sym">I</td><td>Columns: straight up, caught where it was thrown.</td></tr>
         <tr><td class="sym">ioo</td><td>Several direction letters take turns, throw by throw. Each throw's own direction is shown after its number, above the letters.</td></tr>
         <tr><td class="sym">L</td><td>Just before the slash: the pattern starts with the left hand.</td></tr>
-        <tr><td class="sym">\ /</td><td>The way the first throw goes: the top of the slash points where the ball travels, <b>/</b> to the juggler's right and <b>\</b> to the left. It's a guide, not a change to the pattern. Sebs is the exception: it has the mills letters with the opposite slash, and is juggled at the sides. Columns go straight up, so their slash doesn't point anywhere.</td></tr>
+        <tr><td class="sym">\ /</td><td>Where the first throw peaks: the top of the slash points to the side of the body the first ball peaks on, as you look at the juggler. <b>/</b> peaks on the juggler's left (your right) and <b>\</b> on the juggler's right (your left). It's a guide, not a change to the pattern. Sebs is the exception: it has the mills letters with the opposite slash, and is juggled at the sides. Columns go straight up, and O throws peak in the middle, so their slash doesn't point anywhere.</td></tr>
       </table>
       <p>"TR" in a name means time reverse: the pattern you'd see if you filmed another one and played it backwards.</p>
     </section>
@@ -706,13 +706,13 @@ function showProblem(msg) {
       'Seen from the front, the juggler’s right arm is on your left.';
     var notes = [];
     if (note) notes.push(note);
-    // The slash points the way the first throw goes. (Nothing to check with no slash written, for
-    // columns, which go straight up, or for patterns juggled at the sides, like sebs.) The article
-    // uses the older rule for outside patterns, so a pattern typed from it gets a gentle note.
-    if (m.parsed.slash && m.slashSeen && m.slashSeen !== m.parsed.slash && m.parsed.slash !== '|' && !m.turn) {
-      var way = m.slashSeen === '/' ? 'right' : 'left';
-      notes.push('Slash: the first throw here goes to the juggler\'s ' + way + ', so the simulator writes it <b>' + esc(m.slashSeen) + '</b>' +
-        ' (the top of the slash points the way the first throw goes). The pattern plays the same either way.');
+    // The slash shows the side the first throw peaks on. (Nothing to check with no slash written, for
+    // columns, which go straight up, O throws, which peak in the middle, or for patterns juggled at
+    // the sides, like sebs.) A pattern typed with the other slash gets a gentle note.
+    if (m.parsed.slash && m.slashSeen && m.slashSeen !== m.parsed.slash && m.parsed.slash !== '|' && !m.turn && !/^[OI]/.test(m.parsed.dirs)) {
+      var way = m.slashSeen === '/' ? 'left' : 'right';
+      notes.push('Slash: the first throw here peaks on the juggler\'s ' + way + ', so the simulator writes it <b>' + esc(m.slashSeen) + '</b>' +
+        ' (the top of the slash points to the side the first ball peaks on). The pattern plays the same either way.');
     }
     msg.innerHTML = notes.join(' ');
     try { localStorage.setItem('phs-src', src); } catch (e) {}

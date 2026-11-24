@@ -30,7 +30,7 @@ to load three.js). Pick a pattern, then:
 - Play/Pause, step one throw or catch at a time (also the arrow keys and space),
   and a speed slider.
 - Type your own pattern in the box and press Enter to play it. If the slash does
-  not point the way the first throw goes, the page says so (the pattern plays the same).
+  not point to the side the first throw peaks on, the page says so (the pattern plays the same).
 - Pattern tools, written back in the same notation (dashes, L start, hold dots and 1
   brackets kept). Time reverse, Flip, Mirror and the Mills/Flos switch are switches: each lights up
   while it's on, they can be combined, and they apply to the pattern chosen from the list
@@ -104,10 +104,11 @@ are listed once each, their mirror images being a press of Mirror away; the arti
   are drawn a little flattened, like a cupped palm, so you can see which way they face.
   A thrown 2 (`2T`) is a little pop over the other arm, so it rises a set 18 cm
   (`popRise`), as low as still clears that arm, instead of following real gravity.
-- The slash points the way the first throw goes (its top towards where the ball travels:
-  `/` to the juggler's right, `\` to the left). This turns round the article's slash for
-  outside patterns (the mills mess is written `o/` here, sebs `o\`); inside patterns are
-  unchanged. It changes nothing about the movement.
+- The slash shows the side of the body the first throw peaks on: its top points there as you
+  watch, so `/` peaks on the juggler's left (your right) and `\` on the juggler's right. This is
+  the article's 2026 rule, a straight flip of its original slashes (cascade `i/`, mills mess
+  `o/`, sebs `o\`). O throws peak in the middle, so they don't go by the slash. It changes
+  nothing about the movement.
 - R, L and U give the arms at each throw and catch: crossed with the right on
   top, crossed with the left on top, or uncrossed. Crossed means both hands are
   on the other side of the body.

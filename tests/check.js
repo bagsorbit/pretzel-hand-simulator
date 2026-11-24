@@ -14,7 +14,7 @@ PH.PATTERNS.forEach(function (pt) {
   var r = measure(pt, 80);
   if (r.error) { print('FAIL ' + pt.name + ': ' + r.error); bad++; return; }
   var m = r.m, msgs = [];
-  if (!r.slashOk) msgs.push('slash: written ' + m.parsed.slash + ', but the first throw goes ' + (m.slashSeen === '/' ? 'right (/)' : 'left (\\)'));
+  if (!r.slashOk) msgs.push('slash: written ' + m.parsed.slash + ', but the first throw peaks on the juggler\'s ' + (m.slashSeen === '/' ? 'left (/)' : 'right (\\)'));
   if (r.minFore < G.foreR * 2 - G.graze) msgs.push('forearms touch: ' + f1(r.minFore) + ' cm at beat ' + f1(r.worstT));
   if (r.minHand < G.handR * 2) msgs.push('hands touch: ' + f1(r.minHand));
   if (r.minHandFore < G.handR + G.foreR - G.graze) msgs.push('hand touches other forearm: ' + f1(r.minHandFore));

@@ -1195,16 +1195,20 @@
       var dg = p.digits[j % D];
       if (p.tokens[j].hold && dg !== 2) notes.push('throw ' + (j + 1) + ' has a hold dot but the siteswap has a ' + dg + ' there');
     }
-    // The slash points the way the first throw goes (its top towards where the ball travels):
-    // \ for a first throw travelling to the juggler's left, / to the right. Taken from the first
-    // right-hand throw that flies; columns, which go straight up, have no slash of their own.
+    // The slash shows the side of the body the first throw peaks on: the top of the slash points
+    // there as you watch, so / is a peak on the juggler's left (your right) and \ on the juggler's
+    // right. The peak is taken as halfway between the throw and the catch, from the first
+    // right-hand throw that flies; columns, which go straight up, and throws that peak on the
+    // centre line (O throws, outside to outside) have no slash of their own.
     var slashSeen = null;
     for (j = 0; j < P && slashSeen === null; j++) {
       if (handOf(j) !== 0 || !flies(j)) continue;
       var k = j + nOf(j) - 2, tc = catchTime(k);
-      var dxs = pose(tc).hands[handOf(k)][0] - pose(j).hands[0][0];
-      if (Math.abs(dxs) < 3) break;
-      slashSeen = dxs < 0 ? '/' : '\\';
+      var x0 = pose(j).hands[0][0], x1 = pose(tc).hands[handOf(k)][0];
+      if (Math.abs(x1 - x0) < 3) break;
+      var mid = (x0 + x1) / 2;
+      if (Math.abs(mid) < 2) break;
+      slashSeen = mid > 0 ? '/' : '\\';
     }
 
     var model = {
@@ -1259,7 +1263,7 @@
   // The patterns, as written in the article (typos settled with the author on 2026-11-20).
   var PATTERNS = [
     // Appendix A: list of patterns, in its order (with the typos fixed that the author confirmed)
-    { group: 'Basic cascades', name: 'Cascade', src: 'i\\ Uu : Uu' },
+    { group: 'Basic cascades', name: 'Cascade', src: 'i/ Uu : Uu' },
     { group: 'Basic cascades', name: 'Reverse cascade', src: 'o\\ Uu : Uu' },
     { group: 'Basic cascades', name: 'Half shower', src: 'O\\ Uu Uu' },
     { group: 'Basic cascades', name: 'Tennis', src: 'Oii\\ Uu : Uu' },
@@ -1274,18 +1278,18 @@
     { group: 'Half messes (2:2)', name: 'Half mess, left arm on top', src: 'o/ Lu Uu : Ul Ll' },
     { group: 'Half messes (2:2)', name: 'Half mess, left hand starts', src: 'oL\\ Lu Uu : Ul Ll' },
     { group: 'Half messes (2:2)', name: 'Half mess, left arm on top, left hand starts', src: 'oL\\ Ru Uu : Ur Rr' },
-    { group: 'Half messes (2:2)', name: 'Inside half mess', src: '3 i\\ Ru Uu : Ur Rr' },
-    { group: 'Half messes (2:2)', name: 'Inside half mess, left arm on top', src: '3 i\\ Lu Uu : Ul Ll' },
-    { group: 'Half messes (2:2)', name: 'Inside half mess, left hand starts', src: '3 iL/ Lu Uu : Ul Ll' },
-    { group: 'Half messes (2:2)', name: 'Inside half mess, left arm on top, left hand starts', src: '3 iL/ Ru Uu : Ur Rr' },
+    { group: 'Half messes (2:2)', name: 'Inside half mess', src: '3 i/ Ru Uu : Ur Rr' },
+    { group: 'Half messes (2:2)', name: 'Inside half mess, left arm on top', src: '3 i/ Lu Uu : Ul Ll' },
+    { group: 'Half messes (2:2)', name: 'Inside half mess, left hand starts', src: '3 iL\\ Lu Uu : Ul Ll' },
+    { group: 'Half messes (2:2)', name: 'Inside half mess, left arm on top, left hand starts', src: '3 iL\\ Ru Uu : Ur Rr' },
     { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess', src: 'o/ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
     { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess, left arm first', src: 'o/ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
     { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess, left hand starts', src: 'oL\\ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
     { group: 'Alternating half messes (2:2:2:2)', name: 'Alternating half mess, left arm first, left hand starts', src: 'oL\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
-    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess', src: '3 i\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
-    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left arm first', src: '3 i\\ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
-    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left hand starts', src: '3 iL/ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
-    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left arm first, left hand starts', src: '3 iL/ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
+    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess', src: '3 i/ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
+    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left arm first', src: '3 i/ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
+    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left hand starts', src: '3 iL\\ Lu Uu : Ur Rr : Ru Uu : Ul Ll' },
+    { group: 'Alternating half messes (2:2:2:2)', name: 'Inside alternating half mess, left arm first, left hand starts', src: '3 iL\\ Ru Uu : Ul Ll : Lu Uu : Ur Rr' },
     { group: 'Less than half a mess', name: 'Less than half a mess (1:1:1:1)', src: 'Rr : Rl : Ll : Lr' },
     { group: 'Less than half a mess', name: 'Less than half a mess, left hand starts', src: 'L\\ Ll : Lr : Rr : Rl' },
     { group: 'Less than half a mess', name: 'Alternating less than half a mess (1:1:1:1:1:1)', src: 'Rr : Rr : Rl : Ll : Ll : Lr' },
@@ -1293,47 +1297,47 @@
     { group: 'Mills messes (3:3)', name: 'Flipped mess', src: 'o/ Lu Ur Rr : Ru Ul Ll' },
     { group: 'Mills messes (3:3)', name: 'Flos mess', src: 'o\\ Ur Ru Uu : Ul Lu Uu' },
     { group: 'Mills messes (3:3)', name: 'Flipped flos mess', src: 'o\\ Ul Lu Uu : Ur Ru Uu' },
-    { group: 'Mills messes (3:3)', name: 'TR mills mess', src: '3 i/ Ur Rr Ru : Ul Ll Lu' },
-    { group: 'Mills messes (3:3)', name: 'TR flipped mess', src: '3 i/ Ul Ll Lu : Ur Rr Ru' },
-    { group: 'Mills messes (3:3)', name: 'TR flos mess', src: '3 i\\ Ru Uu Ul : Lu Uu Ur' },
-    { group: 'Mills messes (3:3)', name: 'TR flipped flos mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul' },
-    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp1', src: '3 ioo/ Ru - Ul Ll : Lu - Ur Rr' },
-    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp1,2', src: '3 iio/ Ru Ul - Ll : Lu Ur - Rr' },
+    { group: 'Mills messes (3:3)', name: 'TR mills mess', src: '3 i\\ Ur Rr Ru : Ul Ll Lu' },
+    { group: 'Mills messes (3:3)', name: 'TR flipped mess', src: '3 i\\ Ul Ll Lu : Ur Rr Ru' },
+    { group: 'Mills messes (3:3)', name: 'TR flos mess', src: '3 i/ Ru Uu Ul : Lu Uu Ur' },
+    { group: 'Mills messes (3:3)', name: 'TR flipped flos mess', src: '3 i/ Lu Uu Ur : Ru Uu Ul' },
+    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp1', src: '3 ioo\\ Ru - Ul Ll : Lu - Ur Rr' },
+    { group: 'Butterfly messes', name: 'Butterfly basic mess Opp1,2', src: '3 iio\\ Ru Ul - Ll : Lu Ur - Rr' },
     { group: 'Butterfly messes', name: 'Butterfly basic mess Opp2', src: '3 oio/ Ru - Ul - Ll : Lu - Ur - Rr' },
     { group: 'Butterfly messes', name: 'Butterfly basic mess Opp2,3', src: '3 oii/ Ru - Ul Ll : Lu - Ur Rr' },
     { group: 'Butterfly messes', name: 'Butterfly basic mess Opp3', src: '3 ooi/ Ru Ul - Ll : Lu Ur - Rr' },
-    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp1', src: '3 ioo/ Lu - Ur Rr : Ru - Ul Ll' },
-    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp1,2', src: '3 iio/ Lu Ur - Rr : Ru Ul - Ll' },
+    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp1', src: '3 ioo\\ Lu - Ur Rr : Ru - Ul Ll' },
+    { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp1,2', src: '3 iio\\ Lu Ur - Rr : Ru Ul - Ll' },
     { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp2', src: '3 oio/ Lu - Ur - Rr : Ru - Ul - Ll' },
     { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp2,3', src: '3 oii/ Lu - Ur Rr : Ru - Ul Ll' },
     { group: 'Butterfly messes', name: 'Butterfly flipped mess Opp3', src: '3 ooi/ Lu Ur - Rr : Ru Ul - Ll' },
     { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp1', src: '3 oii\\ Ur - Rr Ru : Ul - Ll Lu' },
     { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp1,2', src: '3 ooi\\ Ur Rr - Ru : Ul Ll - Lu' },
-    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp2', src: '3 ioi/ Ur - Rr - Ru : Ul - Ll - Lu' },
-    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp2,3', src: '3 ioo/ Ur - Rr Ru : Ul - Ll Lu' },
-    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp3', src: '3 iio/ Ur Rr - Ru : Ul Ll - Lu' },
+    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp2', src: '3 ioi\\ Ur - Rr - Ru : Ul - Ll - Lu' },
+    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp2,3', src: '3 ioo\\ Ur - Rr Ru : Ul - Ll Lu' },
+    { group: 'Butterfly messes', name: 'Butterfly TR basic mess Opp3', src: '3 iio\\ Ur Rr - Ru : Ul Ll - Lu' },
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp1', src: '3 oii\\ Ul - Ll Lu : Ur - Rr Ru' },
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp1,2', src: '3 ooi\\ Ul Ll - Lu : Ur Rr - Ru' },
-    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp2', src: '3 ioi/ Ul - Ll - Lu : Ur - Rr - Ru' },
-    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp2,3', src: '3 ioo/ Ul - Ll Lu : Ur - Rr Ru' },
-    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp3', src: '3 iio/ Ul Ll - Lu : Ur Rr - Ru' },
+    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp2', src: '3 ioi\\ Ul - Ll - Lu : Ur - Rr - Ru' },
+    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp2,3', src: '3 ioo\\ Ul - Ll Lu : Ur - Rr Ru' },
+    { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp3', src: '3 iio\\ Ul Ll - Lu : Ur Rr - Ru' },
     { group: 'Hectic messes', name: 'Hectic mills', src: 'o/ Lu Ul Lr : Ru Ur Rl' },
     { group: 'Hectic messes', name: 'Hectic flipped mess', src: 'o/ Ru Ur Rl : Lu Ul Lr' },
     { group: 'Hectic messes', name: 'Hectic flos mess', src: 'o\\ Ul Ru Uu : Ur Lu Uu' },
     { group: 'Hectic messes', name: 'Hectic flipped flos mess', src: 'o\\ Ur Lu Uu : Ul Ru Uu' },
-    { group: 'Hectic messes', name: 'TR hectic mills', src: '3 i/ Ul Lr Ru : Ur Rl Lu' },
-    { group: 'Hectic messes', name: 'TR hectic flipped mess', src: '3 i/ Ur Rl Lu : Ul Lr Ru' },
-    { group: 'Hectic messes', name: 'TR hectic flos mess', src: '3 i\\ Lu Uu Ul : Ru Uu Ur' },
-    { group: 'Hectic messes', name: 'TR hectic flipped flos mess', src: '3 i\\ Ru Uu Ur : Lu Uu Ul' },
+    { group: 'Hectic messes', name: 'TR hectic mills', src: '3 i\\ Ul Lr Ru : Ur Rl Lu' },
+    { group: 'Hectic messes', name: 'TR hectic flipped mess', src: '3 i\\ Ur Rl Lu : Ul Lr Ru' },
+    { group: 'Hectic messes', name: 'TR hectic flos mess', src: '3 i/ Lu Uu Ul : Ru Uu Ur' },
+    { group: 'Hectic messes', name: 'TR hectic flipped flos mess', src: '3 i/ Ru Uu Ur : Lu Uu Ul' },
     { group: 'Other mills mess extensions and variations', name: 'Mills mess with windmill (5bt mills with extra windmills)', src: 'o/ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
     { group: 'Other mills mess extensions and variations', name: 'Mills mess with extra crossed arms', src: 'o/ Ru Ul Ll : Ll : Ll : Lu Ur Rr : Rr : Rr' },
     { group: 'Other mills mess extensions and variations', name: 'Mills mess with shower', src: '44133 o/ Ru U U(u)u Ul Ll : Lu U U(u)u Ur Rr' },
     { group: 'Other mills mess extensions and variations', name: "Rubenstein's Revenge", src: '22335 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr' },
-    { group: 'Other mills mess extensions and variations', name: "TR Rubenstein's Revenge", src: '52233 i/ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu' },
+    { group: 'Other mills mess extensions and variations', name: "TR Rubenstein's Revenge", src: '52233 i\\ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu' },
     { group: 'Other mills mess extensions and variations', name: "Flos Rubenstein's Revenge", src: '52233 o\\ Ul Lu. Ur. Ru Uu : Ur Ru. Ul. Lu Uu' },
-    { group: 'Other mills mess extensions and variations', name: "TR flos Rubenstein's Revenge", src: '33522 i\\ Lu Uu Ul Lu. Ur. : Ru Uu Ur Ru. Ul.' },
+    { group: 'Other mills mess extensions and variations', name: "TR flos Rubenstein's Revenge", src: '33522 i/ Lu Uu Ul Lu. Ur. : Ru Uu Ur Ru. Ul.' },
     { group: 'Other mills mess extensions and variations', name: "Alt Rubenstein's Revenge", src: '35223 o/ Ru Ur Ru. Ul. Ll : Lu Ul Lu. Ur. Rr' },
-    { group: 'Other mills mess extensions and variations', name: "TR alt Rubenstein's Revenge", src: '35223 i/ Ur Rr Ru. Ul. Lu : Ul Ll Lu. Ur. Ru' },
+    { group: 'Other mills mess extensions and variations', name: "TR alt Rubenstein's Revenge", src: '35223 i\\ Ur Rr Ru. Ul. Lu : Ul Ll Lu. Ur. Ru' },
     { group: 'Other mills mess extensions and variations', name: '3 ball Boston mess', src: '3 I/ Uu Uu Ur : Rr Rr Ru : Uu Uu Ul : Ll Ll Lu' },
     { group: 'Other mills mess extensions and variations', name: '4 ball Boston mess', src: '4 I/ Uu Uu Ul Lu : Uu Uu Ur Ru' },
     // from the main article: the sebs mess and siteswap sections (patterns not already above)
@@ -1363,11 +1367,11 @@
     { group: 'Appendix B: windmills', name: 'Alternating windmill with showers mess', src: '441344133 o\\ Ur R U(u)l Lu Ul L U(u)r Ru Uu : Ul L U(u)r Ru Ur R U(u)l Lu Uu' },
     // Appendix C: the six butterfly loop Rubenstein's Revenges (the six pure ones are above)
     { group: "Appendix C: butterfly loop Rubenstein's", name: "Rubenstein's Revenge, butterfly loop", src: '22335 o/ Lu. Ur. Ru Ur Rr : Ru. Ul. Lu Ul Ll' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR Rubenstein's Revenge, butterfly loop", src: '52233 i/ Ur Ru. Ul. Ll Lu : Ul Lu. Ur. Rr Ru' },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR Rubenstein's Revenge, butterfly loop", src: '52233 i\\ Ur Ru. Ul. Ll Lu : Ul Lu. Ur. Rr Ru' },
     { group: "Appendix C: butterfly loop Rubenstein's", name: "Alt Rubenstein's Revenge, butterfly loop", src: '35223 o/ Lu Ul Lu. Ur. Rr : Ru Ur Ru. Ul. Ll' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR alt Rubenstein's Revenge, butterfly loop", src: '35223 i/ Ul Ll Lu. Ur. Ru : Ur Rr Ru. Ul. Lu' },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR alt Rubenstein's Revenge, butterfly loop", src: '35223 i\\ Ul Ll Lu. Ur. Ru : Ur Rr Ru. Ul. Lu' },
     { group: "Appendix C: butterfly loop Rubenstein's", name: "Flos Rubenstein's Revenge, butterfly loop", src: '52233 o\\ Ur Ru. Ul. Lu Uu : Ul Lu. Ur. Ru Uu' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR flos Rubenstein's Revenge, butterfly loop", src: '33522 i\\ Ru Uu Ur Ru. Ul. : Lu Uu Ul Lu. Ur.' }
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR flos Rubenstein's Revenge, butterfly loop", src: '33522 i/ Ru Uu Ur Ru. Ul. : Lu Uu Ul Lu. Ur.' }
   ];
 
   // ---------- pattern tools: time reverse, flip, mills <-> flos ----------
@@ -1389,7 +1393,7 @@
     var src0 = (head ? head + ' ' : '') + dirs + '/ ' + body.join(' ');
     var m = build(src0, { noReverse: true });
     if (!m.ok) return { ok: false, error: m.error };
-    return { ok: true, src: src0.replace(dirs + '/', dirs + m.slashSeen) };
+    return { ok: true, src: src0.replace(dirs + '/', dirs + (m.slashSeen || '/')) };
   }
   function groupSizes(p) {
     var g = [];
@@ -1430,7 +1434,7 @@
     if (!m.ok) return { ok: false, error: m.error };
     return { ok: true, src: m.parsed.src };
   }
-  // compose, then give it the slash its first throw calls for (pointing where that throw goes)
+  // compose, then give it the slash its first throw calls for (pointing to the side that throw peaks on)
   function composeSlashed(np, digits, active) {
     var r = compose(np, digits, active);
     if (!r.ok) return r;
