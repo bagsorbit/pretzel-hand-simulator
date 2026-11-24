@@ -152,6 +152,12 @@ select { padding-right: 10px; max-width: 100%; }
 .problem.on { display: block; }
 @media (max-width: 600px) {
   .hideBtn { display: flex; }
+  /* small round buttons by the letters, as on the juggling lane simulator */
+  .keyBtn, .roundBtn { width: 28px; height: 28px; min-width: 0; border-width: 2.5px; box-shadow: 0 0 0 5px var(--paper); }
+  .keyBtn { font: italic 700 16px/1 Georgia, serif; bottom: 10px; }
+  .leftBtns { bottom: 10px; gap: 5px; }
+  .roundBtn svg { width: 15px; height: 15px; }
+  .keyBtn:active, .roundBtn:active { transform: none; box-shadow: 0 0 0 5px var(--paper); }
   body.controls-hidden .controls, body.controls-hidden .tools, body.controls-hidden .tools2,
   body.controls-hidden .msg, body.controls-hidden .info { display: none; }
   .views button[data-view] { display: none; }
