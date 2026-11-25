@@ -1362,6 +1362,7 @@
     { group: 'Other mills mess extensions and variations', name: '4 ball Boston mess', src: '4 I/ Uu Uu Ul Lu : Uu Uu Ur Ru' },
     // from the main article: the sebs mess and siteswap sections (patterns not already above)
     { group: 'Sebs mess and siteswaps', name: 'Forwards sebs mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 90 },
+    { group: 'Sebs mess and siteswaps', name: 'Backwards sebs mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 90 },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
     { group: 'Sebs mess and siteswaps', name: '4 ball mills mess', src: '4 o/ Ru Ul Ll : Lu Ur Rr' },
     { group: 'Sebs mess and siteswaps', name: '423 mills mess', src: '423 o/ Ru Ul. Ll : Lu Ur. Rr' },
     { group: 'Sebs mess and siteswaps', name: '414 mills mess', src: '414 o/ R U(u)l Ll : L U(u)r Rr' },
