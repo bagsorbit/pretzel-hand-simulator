@@ -303,7 +303,8 @@ and TR flos sebs messes wait for the author's description of their crossed throw
 Every sebs search now also keeps each side's three balls in one plane: each ball's flight,
 seen from above, close to one line for that side (the author: "we're trying to get that three
 ball arc as much as possible on one plane"); the 4-ball forwards sebs was redone this way. Elbows follow one path back, without going
-out and in again on the way (the author): flipped flos sebs mess's search scores that too.
+out and in again on the way (the author): flipped flos sebs mess's search scores that too, and backwards sebs
+(3, 4 and 5 balls) was smoothed the same way, staying close to the filmed path.
 
 The turning patterns' check looks at them in the body's own frame, and doesn't test their
 slash. Each sebs is written with the opposite slash to its front-facing pattern, which is
