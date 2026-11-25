@@ -217,19 +217,50 @@ throw's own direction letter is shown after its number on the throw lines.
 `tests/check.js` now also reports balls meeting in the air, and `tests/sweep.js` checks
 every pattern at every ball count from 2 to 5 for collisions of all kinds.
 
-Turning patterns: in Mike's mess (45°) each half is done at one side of the body and the
+Turning patterns: in Mike's mess (30°, from the 2026-11-24 footage) each half is done at one side of the body and the
 whole juggler turns towards it, passing through facing the front between halves (the
-pattern's `turn`); the arms keep their own movement relative to the body. Forwards and
-backwards sebs mess (`turn` 90, more than `bodyTurnMax`) are side-plane patterns: each half
-is juggled at one side (`sideX` out) in a plane square to the front, and the body turns 45°
-towards it. Every throw is made at one end of the side and caught at the other: where a hand
-is across the front pattern (middle or outside, `sideIn`/`sideOutX`) becomes how far forward
-it is at the side (`sideFront`, `sideBack` = level with the side of the body). So backwards
-sebs (the TR flipped flos mess) throws front to back, and forwards sebs (the mills mess)
-back to front. Each hand stays at a throw's side until the catch after it, then carries
-round the front (`carryFwd`) to its next throw's side; the body follows the two hands. The
-check looks at them in the body's own frame, and doesn't test their slash. Each is written
-with the opposite slash to its front-facing pattern, which is what tells them apart.
+pattern's `turn`); the arms keep their own movement relative to the body.
+
+Side-plane mode (a pattern turned more than `bodyTurnMax`, such as a shared link with a
+larger `turn`; no listed pattern uses it now): each half is juggled at one side (`sideX` out)
+in a plane turned `turn` degrees from the front (so its front end comes in a little), and the
+body turns 45° towards it. Every throw is made at one end of the side and caught at the
+other: where a hand is across the front pattern (middle or outside, `sideIn`/`sideOutX`)
+becomes how far forward it is at the side (`sideFront`, `sideBack` = level with the side of
+the body). Every ball is caught on the side it was thrown from; between its throws and
+catches a hand carries round the front (`carryFwd`) to the next one's side, with the elbow
+out, down and forward (`sidePole`); the body follows the two hands. A catch a hand has to
+rush back across for is brought forward (`lateFwd`) with the elbow swung back
+(`lateElbow`). A crossed throw (R or L) is made with the throwing hand close in, just under
+the other arm's elbow (`sideUnderDrop`, `sideUnderFwd`, eased over `sideUnderWin` beats), its
+elbow tucked down (`underPole`).
+
+Backwards sebs mess follows a filmed path (`PATHS.backwardsSebs`, from the author's
+footage of 2026-11-24, front, side and from below): each hand moves on a smooth loop (a
+periodic cubic spline, so speed and acceleration join up with no stops) through points
+measured from the film, made even and the same on both sides, without the body's sway and
+lean. The body turns 45° each way, most while a hand is reaching across. As filmed, the arms
+are stacked: the arm that has crossed over reaches across the chest at about the lower chest,
+its elbow forward, while the other hand works low, out at its own side and down by the hip;
+each half starts with a throw from just under the crossed arm's elbow, and hands carry low
+between sides. Each path point also says how far that arm is reaching across, which sets
+where its elbow points (`pole`, `poleFar`). Elbows never point up.
+
+Forwards sebs mess (the mills mess at the sides) follows a path too (`PATHS.forwardsSebs`).
+There is no footage of it, so it is built from its own letters and the author's description,
+on the same lines as backwards sebs, with the same heights, elbows and turn: each half's three
+balls are thrown at the back of that side and caught in front, so they travel forwards (about
+20 to 45 cm). No throw, in either sebs, goes up between an arm and the body. The first throw
+of a side reaches across and back to that side of the body: the other arm is down by its side
+and the throwing hand comes back to just by its elbow, in front of it, so the ball goes up in
+front of that arm. The other hand holds its ball low in front while the third throw is made
+under it, and that ball too goes up in front of the arm. The points were settled by a search
+(coordinate descent from a first plan) that keeps to that and keeps arms, balls and body
+clear, elbows low and hands smooth.
+
+The turning patterns' check looks at them in the body's own frame, and doesn't test their
+slash. Each sebs is written with the opposite slash to its front-facing pattern, which is
+what tells them apart.
 
 Open questions: since the footage changes (2026-11-22) the TR
 mills messes have a forearm sloping down just over the 10% limit. The hectic flos

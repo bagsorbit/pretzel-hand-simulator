@@ -20,7 +20,8 @@
 
   var G = {
     bodyTurnMax: 45,      // degrees: a turning pattern turns the body this far at most (forwards sebs: body 45, pattern 90)
-    sideX: 30, sideFront: 30, sideBack: 0, carryFwd: 15,   // side-plane patterns (cm): how far out the side plane is, its front and back ends, and how far forward a hand carries round between sides
+    sideX: 30, sideFront: 30, sideBack: 5, carryFwd: 15, sidePole: [0.5, 0.6],
+    lateFwd: 28, crossLift: 0, crossOut: 0, crossDrop: 0, sideUnderDrop: 10, sideUnderFwd: 3, sideUnderWin: 0.5, underPole: [0.8, 0], catchOut: 0, lateElbow: -0.6, lateWin: 0.7,   // a catch a hand rushes back across for: brought forward (cm), the elbow back, over lateWin beats either side   // side-plane patterns (cm): how far out the side plane is, its front and back ends, and how far forward a hand carries round between sides
     sideIn: 5, sideOutX: 22,   // where a hand is across the front pattern at its middle and outside (cm), read as front and back of the side
     shoulderX: 19, shoulderY: 138, shoulderZ: 0,
     upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
@@ -1098,6 +1099,16 @@
     // turned about the spine, and the balls fly between the turned hands.
     var TURN = opts.turn !== undefined ? opts.turn : 0;
     if (opts.turn === undefined) PATTERNS.forEach(function (pt) { if (pt.turn && parse(pt.src).src === p.src) TURN = pt.turn; });
+    var PATH = opts.path !== undefined ? opts.path : null;
+    if (opts.path === undefined) PATTERNS.forEach(function (pt) { if (pt.path && parse(pt.src).src === p.src) PATH = pt.path; });
+    var pathDef = PATH && PATHS[PATH] && PATHS[PATH].period === P ? PATHS[PATH] : null, pathSpl = null;
+    function pathHand(h, tb) {      // a hand on its filmed path, in the body's own frame
+      if (!pathSpl) pathSpl = periodicSpline(pathDef.keys.map(function (k) { return k[0]; }), pathDef.keys.map(function (k) { return k.slice(1); }), P);
+      if (h === 0) return pathSpl(tb);
+      var v = pathSpl(tb - P / 2);
+      return [-v[0], v[1], v[2], v[3]];
+    }
+    function pathYaw(tb) { return pathDef.turn * Math.PI / 180 * Math.cos(2 * Math.PI * (tb - pathDef.turnAt) / P); }
     var turnKeys = null;
     function yawAt(tb) {
       if (!TURN) return 0;
@@ -1126,46 +1137,104 @@
     }
     // turn a point about the spine by yaw (positive turns the chest towards the juggler's left, +x)
     function turnPt(q, c, sn) { return [q[0] * c + q[2] * sn, q[1], -q[0] * sn + q[2] * c]; }
-    // Side-plane patterns (forwards and backwards sebs): each half is juggled at one side of the
-    // body, in a plane square to the front, and the body turns bodyTurnMax towards it. Every throw
-    // is made at one end of that side and caught at the other: the hand's position across the
-    // front pattern (middle or outside) becomes how far forward it is at the side (middle = front,
-    // outside = back, level with the side of the body), so backwards sebs throws front to back
-    // and forwards sebs back to front. Each hand is at a throw's side from the throw to the catch
-    // that follows it, then carries round the front to the side of its next throw. The body
-    // follows the two hands.
-    var handKeys = null;
+    // Side-plane patterns (turned more than bodyTurnMax; both sebs now follow paths, PATHS, so
+    // this is only for a shared link with a large turn): each half is juggled at one side of the
+    // body, in a plane square to the front, and the body turns bodyTurnMax towards it. Every
+    // throw is made at one end of that side and caught at the other: the hand's position across
+    // the front pattern (middle or outside) becomes how far forward it is at the side (middle =
+    // front, outside = back, level with the side of the body), so an inside pattern throws front
+    // to back and an outside one back to front. Every ball is caught on the side it was thrown from;
+    // between its throws and catches a hand carries round the front to the next one's side.
+    // The body follows the two hands.
+    var handKeys = null, lateCatches = null;
+    // how near beat tb is to one of hand h's rushed catches (1 at the catch, 0 lateWin beats away)
+    function lateNear(h, tb) {
+      if (!handKeys) handSide(h, tb);
+      var w = 0, L = lateCatches[h];
+      for (var i = 0; i < L.length; i++) w = Math.max(w, 1 - smoother(0, G.lateWin, Math.abs(mod(tb - L[i] + P / 2, P) - P / 2)));
+      return w;
+    }
+    var underThrowTimes = null;
+    function underNear(h, tb) {
+      if (!underThrowTimes) {
+        underThrowTimes = [[], []];
+        for (var j = 0; j < P; j++) if (flies(j) && tok(j).t !== 'U') underThrowTimes[handOf(j)].push(j);
+      }
+      var w = 0, L = underThrowTimes[h];
+      for (var i = 0; i < L.length; i++) w = Math.max(w, 1 - smoother(0, G.sideUnderWin, Math.abs(mod(tb - L[i] + P / 2, P) - P / 2)));
+      return w;
+    }
     function handSide(h, tb) {
       if (!handKeys) {
         var gx = {}, gSide = {};
         for (var k = 0; k < N; k++) { var g = p.tokens[k].group; gx[g] = (gx[g] || 0) + throwKey(k)[0]; }
         for (var g2 in gx) gSide[g2] = gx[g2] >= 0 ? 1 : -1;
+        // each hand's throws are at their own half's side, and each catch at the side the ball
+        // was thrown from, so every ball is thrown and caught on the same side
         handKeys = [[], []];
-        for (var j = 0; j < P; j++) handKeys[handOf(j)].push({ a: j, b: catchTime(j), side: gSide[p.tokens[mod(j, N)].group] });
+        for (var j = 0; j < P; j++) {
+          var gj = gSide[p.tokens[mod(j, N)].group];
+          handKeys[handOf(j)].push({ t: j, side: gj });
+          if (flies(j)) { var kc = j + nOf(j) - 2; handKeys[handOf(kc)].push({ t: mod(catchTime(kc), P), side: gj, c: 1 }); }
+        }
+        handKeys.forEach(function (ks) { ks.sort(function (u, v) { return u.t - v.t; }); });
+        // a catch the hand has to rush back across for (its event before was on the other side)
+        lateCatches = [[], []];
+        handKeys.forEach(function (ks, hh) {
+          ks.forEach(function (e, i) { var pr = ks[(i + ks.length - 1) % ks.length]; if (e.c && pr.side !== e.side) lateCatches[hh].push(e.t); });
+        });
       }
-      var ks = handKeys[h], t = mod(tb, P), n = ks.length;
-      for (var i = 0; i < n; i++) {
-        var a = ks[i], b = ks[(i + 1) % n], ta = a.a, tn = b.a, tt = t;
-        if (tt < ta) tt += P;
-        if (tn <= ta) tn += P;
-        if (tt >= ta && tt < tn) return tt <= a.b ? a.side : a.side + (b.side - a.side) * smoother(a.b, tn, tt);
-      }
-      return ks[0].side;
+      var ks = handKeys[h], t = mod(tb, P), n = ks.length, i = n - 1;
+      for (var q = 0; q < n; q++) if (ks[q].t <= t) i = q;
+      var a = ks[i], b = ks[(i + 1) % n], ta = a.t, tn = b.t;
+      if (t < ta) ta -= P;
+      if (tn <= ta) tn += P;
+      return a.side === b.side ? a.side : a.side + (b.side - a.side) * smoother(ta, tn, t);
     }
     function flowPose(tb) {
       var o = flowPoseBody(tb), ya = yawAt(tb);
-      if (TURN > G.bodyTurnMax) {
+      if (pathDef) {
+        // a filmed path: the body turns, the hands follow their loops, and each arm reaches
+        // its hand from the turned shoulder with the elbow down and out, or forward when across
+        var yp = pathYaw(tb), cp = Math.cos(yp), sp0 = Math.sin(yp), rch = 0, po = pathDef.pole, pf = pathDef.poleFar;
+        o.yaw = yp;
+        for (var hp = 0; hp < 2; hp++) {
+          var q = pathHand(hp, tb), far = Math.max(0, Math.min(1, q[3]));
+          var Sp = turnPt([OWN[hp] * G.shoulderX, G.shoulderY, G.shoulderZ], cp, sp0);
+          var Tp = turnPt([q[0], G.shoulderY + q[1], G.shoulderZ + q[2]], cp, sp0);
+          var Pp = turnPt([OWN[hp] * (po[0] + (pf[0] - po[0]) * far), po[1] + (pf[1] - po[1]) * far, po[2] + (pf[2] - po[2]) * far], cp, sp0);
+          var Ep = ik(Sp, Tp, G.upper, G.fore, Pp);
+          o.shoulders[hp] = Sp; o.hands[hp] = Ep.hand; o.elbows[hp] = Ep.elbow; rch = Math.max(rch, Ep.reach);
+        }
+        o.reach = rch;
+      } else if (TURN > G.bodyTurnMax) {
         var sd = [handSide(0, tb), handSide(1, tb)], yb = (sd[0] + sd[1]) / 2 * G.bodyTurnMax * Math.PI / 180;
-        var cb = Math.cos(yb), sb = Math.sin(yb), reach = 0;
+        var cb = Math.cos(yb), sb = Math.sin(yb), reach = 0, sp = [];
         o.yaw = yb;
         for (var h = 0; h < 2; h++) {
           var S0 = o.shoulders[h], E0 = o.elbows[h], H0 = o.hands[h];
           var u = smooth(G.sideIn, G.sideOutX, Math.abs(H0[0]));          // 0 middle .. 1 outside
-          var Hh = [sd[h] * G.sideX, H0[1], G.sideBack + (G.sideFront - G.sideBack) * (1 - u) + G.carryFwd * (1 - sd[h] * sd[h])];
+          var lw = lateNear(h, tb);
+          var z = G.sideBack + (G.sideFront - G.sideBack) * (1 - u) + G.carryFwd * (1 - sd[h] * sd[h]) + G.lateFwd * lw;
+          // the side plane is TURN degrees round from the front: short of 90, its front end comes in
+          var rl = handRole(h, tb);   // (+1 this arm on top where the arms cross, -1 underneath)
+          var Hh = [sd[h] * (G.sideX + G.catchOut * u - (z - G.sideBack) * Math.tan((90 - TURN) * Math.PI / 180)), H0[1] + G.crossLift * rl, z];   // (catches a little further out than throws)   // (the top arm's hand a little higher, the other's lower)
           var S = turnPt(S0, cb, sb);
-          var pole = turnPt([E0[0] - S0[0], E0[1] - S0[1], E0[2] - S0[2]], cb, sb);
+          var pole = turnPt([OWN[h] * (G.sidePole[0] + G.crossOut * Math.max(rl, 0)), -1 - G.crossDrop * Math.max(-rl, 0), G.sidePole[1] + (G.lateElbow - G.sidePole[1]) * lw], cb, sb);   // (crossed: the top elbow out, the bottom one dropped; neither ever points up)   // (elbows out, down and forward from the turned shoulders; back for a rushed catch)
           var El = ik(S, Hh, G.upper, G.fore, pole);
           o.shoulders[h] = S; o.hands[h] = El.hand; o.elbows[h] = El.elbow; reach = Math.max(reach, El.reach);
+          sp[h] = { S: S, H: Hh, pole: pole };
+        }
+        // a crossed throw (R or L) is made with the throwing hand close in, just under the other
+        // arm's elbow: eased in and out over sideUnderWin beats either side of the throw
+        for (var h3 = 0; h3 < 2; h3++) {
+          var uw = underNear(h3, tb);
+          if (!uw) continue;
+          var Eo = o.elbows[1 - h3], tgt = [Eo[0], Eo[1] - G.sideUnderDrop, Eo[2] + G.sideUnderFwd], Hc = sp[h3].H;
+          var Hm = [Hc[0] + (tgt[0] - Hc[0]) * uw, Hc[1] + (tgt[1] - Hc[1]) * uw, Hc[2] + (tgt[2] - Hc[2]) * uw];
+          var tp = turnPt([OWN[h3] * G.underPole[0], -1, G.underPole[1]], cb, sb), pl = sp[h3].pole;   // (that arm tucked low: its elbow down and back)
+          var E3 = ik(sp[h3].S, Hm, G.upper, G.fore, [pl[0] + (tp[0] - pl[0]) * uw, pl[1] + (tp[1] - pl[1]) * uw, pl[2] + (tp[2] - pl[2]) * uw]);
+          o.hands[h3] = E3.hand; o.elbows[h3] = E3.elbow; reach = Math.max(reach, E3.reach);
         }
         o.reach = Math.max(o.reach, reach);
       } else {
@@ -1289,6 +1358,61 @@
   }
 
   // two-bone arm: shoulder S, hand target T, bone lengths a and b, elbow pointing towards pole
+  // the shortest distance between segments p1-q1 and p2-q2
+  function segDist(p1, q1, p2, q2) {
+    function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+    var d1 = [q1[0] - p1[0], q1[1] - p1[1], q1[2] - p1[2]], d2 = [q2[0] - p2[0], q2[1] - p2[1], q2[2] - p2[2]], r = [p1[0] - p2[0], p1[1] - p2[1], p1[2] - p2[2]];
+    var a = dot(d1, d1), e = dot(d2, d2), f = dot(d2, r), c = dot(d1, r), b = dot(d1, d2), den = a * e - b * b, s, t;
+    s = den > 1e-9 ? Math.max(0, Math.min(1, (b * f - c * e) / den)) : 0;
+    t = (b * s + f) / e;
+    if (t < 0) { t = 0; s = Math.max(0, Math.min(1, -c / a)); } else if (t > 1) { t = 1; s = Math.max(0, Math.min(1, (b - c) / a)); }
+    var x = [p1[0] + d1[0] * s - p2[0] - d2[0] * t, p1[1] + d1[1] * s - p2[1] - d2[1] * t, p1[2] + d1[2] * s - p2[2] - d2[2] * t];
+    return Math.sqrt(dot(x, x));
+  }
+  // A smooth loop through points (ts, vs) that repeats every P: a periodic cubic spline, so
+  // position, speed and acceleration all join up, with no stops or kinks at the points.
+  function periodicSpline(ts, vs, P) {
+    var n = ts.length, h = [], i, j, k, dim = vs[0].length, M = [];
+    for (i = 0; i < n; i++) h[i] = (i + 1 < n ? ts[i + 1] : ts[0] + P) - ts[i];
+    for (k = 0; k < dim; k++) {
+      var A = [], b = [];
+      for (i = 0; i < n; i++) {
+        var row = [], im = (i + n - 1) % n, ip = (i + 1) % n;
+        for (j = 0; j < n; j++) row.push(0);
+        row[im] += h[im]; row[i] += 2 * (h[im] + h[i]); row[ip] += h[i];
+        A.push(row); b.push(6 * ((vs[ip][k] - vs[i][k]) / h[i] - (vs[i][k] - vs[im][k]) / h[im]));
+      }
+      M.push(solveLinear(A, b));
+    }
+    return function (t) {
+      t = mod(t - ts[0], P) + ts[0];
+      var i = n - 1, q, out = [];
+      for (q = 0; q < n; q++) if (ts[q] <= t) i = q;
+      var ip = (i + 1) % n, hh = h[i], a = t - ts[i], bb = hh - a;
+      for (var k = 0; k < dim; k++) {
+        var m0 = M[k][i], m1 = M[k][ip];
+        out.push(m0 * bb * bb * bb / (6 * hh) + m1 * a * a * a / (6 * hh) + (vs[i][k] / hh - m0 * hh / 6) * bb + (vs[ip][k] / hh - m1 * hh / 6) * a);
+      }
+      return out;
+    };
+  }
+  function solveLinear(A, b) {      // Gaussian elimination with partial pivoting (small systems)
+    var n = b.length, i, j, k;
+    A = A.map(function (r) { return r.slice(); }); b = b.slice();
+    for (i = 0; i < n; i++) {
+      var piv = i;
+      for (j = i + 1; j < n; j++) if (Math.abs(A[j][i]) > Math.abs(A[piv][i])) piv = j;
+      var tr = A[i]; A[i] = A[piv]; A[piv] = tr; var tb = b[i]; b[i] = b[piv]; b[piv] = tb;
+      for (j = i + 1; j < n; j++) {
+        var f = A[j][i] / A[i][i];
+        for (k = i; k < n; k++) A[j][k] -= f * A[i][k];
+        b[j] -= f * b[i];
+      }
+    }
+    var x = [];
+    for (i = n - 1; i >= 0; i--) { var sm = b[i]; for (j = i + 1; j < n; j++) sm -= A[i][j] * x[j]; x[i] = sm / A[i][i]; }
+    return x;
+  }
   function ik(S, T, a, b, pole) {
     var d = [T[0] - S[0], T[1] - S[1], T[2] - S[2]];
     var len = Math.hypot(d[0], d[1], d[2]), reach = len / (a + b);
@@ -1304,6 +1428,52 @@
     var elbow = [S[0] + a * (ca * u[0] + sa * w[0]), S[1] + a * (ca * u[1] + sa * w[1]), S[2] + a * (ca * u[2] + sa * w[2])];
     return { hand: hand, elbow: elbow, reach: reach };
   }
+
+  // Filmed paths: a pattern whose arms are best taken straight from the author's own juggling.
+  // Backwards sebs mess, from the footage of 2026-11-24 (front, side and from below), made even
+  // and the same on both sides, without the body's sway and lean. keys: the right hand at each
+  // beat, in the body's own frame (cm: across, + = the juggler's left; up from the shoulder;
+  // forward from the chest; and how much the arm is reaching across, 0 to 1, for its elbow);
+  // the left hand is its mirror image three beats later. The hands
+  // move on a smooth loop through these points. Across and height were measured from the
+  // front, averaged over both halves; depth keeps the hands in front of the turned chest, with
+  // a hand on its own side catching out beside the body. Every ball is thrown in front and
+  // caught further back: the first of each side about 50 cm, the other two about 30 (the author
+  // liked the first throw's path and asked for the other two to come back more like it). In words, for the right hand: it
+  // throws from just under the other arm's elbow, a little outside and in front of it so the
+  // ball goes up in front of that arm, then slips back under that forearm (beat 0; the other arm
+  // stays across a moment before sweeping down in front of it), catches out on its own side at chest
+  // height, dips low and throws again in the middle, reaches across the chest to catch on the
+  // other side, sweeps down low and back to its own side to throw, catches out beside its hip
+  // and swings low round to the middle again. turn: the body turns this far, most to the left at
+  // beat turnAt and to the right three beats later. pole: which way an elbow points, with the arm
+  // on its own side (out, down, a little back) and reaching across (forward, in front of the chest).
+  // Forwards sebs mess has no footage: it is built from its own letters (the mills mess at the
+  // sides) and the author's description, on the same lines as backwards sebs (heights, elbows,
+  // turn). Each half's three balls are thrown at the back of that side and caught in front, so
+  // they travel forwards, and no throw goes up between an arm and the body. The first throw of
+  // a side (Ru, an arm over the other) reaches across and back to that side of the body: the
+  // other arm is down by its side and the throwing hand comes back to just by its elbow, in
+  // front of it. The other hand holds its ball low in front while the third throw is made under
+  // it, so that ball too goes up in front of the arm. Catches are in front. The points were
+  // settled by a search that keeps to that and keeps arms, balls and body clear, elbows low and
+  // hands smooth.
+  var PATHS = {
+    forwardsSebs: {
+      period: 6, turn: 45, turnAt: 1.9, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8],
+      keys: [[0.0, 22, -21, 9, 1], [0.4, -7, -28, 26, 0], [0.8, -31, -14, 29, 0], [1.0, -25, -24, 28, 0],
+             [1.5, -4, -37, 22, 0], [2.0, 20, -35, 11, 1], [2.4, -2, -30, 25, 0], [2.8, -7, -21, 40, 0],
+             [3.0, -15, -47, 23, 0], [3.5, -21, -44, 15, 0], [4.0, -31, -31, 7, 0], [4.5, -11, -18, 31, 0],
+             [4.8, 6, -26, 42, 0], [5.0, -15, -39, 35, 0], [5.4, -7, -33, 23, 0.6], [5.75, 13, -29, 14, 1]]
+    },
+    backwardsSebs: {
+      period: 6, turn: 45, turnAt: 2.5, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8],
+      keys: [[0.0, 20, -29, 32, 0], [0.25, 2, -31, 18, 0], [0.5, -29, -17, 9, 0], [0.8, -42, -20, 2, 0], [1.0, -36, -26, 4, 0],
+             [1.5, -10, -44, 16, 0], [2.0, -1, -18, 34, 0.5], [2.5, 25, -15, 26, 1], [2.8, 29, -14, 22, 1], [3.0, 20, -19, 28, 1],
+             [3.2, 17, -22, 27, 1], [3.5, -12, -50, 24, 0.2], [4.0, -22, -30, 26, 0], [4.5, -38, -16, 16, 0], [4.8, -42, -16, 14, 0],
+             [5.0, -40, -26, 13, 0], [5.5, -16, -52, 14, 0]]
+    }
+  };
 
   // The patterns, as written in the article (typos settled with the author on 2026-11-20).
   var PATTERNS = [
@@ -1386,13 +1556,13 @@
     { group: 'Other mills mess extensions and variations', name: '3 ball Boston mess', src: '3 I/ Uu Uu Ur : Rr Rr Ru : Uu Uu Ul : Ll Ll Lu' },
     { group: 'Other mills mess extensions and variations', name: '4 ball Boston mess', src: '4 I/ Uu Uu Ul Lu : Uu Uu Ur Ru' },
     // from the main article: the sebs mess and siteswap sections (patterns not already above)
-    { group: 'Sebs mess and siteswaps', name: 'Forwards sebs mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 90 },
-    { group: 'Sebs mess and siteswaps', name: 'Backwards sebs mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 90 },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
+    { group: 'Sebs mess and siteswaps', name: 'Forwards sebs mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 45, path: 'forwardsSebs' },
+    { group: 'Sebs mess and siteswaps', name: 'Backwards sebs mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 45, path: 'backwardsSebs' },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
     { group: 'Sebs mess and siteswaps', name: '4 ball mills mess', src: '4 o/ Ru Ul Ll : Lu Ur Rr' },
     { group: 'Sebs mess and siteswaps', name: '423 mills mess', src: '423 o/ Ru Ul. Ll : Lu Ur. Rr' },
     { group: 'Sebs mess and siteswaps', name: '414 mills mess', src: '414 o/ R U(u)l Ll : L U(u)r Rr' },
     { group: 'Sebs mess and siteswaps', name: '234 flos mess', src: '234 o\\ Ur. Ru Uu : Ul. Lu Uu' },
-    { group: 'Sebs mess and siteswaps', name: '[32T] forwards sebs mess', src: '[32T] o\\ Ru Ul Ll : Lu Ur Rr', turn: 90 },
+    { group: 'Sebs mess and siteswaps', name: '[32T] forwards sebs mess', src: '[32T] o\\ Ru Ul Ll : Lu Ur Rr', turn: 80 },
     { group: 'Sebs mess and siteswaps', name: '24[54] flos mess', src: '24[54] o\\ Ur. Ru Uu : Ul. Lu Uu' },
     // Appendix B: building ingenious messes from hulking windmills
     { group: 'Appendix B: windmills', name: 'Under throw windmill', src: 'O/ Lu Ul' },
@@ -1404,7 +1574,7 @@
     { group: 'Appendix B: windmills', name: 'Under throw 342T3 windmill', src: '342T3 O/ Lu Ul Lu Ul' },
     { group: 'Appendix B: windmills', name: '342T33 mills mess', src: '342T33 o/ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
     { group: 'Appendix B: windmills', name: '5223 alternating windmill', src: '5223 O\\ Ur Ru. Ul. Lu' },
-    { group: 'Appendix B: windmills', name: "Mike's mess", src: '225 o/ Ru. Ul. Ll : Lu. Ur. Rr', turn: 45 },
+    { group: 'Appendix B: windmills', name: "Mike's mess", src: '225 o/ Ru. Ul. Ll : Lu. Ur. Rr', turn: 30 },
     { group: 'Appendix B: windmills', name: 'Under throw windmill with shower', src: '4413 O\\ Ul L U(u)l Lu' },
     { group: 'Appendix B: windmills', name: 'Under catch windmill with shower', src: '4413 O\\ Ur R U(u)r Ru' },
     { group: 'Appendix B: windmills', name: '44133 flos mess', src: '44133 o\\ Ur R U(u)r Ru Uu : Ul L U(u)l Lu Uu' },
@@ -1695,7 +1865,7 @@
     return null;
   }
 
-  var PH = { G: G, parse: parse, build: build, ik: ik, PATTERNS: PATTERNS,
+  var PH = { G: G, parse: parse, build: build, ik: ik, PATTERNS: PATTERNS, PATHS: PATHS,
              timeReverse: timeReverse, flip: flip, millsFlos: millsFlos, sameKey: sameKey, findPattern: findPattern,
              cycleSiteswap: cycleSiteswap, addBalls: addBalls, compose: compose, mirror: mirror, family: family };
   if (typeof module !== 'undefined' && module.exports) module.exports = PH;
