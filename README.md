@@ -63,9 +63,11 @@ to load three.js). Pick a pattern, then:
 The list has every pattern in the article: all of Appendix A (with the confirmed typos
 fixed), the main article's sebs and siteswap patterns, Appendix B, and Appendix C's
 butterfly loop Rubenstein's Revenges. The menu is in the author's order (2026-11-25):
-mills messes (3:3), hectic messes, sebs messes, Rubenstein's Revenges, other mills mess
+mills messes (3:3), hectic messes, sebs messes, Rubenstein's Revenges, Mike's messes (added
+2026-11-25: Mike's mess, moved from Appendix B, the 4 ball 228 one, and the flipped
+versions of both), other mills mess
 extensions and variations, siteswap messes, butterfly messes, then the cascades and half
-messes, then the two appendices; within a group, the article's order (105 patterns; the two multiplexes are left out; patterns that appear
+messes, then the two appendices; within a group, the article's order (114 patterns; the two multiplexes are left out; patterns that appear
 twice in the article are listed once; the crossed arm cascade and the alternating windmill
 are listed once each, their mirror images being a press of Mirror away; the article's 2 and
 4 ball time reverses are left out, being the 3 ball ones with a ball fewer or more).
@@ -215,8 +217,14 @@ where it's thrown from; the whole pattern is drawn in (`oNarrow` 0.7), so its wi
 about 31 cm out from the middle.
 The half shower is one hand throwing outside and the other inside (the author,
 2026-11-25), so it is written `Oi\ Uu Uu` (the article has `O\ Uu Uu`): the right hand's
-`O` throws go over the top and wide, as in tennis, and the left hand's are inside throws. Both are kept to 3 balls (`fixedBalls`): a half
+`O` throws go over the top and wide, as in tennis, and the left hand's are inside throws. Rubenstein's Revenges and Mike's messes are kept to their own siteswaps too (the author,
+2026-11-25). Both are kept to 3 balls (`fixedBalls`): a half
 shower with 4 is a different siteswap, and tennis doesn't work with 4.
+
+Two hectic Rubenstein's (2026-11-25) keep the 2 2 3 double loop and add change-overs, where a
+hand throws on one side of the other forearm and catches on the other, as in the hectic mills
+mess: one with the change-overs on the two 3s (`Lr Rl`), one with a change-over on the 5
+(`Rl`). Each is two letters from the Rubenstein's Revenge.
 
 Continuous under-arm throws (`Lu : Ru`) and catches (`Ul : Ur`): the hand going under does
 nearly all the moving (the author, 2026-11-25). For a throw, the arm on top waits near its

@@ -1590,12 +1590,21 @@
     { group: 'Sebs messes', name: 'Flipped flos sebs mess', src: 'o/ Ul Lu Uu : Ur Ru Uu', turn: 45, path: 'flippedFlosSebs' },   // (the flipped flos mess at the sides: backwards sebs played backwards)
     { group: 'Sebs messes', name: 'TR mills sebs mess (Weave)', src: '3 i/ Ur Rr Ru : Ul Ll Lu', turn: 45, path: 'weaveSebs' },   // (the TR mills mess at the sides, the author's Weave: forwards sebs played backwards)
     { group: 'Sebs messes', name: 'Backwards sebs mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 45, path: 'backwardsSebs' },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
-    { group: "Rubenstein's Revenges", name: "Rubenstein's Revenge", src: '22335 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr' },
-    { group: "Rubenstein's Revenges", name: "TR Rubenstein's Revenge", src: '52233 i\\ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu' },
-    { group: "Rubenstein's Revenges", name: "Flos Rubenstein's Revenge", src: '52233 o\\ Ul Lu. Ur. Ru Uu : Ur Ru. Ul. Lu Uu' },
-    { group: "Rubenstein's Revenges", name: "TR flos Rubenstein's Revenge", src: '33522 i/ Lu Uu Ul Lu. Ur. : Ru Uu Ur Ru. Ul.' },
-    { group: "Rubenstein's Revenges", name: "Alt Rubenstein's Revenge", src: '35223 o/ Ru Ur Ru. Ul. Ll : Lu Ul Lu. Ur. Rr' },
-    { group: "Rubenstein's Revenges", name: "TR alt Rubenstein's Revenge", src: '35223 i\\ Ur Rr Ru. Ul. Lu : Ul Ll Lu. Ur. Ru' },
+    { group: "Rubenstein's Revenges", name: "Rubenstein's Revenge", src: '22335 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Rubenstein's Revenges", name: "TR Rubenstein's Revenge", src: '52233 i\\ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Rubenstein's Revenges", name: "Flos Rubenstein's Revenge", src: '52233 o\\ Ul Lu. Ur. Ru Uu : Ur Ru. Ul. Lu Uu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Rubenstein's Revenges", name: "TR flos Rubenstein's Revenge", src: '33522 i/ Lu Uu Ul Lu. Ur. : Ru Uu Ur Ru. Ul.', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Rubenstein's Revenges", name: "Alt Rubenstein's Revenge", src: '35223 o/ Ru Ur Ru. Ul. Ll : Lu Ul Lu. Ur. Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Rubenstein's Revenges", name: "TR alt Rubenstein's Revenge", src: '35223 i\\ Ur Rr Ru. Ul. Lu : Ul Ll Lu. Ur. Ru', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Rubenstein's Revenges", name: "22317 Rubenstein's Revenge", src: '22317 o/ Ru. Ul. L U(u)l Ll : Lu. Ur. R U(u)r Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },   // (the other 223 Rubens siteswaps in the Rubenstein's frame, 2026-11-25)
+    { group: "Rubenstein's Revenges", name: "4 ball 22367 Rubenstein's Revenge", src: '22367 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Rubenstein's Revenges", name: "4 ball 22385 Rubenstein's Revenge", src: '22385 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Rubenstein's Revenges", name: "Hectic Rubenstein's Revenge, change-overs on the 3s", src: '22335 o/ Ru. Ul. Lr Rl Ll : Lu. Ur. Rl Lr Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },   // (hectic Rubens, 2026-11-25: the double loop kept, change-overs as in the hectic mills mess)
+    { group: "Rubenstein's Revenges", name: "Hectic Rubenstein's Revenge, change-over on the 5", src: '22335 o/ Ru. Ul. Lu Ur Rl : Lu. Ur. Ru Ul Lr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Mike's messes", name: "Mike's mess", src: '225 o/ Ru. Ul. Ll : Lu. Ur. Rr', turn: 30, fixedBalls: "Mike's messes work with their own siteswaps only, so the ball count can't be changed (the 3 and 4 ball ones are listed separately).", fixedCycle: "Mike's mess keeps its siteswap where it is: the 2 2 loop sits on an R U L." },   // (moved from Appendix B; with the 4 ball one and the flipped ones, 2026-11-25)
+    { group: "Mike's messes", name: "Flipped Mike's mess", src: '225 o/ Lu. Ur. Rr : Ru. Ul. Ll', turn: 30, fixedBalls: "Mike's messes work with their own siteswaps only, so the ball count can't be changed (the 3 and 4 ball ones are listed separately).", fixedCycle: "Mike's mess keeps its siteswap where it is: the 2 2 loop sits on an R U L." },
+    { group: "Mike's messes", name: "4 ball Mike's mess", src: '228 o/ Ru. Ul. Ll : Lu. Ur. Rr', turn: 30, fixedBalls: "Mike's messes work with their own siteswaps only, so the ball count can't be changed (the 3 and 4 ball ones are listed separately).", fixedCycle: "Mike's mess keeps its siteswap where it is: the 2 2 loop sits on an R U L." },
+    { group: "Mike's messes", name: "4 ball flipped Mike's mess", src: '228 o/ Lu. Ur. Rr : Ru. Ul. Ll', turn: 30, fixedBalls: "Mike's messes work with their own siteswaps only, so the ball count can't be changed (the 3 and 4 ball ones are listed separately).", fixedCycle: "Mike's mess keeps its siteswap where it is: the 2 2 loop sits on an R U L." },
     { group: 'Other mills mess extensions and variations', name: 'Mills mess with windmill (5bt mills with extra windmills)', src: 'o/ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
     { group: 'Other mills mess extensions and variations', name: 'Mills mess with extra crossed arms', src: 'o/ Ru Ul Ll : Ll : Ll : Lu Ur Rr : Rr : Rr' },
     { group: 'Other mills mess extensions and variations', name: 'Mills mess with shower', src: '44133 o/ Ru U U(u)u Ul Ll : Lu U U(u)u Ur Rr' },
@@ -1664,19 +1673,18 @@
     { group: 'Appendix B: windmills', name: 'Under throw 342T3 windmill', src: '342T3 O/ Lu Ul Lu Ul' },
     { group: 'Appendix B: windmills', name: '342T33 mills mess', src: '342T33 o/ Ru Ul Lu Ul Ll : Lu Ur Ru Ur Rr' },
     { group: 'Appendix B: windmills', name: '5223 alternating windmill', src: '5223 O\\ Ur Ru. Ul. Lu' },
-    { group: 'Appendix B: windmills', name: "Mike's mess", src: '225 o/ Ru. Ul. Ll : Lu. Ur. Rr', turn: 30 },
     { group: 'Appendix B: windmills', name: 'Under throw windmill with shower', src: '4413 O\\ Ul L U(u)l Lu' },
     { group: 'Appendix B: windmills', name: 'Under catch windmill with shower', src: '4413 O\\ Ur R U(u)r Ru' },
     { group: 'Appendix B: windmills', name: '44133 flos mess', src: '44133 o\\ Ur R U(u)r Ru Uu : Ul L U(u)l Lu Uu' },
     { group: 'Appendix B: windmills', name: '44133 flipped flos mess', src: '44133 o\\ Ul L U(u)l Lu Uu : Ur R U(u)r Ru Uu' },
     { group: 'Appendix B: windmills', name: 'Alternating windmill with showers', src: '4413 O\\ Ur R U(u)l Lu Ul L U(u)r Ru' },
     { group: 'Appendix B: windmills', name: 'Alternating windmill with showers mess', src: '441344133 o\\ Ur R U(u)l Lu Ul L U(u)r Ru Uu : Ul L U(u)r Ru Ur R U(u)l Lu Uu' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "Rubenstein's Revenge, butterfly loop", src: '22335 o/ Lu. Ur. Ru Ur Rr : Ru. Ul. Lu Ul Ll' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR Rubenstein's Revenge, butterfly loop", src: '52233 i\\ Ur Ru. Ul. Ll Lu : Ul Lu. Ur. Rr Ru' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "Alt Rubenstein's Revenge, butterfly loop", src: '35223 o/ Lu Ul Lu. Ur. Rr : Ru Ur Ru. Ul. Ll' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR alt Rubenstein's Revenge, butterfly loop", src: '35223 i\\ Ul Ll Lu. Ur. Ru : Ur Rr Ru. Ul. Lu' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "Flos Rubenstein's Revenge, butterfly loop", src: '52233 o\\ Ur Ru. Ul. Lu Uu : Ul Lu. Ur. Ru Uu' },
-    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR flos Rubenstein's Revenge, butterfly loop", src: '33522 i/ Ru Uu Ur Ru. Ul. : Lu Uu Ul Lu. Ur.' }
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "Rubenstein's Revenge, butterfly loop", src: '22335 o/ Lu. Ur. Ru Ur Rr : Ru. Ul. Lu Ul Ll', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR Rubenstein's Revenge, butterfly loop", src: '52233 i\\ Ur Ru. Ul. Ll Lu : Ul Lu. Ur. Rr Ru', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "Alt Rubenstein's Revenge, butterfly loop", src: '35223 o/ Lu Ul Lu. Ur. Rr : Ru Ur Ru. Ul. Ll', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR alt Rubenstein's Revenge, butterfly loop", src: '35223 i\\ Ul Ll Lu. Ur. Ru : Ur Rr Ru. Ul. Lu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "Flos Rubenstein's Revenge, butterfly loop", src: '52233 o\\ Ur Ru. Ul. Lu Uu : Ul Lu. Ur. Ru Uu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
+    { group: "Appendix C: butterfly loop Rubenstein's", name: "TR flos Rubenstein's Revenge, butterfly loop", src: '33522 i/ Ru Uu Ur Ru. Ul. : Lu Uu Ul Lu. Ur.', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." }
   ];
 
   // ---------- pattern tools: time reverse, flip, mills <-> flos ----------
@@ -1758,6 +1766,9 @@
     var m = build(src, { noReverse: true });
     if (!m.ok) return m;
     var p = m.parsed, d = p.digits;
+    // (a Rubenstein's or Mike's keeps its siteswap where it is: its 2 2 sit on the R U of an R U L)
+    var fixedC = PATTERNS.filter(function (pt) { return pt.fixedCycle && parse(pt.src).src === p.src; })[0];
+    if (fixedC) return { ok: false, error: fixedC.fixedCycle };
     if (d.every(function (x) { return x === d[0]; })) return { ok: false, error: 'Nothing to cycle: every throw is a ' + d[0] + '.' };
     return compose(p, d.slice(1).concat(d[0]), p.active.slice(1).concat(p.active[0]));
   }
