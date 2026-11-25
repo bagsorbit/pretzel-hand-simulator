@@ -19,6 +19,8 @@
   'use strict';
 
   var G = {
+    bodyTurnMax: 45,      // degrees: a turning pattern turns the body this far at most (forwards sebs: body 45, pattern 90)
+    sideFwd: 5, sideOut: -5, sideScale: 1,   // a pattern turned past bodyTurnMax: its plane moved forward and out (cm) and narrowed front to back
     shoulderX: 19, shoulderY: 138, shoulderZ: 0,
     upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
     handZ: 33.5,                      // how far in front of the body the hands work
@@ -1123,12 +1125,30 @@
     }
     // turn a point about the spine by yaw (positive turns the chest towards the juggler's left, +x)
     function turnPt(q, c, sn) { return [q[0] * c + q[2] * sn, q[1], -q[0] * sn + q[2] * c]; }
+    // The body turns at most bodyTurnMax degrees. A pattern turned further (forwards sebs, 90)
+    // still has its hands and balls turned the whole way, so each side's throws are in a plane
+    // square to the front, and the arms reach round to them from the less-turned body.
     function flowPose(tb) {
       var o = flowPoseBody(tb), ya = yawAt(tb);
-      o.yaw = ya;
+      var yb = TURN > G.bodyTurnMax ? ya * G.bodyTurnMax / TURN : ya;
+      o.yaw = yb;
       if (ya) {
-        var c = Math.cos(ya), sn = Math.sin(ya);
-        ['hands', 'elbows', 'shoulders'].forEach(function (k) { o[k] = o[k].map(function (q) { return turnPt(q, c, sn); }); });
+        var c = Math.cos(ya), sn = Math.sin(ya), cb = Math.cos(yb), sb = Math.sin(yb);
+        if (yb === ya) ['hands', 'elbows', 'shoulders'].forEach(function (k) { o[k] = o[k].map(function (q) { return turnPt(q, c, sn); }); });
+        else {
+          var reach = 0;
+          for (var h = 0; h < 2; h++) {
+            var S0 = o.shoulders[h], E0 = o.elbows[h];
+            var S = turnPt(S0, cb, sb), Hh = turnPt([o.hands[h][0] * (1 - (1 - G.sideScale) * Math.abs(ya) / (TURN * Math.PI / 180)), o.hands[h][1], o.hands[h][2]], c, sn), fr = Math.abs(ya) / (TURN * Math.PI / 180);
+            // (the side plane sits a little forward and out from the turn about the spine, so the back hand can reach)
+            var off = turnPt([0, 0, G.sideFwd * fr], cb, sb);
+            Hh = [Hh[0] + off[0] + Math.sign(ya) * G.sideOut * fr, Hh[1], Hh[2] + off[2]];
+            var pole = turnPt([E0[0] - S0[0], E0[1] - S0[1], E0[2] - S0[2]], c, sn);   // (the elbow keeps its place relative to the pattern)
+            var El = ik(S, Hh, G.upper, G.fore, pole);
+            o.shoulders[h] = S; o.hands[h] = El.hand; o.elbows[h] = El.elbow; reach = Math.max(reach, El.reach);
+          }
+          o.reach = Math.max(o.reach, reach);
+        }
       }
       o.palms = [palmAt(0, tb, o), palmAt(1, tb, o)];
       return o;
@@ -1341,12 +1361,12 @@
     { group: 'Other mills mess extensions and variations', name: '3 ball Boston mess', src: '3 I/ Uu Uu Ur : Rr Rr Ru : Uu Uu Ul : Ll Ll Lu' },
     { group: 'Other mills mess extensions and variations', name: '4 ball Boston mess', src: '4 I/ Uu Uu Ul Lu : Uu Uu Ur Ru' },
     // from the main article: the sebs mess and siteswap sections (patterns not already above)
-    { group: 'Sebs mess and siteswaps', name: 'Sebs mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 80 },
+    { group: 'Sebs mess and siteswaps', name: 'Forwards sebs mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 90 },
     { group: 'Sebs mess and siteswaps', name: '4 ball mills mess', src: '4 o/ Ru Ul Ll : Lu Ur Rr' },
     { group: 'Sebs mess and siteswaps', name: '423 mills mess', src: '423 o/ Ru Ul. Ll : Lu Ur. Rr' },
     { group: 'Sebs mess and siteswaps', name: '414 mills mess', src: '414 o/ R U(u)l Ll : L U(u)r Rr' },
     { group: 'Sebs mess and siteswaps', name: '234 flos mess', src: '234 o\\ Ur. Ru Uu : Ul. Lu Uu' },
-    { group: 'Sebs mess and siteswaps', name: '[32T] sebs mess', src: '[32T] o\\ Ru Ul Ll : Lu Ur Rr', turn: 80 },
+    { group: 'Sebs mess and siteswaps', name: '[32T] forwards sebs mess', src: '[32T] o\\ Ru Ul Ll : Lu Ur Rr', turn: 90 },
     { group: 'Sebs mess and siteswaps', name: '24[54] flos mess', src: '24[54] o\\ Ur. Ru Uu : Ul. Lu Uu' },
     // Appendix B: building ingenious messes from hulking windmills
     { group: 'Appendix B: windmills', name: 'Under throw windmill', src: 'O/ Lu Ul' },

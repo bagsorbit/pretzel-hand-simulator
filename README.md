@@ -56,7 +56,7 @@ to load three.js). Pick a pattern, then:
   - − 3 + (by the arrows): every digit one lower or higher, which always gives a siteswap that
     works. Taking a ball away stops before a throw would become a 0.
   A tool that can't be used on the current pattern is greyed out, with the reason as its
-  tip. A pattern juggled at the sides (sebs, Mike's mess) stays at the sides. If the
+  tip. A pattern juggled at the sides (forwards sebs, Mike's mess) stays at the sides. If the
   result is in the list, its name is shown. `tests/transforms.js` checks the tools against
   the pairs published in the article, and that every pattern comes back to itself after
   reversing twice, flipping twice, cycling right round, and a ball on and off.
@@ -217,12 +217,16 @@ throw's own direction letter is shown after its number on the throw lines.
 `tests/check.js` now also reports balls meeting in the air, and `tests/sweep.js` checks
 every pattern at every ball count from 2 to 5 for collisions of all kinds.
 
-Turning patterns: in Mike's mess (45°) and sebs (80°) each half is done at one side of
-the body and the whole juggler turns towards it, passing through facing the front
-between halves (the pattern's `turn`). The arms keep their own movement relative to the
-body, and the balls fly between the turned hands. The check looks at them in the
-juggler's own frame, and doesn't test their slash. Sebs has the same letters as the
-mills mess; only its slash (`o/`) and the turn tell them apart.
+Turning patterns: in Mike's mess (45°) and forwards sebs mess (90°) each half is done at
+one side of the body, passing through facing the front between halves (the pattern's
+`turn`). The body turns at most 45° (`bodyTurnMax`). In Mike's mess the whole juggler
+turns, and the arms keep their own movement relative to the body. In forwards sebs the
+body turns 45° but each side's three throws are in a plane square to the front; the
+hands are turned the full 90° (that plane sits `sideFwd` forward and `sideOut` out), and
+the arms reach round to them from the half-turned body. The check looks at them in the
+body's own frame, and doesn't test their slash. Forwards sebs has the same letters as
+the mills mess; only its slash (`o\`) and the turn tell them apart. Its arms still come
+a few cm into the body and through a ball's path in places.
 
 Open questions: since the footage changes (2026-11-22) the TR
 mills messes have a forearm sloping down just over the 10% limit. The hectic flos
