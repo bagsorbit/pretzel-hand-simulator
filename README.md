@@ -217,16 +217,19 @@ throw's own direction letter is shown after its number on the throw lines.
 `tests/check.js` now also reports balls meeting in the air, and `tests/sweep.js` checks
 every pattern at every ball count from 2 to 5 for collisions of all kinds.
 
-Turning patterns: in Mike's mess (45°) and forwards sebs mess (90°) each half is done at
-one side of the body, passing through facing the front between halves (the pattern's
-`turn`). The body turns at most 45° (`bodyTurnMax`). In Mike's mess the whole juggler
-turns, and the arms keep their own movement relative to the body. In forwards sebs the
-body turns 45° but each side's three throws are in a plane square to the front; the
-hands are turned the full 90° (that plane sits `sideFwd` forward and `sideOut` out), and
-the arms reach round to them from the half-turned body. The check looks at them in the
-body's own frame, and doesn't test their slash. Forwards sebs has the same letters as
-the mills mess; only its slash (`o\`) and the turn tell them apart. Its arms still come
-a few cm into the body and through a ball's path in places.
+Turning patterns: in Mike's mess (45°) each half is done at one side of the body and the
+whole juggler turns towards it, passing through facing the front between halves (the
+pattern's `turn`); the arms keep their own movement relative to the body. Forwards and
+backwards sebs mess (`turn` 90, more than `bodyTurnMax`) are side-plane patterns: each half
+is juggled at one side (`sideX` out) in a plane square to the front, and the body turns 45°
+towards it. Every throw is made at one end of the side and caught at the other: where a hand
+is across the front pattern (middle or outside, `sideIn`/`sideOutX`) becomes how far forward
+it is at the side (`sideFront`, `sideBack` = level with the side of the body). So backwards
+sebs (the TR flipped flos mess) throws front to back, and forwards sebs (the mills mess)
+back to front. Each hand stays at a throw's side until the catch after it, then carries
+round the front (`carryFwd`) to its next throw's side; the body follows the two hands. The
+check looks at them in the body's own frame, and doesn't test their slash. Each is written
+with the opposite slash to its front-facing pattern, which is what tells them apart.
 
 Open questions: since the footage changes (2026-11-22) the TR
 mills messes have a forearm sloping down just over the 10% limit. The hectic flos

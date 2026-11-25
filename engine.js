@@ -20,7 +20,8 @@
 
   var G = {
     bodyTurnMax: 45,      // degrees: a turning pattern turns the body this far at most (forwards sebs: body 45, pattern 90)
-    sideFwd: 20, sideOut: -10, sideScale: 0.8,   // a pattern turned past bodyTurnMax: its plane moved forward and out (cm) and narrowed front to back
+    sideX: 30, sideFront: 30, sideBack: 0, carryFwd: 15,   // side-plane patterns (cm): how far out the side plane is, its front and back ends, and how far forward a hand carries round between sides
+    sideIn: 5, sideOutX: 22,   // where a hand is across the front pattern at its middle and outside (cm), read as front and back of the side
     shoulderX: 19, shoulderY: 138, shoulderZ: 0,
     upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
     handZ: 33.5,                      // how far in front of the body the hands work
@@ -1125,29 +1126,53 @@
     }
     // turn a point about the spine by yaw (positive turns the chest towards the juggler's left, +x)
     function turnPt(q, c, sn) { return [q[0] * c + q[2] * sn, q[1], -q[0] * sn + q[2] * c]; }
-    // The body turns at most bodyTurnMax degrees. A pattern turned further (forwards sebs, 90)
-    // still has its hands and balls turned the whole way, so each side's throws are in a plane
-    // square to the front, and the arms reach round to them from the less-turned body.
+    // Side-plane patterns (forwards and backwards sebs): each half is juggled at one side of the
+    // body, in a plane square to the front, and the body turns bodyTurnMax towards it. Every throw
+    // is made at one end of that side and caught at the other: the hand's position across the
+    // front pattern (middle or outside) becomes how far forward it is at the side (middle = front,
+    // outside = back, level with the side of the body), so backwards sebs throws front to back
+    // and forwards sebs back to front. Each hand is at a throw's side from the throw to the catch
+    // that follows it, then carries round the front to the side of its next throw. The body
+    // follows the two hands.
+    var handKeys = null;
+    function handSide(h, tb) {
+      if (!handKeys) {
+        var gx = {}, gSide = {};
+        for (var k = 0; k < N; k++) { var g = p.tokens[k].group; gx[g] = (gx[g] || 0) + throwKey(k)[0]; }
+        for (var g2 in gx) gSide[g2] = gx[g2] >= 0 ? 1 : -1;
+        handKeys = [[], []];
+        for (var j = 0; j < P; j++) handKeys[handOf(j)].push({ a: j, b: catchTime(j), side: gSide[p.tokens[mod(j, N)].group] });
+      }
+      var ks = handKeys[h], t = mod(tb, P), n = ks.length;
+      for (var i = 0; i < n; i++) {
+        var a = ks[i], b = ks[(i + 1) % n], ta = a.a, tn = b.a, tt = t;
+        if (tt < ta) tt += P;
+        if (tn <= ta) tn += P;
+        if (tt >= ta && tt < tn) return tt <= a.b ? a.side : a.side + (b.side - a.side) * smoother(a.b, tn, tt);
+      }
+      return ks[0].side;
+    }
     function flowPose(tb) {
       var o = flowPoseBody(tb), ya = yawAt(tb);
-      var yb = TURN > G.bodyTurnMax ? ya * G.bodyTurnMax / TURN : ya;
-      o.yaw = yb;
-      if (ya) {
-        var c = Math.cos(ya), sn = Math.sin(ya), cb = Math.cos(yb), sb = Math.sin(yb);
-        if (yb === ya) ['hands', 'elbows', 'shoulders'].forEach(function (k) { o[k] = o[k].map(function (q) { return turnPt(q, c, sn); }); });
-        else {
-          var reach = 0;
-          for (var h = 0; h < 2; h++) {
-            var S0 = o.shoulders[h], E0 = o.elbows[h];
-            var S = turnPt(S0, cb, sb), Hh = turnPt([o.hands[h][0] * (1 - (1 - G.sideScale) * Math.abs(ya) / (TURN * Math.PI / 180)), o.hands[h][1], o.hands[h][2]], c, sn), fr = Math.abs(ya) / (TURN * Math.PI / 180);
-            // (the side plane sits a little forward and out from the turn about the spine, so the back hand can reach)
-            var off = turnPt([0, 0, G.sideFwd * fr], cb, sb);
-            Hh = [Hh[0] + off[0] + Math.sign(ya) * G.sideOut * fr, Hh[1], Hh[2] + off[2]];
-            var pole = turnPt([E0[0] - S0[0], E0[1] - S0[1], E0[2] - S0[2]], c, sn);   // (the elbow keeps its place relative to the pattern)
-            var El = ik(S, Hh, G.upper, G.fore, pole);
-            o.shoulders[h] = S; o.hands[h] = El.hand; o.elbows[h] = El.elbow; reach = Math.max(reach, El.reach);
-          }
-          o.reach = Math.max(o.reach, reach);
+      if (TURN > G.bodyTurnMax) {
+        var sd = [handSide(0, tb), handSide(1, tb)], yb = (sd[0] + sd[1]) / 2 * G.bodyTurnMax * Math.PI / 180;
+        var cb = Math.cos(yb), sb = Math.sin(yb), reach = 0;
+        o.yaw = yb;
+        for (var h = 0; h < 2; h++) {
+          var S0 = o.shoulders[h], E0 = o.elbows[h], H0 = o.hands[h];
+          var u = smooth(G.sideIn, G.sideOutX, Math.abs(H0[0]));          // 0 middle .. 1 outside
+          var Hh = [sd[h] * G.sideX, H0[1], G.sideBack + (G.sideFront - G.sideBack) * (1 - u) + G.carryFwd * (1 - sd[h] * sd[h])];
+          var S = turnPt(S0, cb, sb);
+          var pole = turnPt([E0[0] - S0[0], E0[1] - S0[1], E0[2] - S0[2]], cb, sb);
+          var El = ik(S, Hh, G.upper, G.fore, pole);
+          o.shoulders[h] = S; o.hands[h] = El.hand; o.elbows[h] = El.elbow; reach = Math.max(reach, El.reach);
+        }
+        o.reach = Math.max(o.reach, reach);
+      } else {
+        o.yaw = ya;
+        if (ya) {
+          var c0 = Math.cos(ya), s0 = Math.sin(ya);
+          ['hands', 'elbows', 'shoulders'].forEach(function (k) { o[k] = o[k].map(function (q) { return turnPt(q, c0, s0); }); });
         }
       }
       o.palms = [palmAt(0, tb, o), palmAt(1, tb, o)];
