@@ -20,7 +20,7 @@
 
   var G = {
     bodyTurnMax: 45,      // degrees: a turning pattern turns the body this far at most (forwards sebs: body 45, pattern 90)
-    sideFwd: 5, sideOut: -5, sideScale: 1,   // a pattern turned past bodyTurnMax: its plane moved forward and out (cm) and narrowed front to back
+    sideFwd: 20, sideOut: -10, sideScale: 0.8,   // a pattern turned past bodyTurnMax: its plane moved forward and out (cm) and narrowed front to back
     shoulderX: 19, shoulderY: 138, shoulderZ: 0,
     upper: 32, fore: 32,            // shoulder to elbow, elbow to hand centre
     handZ: 33.5,                      // how far in front of the body the hands work
