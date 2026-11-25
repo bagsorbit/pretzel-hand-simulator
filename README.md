@@ -213,6 +213,17 @@ reverse cascade: an `O` throw mixed with other directions is thrown and caught f
 (`oWide`) and peaks `oLift` 16 cm higher, the least that keeps it clear of the balls landing
 where it's thrown from; the whole pattern is drawn in (`oNarrow` 0.7), so its widest ball is
 about 31 cm out from the middle.
+The half shower is one hand throwing outside and the other inside (the author,
+2026-11-25), so it is written `Oi\ Uu Uu` (the article has `O\ Uu Uu`): the right hand's
+`O` throws go over the top and wide, as in tennis, and the left hand's are inside throws. Both are kept to 3 balls (`fixedBalls`): a half
+shower with 4 is a different siteswap, and tennis doesn't work with 4.
+
+Continuous under-arm throws (`Lu : Ru`) and catches (`Ul : Ur`): the hand going under does
+nearly all the moving (the author, 2026-11-25). For a throw, the arm on top waits near its
+own uncrossed spot (`contHold` 0.8) and the throwing hand reaches across under it. For a
+catch, the top hand comes in only to just inside its own side (`contTopIn` 4 cm), and the
+catching hand reaches across under that forearm (`contCatchOut` 10 cm past the middle),
+10 cm in front of it (`contCatchFwd`) so the ball comes down past the forearm.
 
 Where a pattern's directions change from throw to throw (tennis, the butterflies), each
 throw's own direction letter is shown after its number on the throw lines.
@@ -279,6 +290,20 @@ search, which also keeps forwards sebs's first and third throws where the author
 Their catches overlap the other side's throws, so the body turns less in forwards sebs
 (25° with 4 balls, 20° with 5) and on a later beat in backwards sebs. With more balls the
 beat is quicker, so the hands move faster.
+
+More of the mills family at the sides (3 balls; the author, 2026-11-25: each named after its
+front pattern with "sebs" before "mess": flipped flos sebs mess). Time reverse keeps each hand's own moves, so a time
+reversed sebs is its path played backwards (t becomes 0.8 - t, which turns each throw into a
+catch with the same holds): TR mills sebs mess, the author's Weave (`weaveSebs`, from forwards
+sebs) and flipped flos sebs mess (`flippedFlosSebs`, from backwards sebs), each then searched
+smooth and clear. Flipping swaps which arm goes over at every crossing, which no replay or
+mirror gives (every pattern in the family is its own mirror image), and searches from the
+existing paths only found ways of not crossing the arms, so the flipped, TR flipped, flos
+and TR flos sebs messes wait for the author's description of their crossed throws.
+Every sebs search now also keeps each side's three balls in one plane: each ball's flight,
+seen from above, close to one line for that side (the author: "we're trying to get that three
+ball arc as much as possible on one plane"); the 4-ball forwards sebs was redone this way. Elbows follow one path back, without going
+out and in again on the way (the author): flipped flos sebs mess's search scores that too.
 
 The turning patterns' check looks at them in the body's own frame, and doesn't test their
 slash. Each sebs is written with the opposite slash to its front-facing pattern, which is

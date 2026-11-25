@@ -46,9 +46,9 @@ PH.PATTERNS.forEach(function (pt) {
   var c = pt.src, steps = 0;
   while (steps < 12) { var cr = PH.cycleSiteswap(c); if (!cr.ok) break; c = cr.src; steps++; if (PH.sameKey(c) === k) break; }
   if (steps && PH.sameKey(c) !== k) probs.push('cycling right round');
-  // (a thrown 2 comes back as a held one: a 3 one ball down is held, so skip those)
+  // (a thrown 2 comes back as a held one: a 3 one ball down is held, so skip those)   (and patterns kept to their own ball count, fixedBalls)
   var up = PH.addBalls(pt.src, 1), down = up.ok && PH.addBalls(up.src, -1);
-  if (!/T/.test(PH.parse(pt.src).head) && (!up.ok || !down.ok || PH.sameKey(down.src) !== k)) probs.push('a ball on and off');
+  if (!/T/.test(PH.parse(pt.src).head) && !pt.fixedBalls && (!up.ok || !down.ok || PH.sameKey(down.src) !== k)) probs.push('a ball on and off');
   if (probs.length) { bad++; print('FAIL ' + pt.name + ': ' + probs.join(', ')); } else round++;
 });
 print('ok   ' + round + ' patterns come back to themselves after reversing, flipping, mirroring, cycling and a ball on and off');

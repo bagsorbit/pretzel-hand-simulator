@@ -33,7 +33,7 @@
     topLift: 0, botDrop: 0, roleLift: 2, roleDrop: 0, topFloor: 122.1, botCap: 108.4, bandSoft: 1.8, bodyEase: 3, crossEase: 0.2, flowBlur: 0.06, blurSwings: 1, swapRise0: 0.55, swapRise1: 0.95, swapStay: 0.5, swapFwd: 0, swapKey: 0, orbitR: 13, orbitSide: -1, orbitSideDown: -1, sharePushOther: 0.51, shareOrbitR: 10.53, shareOrbitRY: 7.37, shareLag: 0.46, shareOrbitXa: 1, shareOrbitAlong: 0.7, shareCatchUp: 8.08, shareEven: 1, shareRaise: 5.59, shareOrbit0: 0.09, shareOrbit1: 1.1, shareOrbitIn: 0.22, shareOrbitOut: 0.91, shareSwapRise0: 0.39, shareSwapRise1: 0.98, shareSwapEaseIn: 0.12, shareSwapEaseOut: 0.71, shareLift: 0, shareLiftW: 0.64, orbitXa: 0.75, centreKeys: 1, centreMin: 3,  sharePushFwd: 2, shareElbowIn: 1, shareElbowX: 22.48, shareElbowY: 104.01, shareElbowZ: 4.38, orbitElbow: 0, orbitHold: 1, orbit0: 0.1, orbit1: 0.9, orbitIn: 0.2, orbitOut: 0.8, swapOut: 0, swapUnder: 10, swapMidT: 0.4, roomBack: 0, roomDown: 0, swapClear: 2, swapEaseIn: 0.4, shareA: 0.47, shareB: 0.89, swapEaseOut: 0.9, swapPushFwd: 1, swapPushUp: 0.3, swapPushOther: 0.3, swapPushBack: 0.1, nearHold: 0.1, nearBlur: 0.1,                    // while the arms cross, the top hand rides higher and the bottom hand lower
     topZ: 3.1, botZ: -2.8,                     // and the top arm sits a little further forward
     topElbow: [15.1, 119.2, 24], botElbow: [12, 104.7, 14.9], elbowEarly: 0.8, underDrop: 10, underFwd: 8.7, underOut: 1, underWin: 0.5, nearIn: 22, nearOut: 29.6,
-    underCatch: 0, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
+    underCatch: 0, contHold: 0.8, contTopIn: 4, contCatchOut: 10, contCatchFwd: 10, minArc: 12, graze: 1, underZMax: 34, oneFlight: 0.25, tempoK: 0.8, compress: 0.5, peak4: 165, peakStep: 7,   // the most a ball or arm may brush another arm, in cm
     throwMatch: 1.3, oneStroke: 0.1, ballLane: 6, ballLaneStep: 1, leanPow: 0.7, maxBalls: 5, oWide: 18, oLift: 16, oNarrow: 0.7, ballGap: 0.5, colStep: 18, popRise: 18, oneOut: 10, oneIn: 13, onePass: 0, passY: 116, passWin: 0.45, passGap: 4, palmWin: 0.45, throwBefore: 0.3, throwAfter: 0.2, catchBefore: 0.4, catchAfter: 0.3, underStroke: 0.5, catchGive: 0.3, maxStroke: 110, elbowOut: 0.1, elbowFwd: 0,
     handR: 4.1, foreR: 3.1, upperR: 3.7, ballR: 3.3,
     bps: 3.2,                       // beats per second at full speed (the author's own mills mess, filmed 2026-11-22)
@@ -281,6 +281,9 @@
       if (d === 'O' && MIXED_O) far += G.oWide;
       var x = sideFor(h, s) * (d === 'o' ? G.inner : far) * (MIXED_O ? G.oNarrow : 1);
       if (d === 'I' && inc !== null) x = columnOf(inc);   // (a column comes straight down where it went up)
+      // (continuous under-arm catches: the catching hand reaches across under the other forearm,
+      // just in front of it, so the ball comes down past it)
+      if (CONT_UNDER && crossed && under && inc !== null) return [sideFor(h, s) * G.contCatchOut, G.catchY, G.handZ + G.contCatchFwd];
       // (a 1 is caught where the other hand already is, without reaching in for it, so the
       // hands stay apart: oneIn, how far out on its own side. Not when that hand crosses over
       // straight after, as in the flos showers: it catches nearer the middle, on its way across)
@@ -291,6 +294,11 @@
 
     // key positions of each hand: at its own throws and catches, and in between (at the
     // other hand's events) drifting along its path but kept on the side the arms state says
+    // the letter that says where this event's hand is: its throw letter or its catch letter
+    function ownLetter(ev) { var tk = tok(ev.j); return ev.part === 'throw' ? tk.t : tk.c.toUpperCase(); }
+    function underEvent(ev) { var l = ownLetter(ev); return l !== 'U' && l !== (ev.hand === 0 ? 'R' : 'L'); }
+    var CONT_UNDER = p.tokens.length > 0 && (p.tokens.every(function (tk) { return tk.t === 'U' && tk.c && tk.c.toUpperCase() !== 'U'; }) ||
+                                             p.tokens.every(function (tk) { return tk.t !== 'U' && tk.c && tk.c.toUpperCase() === 'U'; }));
     var keys = [[], []];
     events.forEach(function (ev, i) {
       keys[ev.hand].push({ t: ev.t, i: i, pos: ev.part === 'throw' ? throwKey(ev.j) : catchKey(ev.j), own: true });
@@ -316,11 +324,24 @@
         if (!b) { b = own[0]; tb2 = b.t + P; } else tb2 = b.t;
         var f = tb2 > ta ? (ev.t - ta) / (tb2 - ta) : 0;
         var x = a.pos[0] + (b.pos[0] - a.pos[0]) * f;
+        // Continuous under-arm throws or catches (every throw, or every catch, made under the
+        // other arm): the arm on top waits at its own uncrossed spot while the other hand
+        // reaches under it, so the hand going under does nearly all the moving (the author,
+        // 2026-11-25). contHold 1 = held right there
+        if (CONT_UNDER && underEvent(ev)) {
+          var ua = ownLetter(events[a.i]) === 'U', ub = ownLetter(events[b.i]) === 'U';
+          var hold = ua && ub ? (ev.t - ta <= tb2 - ev.t ? a : b) : ua ? a : ub ? b : null;
+          if (hold) x += (hold.pos[0] - x) * G.contHold;
+          // (for a catch the top forearm still has to reach over the spot where the ball comes
+          // down, so the top hand comes in only to just inside its own side: contTopIn)
+          if (ev.part === 'catch') x = OWN[h] * G.contTopIn;
+        }
+        var held = CONT_UNDER && underEvent(ev) && G.contHold > 0;
         var need = ev.st === 0 ? OWN[h] : -OWN[h];
         // (in columns a hand throws from the spot where it caught, carrying the ball nowhere,
         // so between a catch and a throw at the same spot it stays put)
         var still = dirOf(events[b.i].j) === 'I' && Math.abs(a.pos[0] - b.pos[0]) < 0.01;
-        if (!still && x * need < G.crossMin) x = need * G.crossMin;
+        if (!still && !held && x * need < G.crossMin) x = need * G.crossMin;   // (a held top arm stays on its own side)
         keys[h].push({ t: ev.t, i: i, pos: [x, G.lowY, G.handZ], own: false });
       });
       keys[h].sort(function (u, v) { return u.t - v.t; });
@@ -1498,11 +1519,11 @@
              [5.0, -40, -26, 13, 0], [5.5, -16, -52, 14, 0]]
     },
     forwardsSebs4: {
-      period: 6, turn: 25, turnAt: 2.35, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8], poleTuck: [0.2, -1, -0.6], reachShoulder: [2, 5],
-      keys: [[0, 32, -30, 5, 1, 0], [0.4, -7, -25, 27, 0, 0], [0.8, -32, -18, 29, 0, 0], [1, -26, -24, 28, 0, 0],
-             [1.5, -4, -37, 22, 0, 0], [2, 19, -34, 20, 1, 0], [2.4, -2, -33, 26, 0, 0], [2.8, -5, -25, 40, 0, 0],
-             [3, -12, -39, 32, 0, 1], [3.5, -20, -44, 15, 0, 0.6], [4, -32, -30, 8, 0, 0], [4.5, -11, -18, 31, 0, 0],
-             [4.8, 25, -24, 36, 0, 0], [5, 17, -17, 39, 0, 0], [5.4, 20, -23, 23, 0.4, 0], [5.75, 34, -22, 8, 1, 0]]
+      period: 6, turn: 25, turnAt: 1.55, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, 32, -31, 5, 1, 0], [0.4, -7, -25, 27, 0, 0], [0.8, -28, -18, 28, 0, 0], [1, -26, -24, 28, 0, 0],
+             [1.5, -4, -37, 22, 0, 0], [2, 19, -34, 21, 1, 0], [2.4, -2, -33, 25, 0, 0], [2.8, 3, -25, 43, 0, 0],
+             [3, -10, -39, 31, 0, 1], [3.5, -20, -44, 15, 0, 0.6], [4, -35, -30, 11, 0, 0], [4.5, -11, -18, 31, 0, 0],
+             [4.8, 25, -24, 36, 0, 0], [5, 16, -16, 40, 0, 0], [5.4, 20, -23, 23, 0.4, 0], [5.75, 34, -22, 8, 1, 0]]
     },
     forwardsSebs5: {
       period: 6, turn: 20, turnAt: 2.15, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8], poleTuck: [0.2, -1, -0.6], reachShoulder: [2, 5],
@@ -1526,6 +1547,21 @@
              [2.8, -12, -14, 31, 1], [3, 5, -19, 29, 1], [3.2, 18, -22, 29, 1], [3.5, -8, -49, 24, 0.2],
              [4, -38, -30, 48, 0], [4.5, 3, -16, 32, 0], [4.8, 0, -15, 43, 0], [5, -35, -21, 33, 0],
              [5.5, -16, -53, 13, 0]]
+    },
+    weaveSebs: {
+      period: 6, turn: 43, turnAt: 4.8, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -30, -18, 29, 0, 0], [0.4, -7, -25, 27, 0, 0], [0.8, 31, -29, 6, 1, 0], [1.05, 34, -23, 8, 1, 0],
+             [1.4, 20, -23, 24, 0.4, 0], [1.8, 14, -23, 42, 0, 0], [2, 10, -26, 43, 0, 0], [2.3, -11, -18, 31, 0, 0],
+             [2.8, -32, -30, 8, 0, 0], [3.3, -21, -44, 15, 0, 0.6], [3.8, -13, -36, 33, 0, 1], [4, -5, -25, 41, 0, 0],
+             [4.4, -2, -33, 26, 0, 0], [4.8, 19, -34, 22, 1, 0], [5.3, -4, -37, 22, 0, 0], [5.8, -26, -24, 28, 0, 0]]
+    },
+    flippedFlosSebs: {
+      period: 6, turn: 35, turnAt: 4.7, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8],
+      keys: [[0, -34, -25, 1, 0], [0.3, -28, -26, 8, 0], [0.55, -1, -30, 18, 0], [0.8, 20, -28, 31, 0],
+             [1.3, -16, -52, 14, 0], [1.8, -40, -26, 14, 0], [2, -42, -16, 15, 0], [2.3, -38, -16, 16, 0],
+             [2.8, -16, -30, 28, 0], [3.3, -12, -50, 25, 0.2], [3.6, 11, -22, 29, 1], [3.8, 20, -19, 28, 1],
+             [4, 36, -14, 19, 1], [4.3, 25, -15, 26, 1], [4.8, -1, -18, 34, 0.5], [5.3, -10, -44, 16, 0],
+             [5.8, -34, -28, 3, 0]]
     }
   };
 
@@ -1550,6 +1586,8 @@
     { group: 'Hectic messes', name: 'TR hectic flos mess', src: '3 i/ Lu Uu Ul : Ru Uu Ur' },
     { group: 'Hectic messes', name: 'TR hectic flipped flos mess', src: '3 i/ Ru Uu Ur : Lu Uu Ul' },
     { group: 'Sebs messes', name: 'Forwards sebs mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 45, path: 'forwardsSebs' },
+    { group: 'Sebs messes', name: 'Flipped flos sebs mess', src: 'o/ Ul Lu Uu : Ur Ru Uu', turn: 45, path: 'flippedFlosSebs' },   // (the flipped flos mess at the sides: backwards sebs played backwards)
+    { group: 'Sebs messes', name: 'TR mills sebs mess (Weave)', src: '3 i/ Ur Rr Ru : Ul Ll Lu', turn: 45, path: 'weaveSebs' },   // (the TR mills mess at the sides, the author's Weave: forwards sebs played backwards)
     { group: 'Sebs messes', name: 'Backwards sebs mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 45, path: 'backwardsSebs' },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
     { group: "Rubenstein's Revenges", name: "Rubenstein's Revenge", src: '22335 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr' },
     { group: "Rubenstein's Revenges", name: "TR Rubenstein's Revenge", src: '52233 i\\ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu' },
@@ -1588,8 +1626,8 @@
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp3', src: '3 iio\\ Ul Ll - Lu : Ur Rr - Ru' },
     { group: 'Basic cascades', name: 'Cascade', src: 'i/ Uu : Uu' },
     { group: 'Basic cascades', name: 'Reverse cascade', src: 'o\\ Uu : Uu' },
-    { group: 'Basic cascades', name: 'Half shower', src: 'O\\ Uu Uu' },
-    { group: 'Basic cascades', name: 'Tennis', src: 'Oii\\ Uu : Uu' },
+    { group: 'Basic cascades', name: 'Half shower', src: 'Oi\\ Uu Uu', fixedBalls: "Half shower is juggled with 3 balls only: with 4 it is a different siteswap." },
+    { group: 'Basic cascades', name: 'Tennis', src: 'Oii\\ Uu : Uu', fixedBalls: "Tennis is juggled with 3 balls only: it doesn't work with 4." },
     { group: 'Basic cascades', name: 'Crossed arm cascade', src: 'Rr : Rr' },
     { group: 'Basic cascades', name: 'Clockwise windmill (under throws)', src: 'Lu Ul' },
     { group: 'Basic cascades', name: 'Clockwise flipped windmill (under catches)', src: 'Ru Ur' },
@@ -1727,6 +1765,9 @@
   function addBalls(src, k) {
     var m = build(src, { noReverse: true });
     if (!m.ok) return m;
+    // some patterns only work with their own ball count (half shower, tennis: the author, 2026-11-25)
+    var fixed = PATTERNS.filter(function (pt) { return pt.fixedBalls && parse(pt.src).src === m.parsed.src; })[0];
+    if (fixed) return { ok: false, error: fixed.fixedBalls };
     var p = m.parsed, d = p.digits.map(function (x) { return x + k; });
     if (d.some(function (x) { return x < 1; })) return { ok: false, error: 'Can\'t take a ball away: a throw would become a 0, and empty hands aren\'t in the simulator yet.' };
     if (d.some(function (x) { return x > 9; })) return { ok: false, error: 'That would need a throw higher than 9.' };
