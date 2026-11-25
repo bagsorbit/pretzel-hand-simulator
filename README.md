@@ -39,8 +39,7 @@ to load three.js). Pick a pattern, then:
   keep the switches.
   - Time reverse: the pattern played backwards, by Appendix C's rule (`Af Ba Cb : Dc Ed
     Fe` becomes `Fa Ef De : Cd Bc Ab`): throws become catches, `o` and `i` swap, each ball
-    keeps its height, each hand keeps its own moves. Works on every pattern but the
-    multiplexes.
+    keeps its height, each hand keeps its own moves. Works on every pattern.
   - Flip: right and left swapped in every letter.
   - Mirror: the mirror image (the hands swap over as well as the letters), so clockwise
     and anticlockwise swap and right arm on top becomes left arm on top. Greyed out for a
@@ -61,9 +60,12 @@ to load three.js). Pick a pattern, then:
   the pairs published in the article, and that every pattern comes back to itself after
   reversing twice, flipping twice, cycling right round, and a ball on and off.
 
-The list follows the article: all of Appendix A in its order (with the confirmed
-typos fixed), then the main article's sebs and siteswap patterns, Appendix B, and
-Appendix C's butterfly loop Rubenstein's Revenges (106 patterns; patterns that appear
+The list has every pattern in the article: all of Appendix A (with the confirmed typos
+fixed), the main article's sebs and siteswap patterns, Appendix B, and Appendix C's
+butterfly loop Rubenstein's Revenges. The menu is in the author's order (2026-11-25):
+mills messes (3:3), hectic messes, sebs messes, Rubenstein's Revenges, other mills mess
+extensions and variations, siteswap messes, butterfly messes, then the cascades and half
+messes, then the two appendices; within a group, the article's order (105 patterns; the two multiplexes are left out; patterns that appear
 twice in the article are listed once; the crossed arm cascade and the alternating windmill
 are listed once each, their mirror images being a press of Mirror away; the article's 2 and
 4 ball time reverses are left out, being the 3 ball ones with a ball fewer or more).
@@ -187,7 +189,8 @@ are listed once each, their mirror images being a press of Mirror away; the arti
   hands throw on the left) is moved sideways as a whole, so it sits in front of the
   middle of the body (`centreKeys`).
 
-Not in yet: multiplexes (listed, but they show a message) and empty hands. First tries,
+Not in yet: multiplexes (the article's two, [32T] forwards sebs and 24[54] flos, are left
+out of the list; typed in, they show a message) and empty hands. First tries,
 to be corrected by eye: `-` direction changes (the butterfly messes: the directions
 listed before the slash apply throw by throw), `I` columns (thrown and caught straight up: right,
 centre and left columns; a ball that comes back to its own hand, as in the 4 ball Boston
@@ -250,13 +253,32 @@ Forwards sebs mess (the mills mess at the sides) follows a path too (`PATHS.forw
 There is no footage of it, so it is built from its own letters and the author's description,
 on the same lines as backwards sebs, with the same heights, elbows and turn: each half's three
 balls are thrown at the back of that side and caught in front, so they travel forwards (about
-20 to 45 cm). No throw, in either sebs, goes up between an arm and the body. The first throw
-of a side reaches across and back to that side of the body: the other arm is down by its side
-and the throwing hand comes back to just by its elbow, in front of it, so the ball goes up in
-front of that arm. The other hand holds its ball low in front while the third throw is made
-under it, and that ball too goes up in front of the arm. The points were settled by a search
-(coordinate descent from a first plan) that keeps to that and keeps arms, balls and body
-clear, elbows low and hands smooth.
+20 to 45 cm). No throw, in either sebs, goes up between an arm and the body: both crossed
+throws of a side are made just outside the other arm's elbow (the author, 2026-11-25). At the
+first (Ru) the left elbow is tucked in by the body and the right hand reaches over to just
+outside it, at the same height (body, left elbow, right hand). At the third (Ll) the left arm
+is pulled out in front and a bit across, its elbow towards the middle of the chest, and the
+right hand throws from under it, just outside that elbow, about in line with the left
+shoulder. A path point may carry a sixth number, how far that elbow is tucked in by the side
+(`poleTuck`), and reaching across brings the shoulder 2 cm in and 5 cm forward
+(`reachShoulder`), as in the front-facing patterns. The points were settled by a search
+(random steps from a first plan) that keeps to that and keeps arms, balls and body clear, the
+right arm on top where the letters say, and hands smooth.
+
+Both sebs keep their own movement with more balls: a pattern written with the same
+letters, directions and slash, with every throw the same height (3, 4, 5 ...), shares the
+listed pattern's path and turn (`sameMoves`), and a path may have its own version for a
+ball count (`forwardsSebs4`, `backwardsSebs5` ...). The identity of a sebs, as of a mills
+mess, is three balls following each other in an arc, at any ball count; in sebs the arc is
+at a side of the body, forwards or backwards (the author, 2026-11-25). Each extra ball is
+caught a beat later, so with the 3-ball path some balls would land after the body has
+turned to the other side and fly across (with 4 balls the third of each side, with 5 the
+second and third). The 4 and 5 ball paths move those catches so each side's three balls
+are caught on that side, travelling forwards (or backwards), found by the same kind of
+search, which also keeps forwards sebs's first and third throws where the author put them.
+Their catches overlap the other side's throws, so the body turns less in forwards sebs
+(25° with 4 balls, 20° with 5) and on a later beat in backwards sebs. With more balls the
+beat is quicker, so the hands move faster.
 
 The turning patterns' check looks at them in the body's own frame, and doesn't test their
 slash. Each sebs is written with the opposite slash to its front-facing pattern, which is
