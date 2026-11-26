@@ -1120,6 +1120,12 @@
     // turned about the spine, and the balls fly between the turned hands.
     var TURN = opts.turn !== undefined ? opts.turn : 0;
     if (opts.turn === undefined) PATTERNS.forEach(function (pt) { if (pt.turn && sameMoves(parse(pt.src), p)) TURN = pt.turn; });
+    // A pivot (the author, 2026-11-25): each group of throws has a place, written like
+    // BL:FL:FR:BR:FR:FL (Back or Front, Left or Right). At a Back group the juggler is turned
+    // to that side; at a Front group the body faces the front.
+    var PIVOT = opts.pivot !== undefined ? opts.pivot : null;
+    if (opts.pivot === undefined) PATTERNS.forEach(function (pt) { if (pt.pivot && sameMoves(parse(pt.src), p)) PIVOT = pt.pivot; });
+    var pivotPos = PIVOT ? PIVOT.split(':') : null;
     var PATH = opts.path !== undefined ? opts.path : null;
     if (opts.path === undefined) PATTERNS.forEach(function (pt) { if (pt.path && sameMoves(parse(pt.src), p)) PATH = pt.path; });
     // a path may have its own version for a ball count (forwardsSebs4 ...): with more balls each
@@ -1132,7 +1138,20 @@
       var v = pathSpl(tb - P / 2);
       return [-v[0], v[1], v[2], v[3], v[4]];
     }
-    function pathYaw(tb) { return pathDef.turn * Math.PI / 180 * Math.cos(2 * Math.PI * (tb - pathDef.turnAt) / P); }
+    function pathYaw(tb) {
+      // (a path may set its own turn through the cycle, yawKeys [beat, share of turn], as the
+      // pivot does: held at a side through a side group and square to the front for the front ones)
+      if (pathDef.yawKeys) {
+        // (eased from one key to the next, so it holds still at each and never overshoots)
+        var ks = pathDef.yawKeys, t = mod(tb, P), n = ks.length, i = n - 1;
+        for (var q = 0; q < n; q++) if (ks[q][0] <= t) i = q;
+        var a = ks[i], b = ks[(i + 1) % n], ta = a[0], tb2 = b[0];
+        if (t < ta) ta -= P;
+        if (tb2 <= ta) tb2 += P;
+        return pathDef.turn * Math.PI / 180 * (a[1] + (b[1] - a[1]) * smoother(ta, tb2, t));
+      }
+      return pathDef.turn * Math.PI / 180 * Math.cos(2 * Math.PI * (tb - pathDef.turnAt) / P);
+    }
     var turnKeys = null;
     function yawAt(tb) {
       if (!TURN) return 0;
@@ -1146,7 +1165,9 @@
           Object.keys(byG).forEach(function (g) {
             var js = byG[g], tm = 0, x = 0;
             js.forEach(function (j) { tm += j; x += throwKey(j)[0]; });
-            turnKeys.push({ t: tm / js.length, side: x >= 0 ? 1 : -1 });
+            var side = x >= 0 ? 1 : -1, pos = pivotPos && pivotPos[+g % pivotPos.length];
+            if (pos) side = pos.charAt(0) === 'B' ? (pos.charAt(1) === 'L' ? 1 : -1) : 0;
+            turnKeys.push({ t: tm / js.length, side: side });
           });
         }
         turnKeys.sort(function (a, b) { return a.t - b.t; });
@@ -1527,34 +1548,34 @@
              [4.8, 25, -24, 36, 0, 0], [5, 16, -16, 40, 0, 0], [5.4, 20, -23, 23, 0.4, 0], [5.75, 34, -22, 8, 1, 0]]
     },
     forwardsSebs5: {
-      period: 6, turn: 20, turnAt: 2.15, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8], poleTuck: [0.2, -1, -0.6], reachShoulder: [2, 5],
-      keys: [[0, 31, -26, 4, 1, 0], [0.4, -6, -25, 30, 0, 0], [0.8, -32, -18, 31, 0, 0], [1, -26, -24, 28, 0, 0],
-             [1.5, -4, -37, 22, 0, 0], [2, 19, -34, 20, 1, 0], [2.4, -2, -33, 26, 0, 0], [2.8, -20, -26, 35, 0, 0],
-             [3, -18, -35, 33, 0, 1], [3.5, -21, -44, 15, 0, 0.6], [4, -31, -31, 8, 0, 0], [4.5, -11, -18, 30, 0, 0],
-             [4.8, 23, -25, 37, 0, 0], [5, 16, -21, 41, 0, 0], [5.4, 21, -23, 24, 0.4, 0], [5.75, 35, -20, 8, 1, 0]]
+      period: 6, turn: 23, turnAt: 1.85, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, 32.3, -27.9, 4.5, 1, 0], [0.4, -5.1, -23.1, 29.9, 0, 0], [0.8, -23.6, -18.1, 30.7, 0, 0], [1, -26.2, -24.1, 27.9, 0, 0],
+             [1.5, -4, -36.9, 21.8, 0, 0], [2, 19, -34.3, 20, 1, 0], [2.4, -2.4, -33.1, 26, 0, 0], [2.8, -19.6, -25.9, 36.4, 0, 0],
+             [3, -18.8, -36.2, 32.8, 0, 1], [3.5, -19.7, -44.3, 16, 0, 0.6], [4, -31, -31, 10.3, 0, 0], [4.5, -10, -18.1, 29.9, 0, 0],
+             [4.8, 23.1, -21.8, 33.5, 0, 0], [5, 15.9, -18.6, 39.8, 0, 0], [5.4, 21, -23.1, 24, 0.4, 0], [5.75, 35, -20, 8, 1, 0]]
     },
     backwardsSebs4: {
-      period: 6, turn: 45, turnAt: 4.1, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8],
-      keys: [[0, 16, -30, 32, 0], [0.25, -7, -32, 28, 0], [0.5, -23, -17, 10, 0], [0.8, -38, -33, 12, 0],
-             [1, -35, -29, 2, 0], [1.5, -15, -44, 15, 0], [2, 22, -20, 41, 0.5], [2.5, 25, -9, 22, 1],
-             [2.8, 21, -14, 12, 1], [3, 21, -20, 27, 1], [3.2, 9, -20, 30, 1], [3.5, -6, -46, 26, 0.2],
-             [4, -36, -32, 24, 0], [4.5, -10, -17, 34, 0], [4.8, 0, -16, 28, 0], [5, -22, -18, 26, 0],
-             [5.5, -32, -54, 20, 0]]
+      period: 6, turn: 38, turnAt: 4.2, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6],
+      keys: [[0, 17.5, -30, 35.5, 0, 0], [0.25, -7, -32, 28.1, 0, 0.72], [0.5, -23, -18.6, 15, 0, 0.22], [0.8, -19.7, -31.5, 21.8, 0, 0],
+             [1, -31.8, -30.4, 3.8, 0, 0.02], [1.5, -14.9, -44, 14.8, 0, 0], [2, 20.2, -19.9, 40.4, 0.5, 0.2], [2.5, 25, -9.1, 22, 1, 0.27],
+             [2.8, 27.9, -27.5, 18.2, 1, 0.19], [3, 21.6, -17.8, 27, 1, 0.01], [3.2, 8.8, -19.5, 30.2, 1, 0.22], [3.5, -6, -45.7, 26, 0.2, 0.04],
+             [4, -29.3, -32, 25.7, 0, 1], [4.5, -9.6, -17.1, 33.8, 0, 0.73], [4.8, 12.1, -16, 26, 0, 0], [5, -12.5, -17.9, 24.6, 0, 0.78],
+             [5.5, -32.4, -54, 20.2, 0, 0.43]]
     },
     backwardsSebs5: {
-      period: 6, turn: 45, turnAt: 4.7, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8],
-      keys: [[0, 7, -28, 35, 0], [0.25, -4, -32, 20, 0], [0.5, -29, -22, 15, 0], [0.8, -37, -25, 10, 0],
-             [1, -32, -26, 2, 0], [1.5, -20, -46, 14, 0], [2, 29, -20, 28, 0.5], [2.5, 12, -12, 27, 1],
-             [2.8, -13, -9, 24, 1], [3, 2, -17, 29, 1], [3.2, 9, -21, 29, 1], [3.5, -8, -47, 24, 0.2],
-             [4, -30, -31, 50, 0], [4.5, 0, -17, 32, 0], [4.8, -9, -15, 32, 0], [5, -36, -21, 34, 0],
-             [5.5, -16, -53, 13, 0]]
+      period: 6, turn: 46, turnAt: 4.9, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6],
+      keys: [[0, -8.8, -28, 37, 0, 0.44], [0.25, -4, -32, 20, 0, 0.42], [0.5, -27, -22, 15.8, 0, 0], [0.8, -17.2, -24.9, 20.3, 0, 0],
+             [1, -31.3, -26, 3, 0, 0], [1.5, -20.5, -46.6, 14, 0, 0], [2, 28.8, -20.3, 28.2, 0.5, 0], [2.5, 12, -11.9, 27.1, 1, 0.49],
+             [2.8, -9.9, -9, 24.3, 1, 0.58], [3, 2, -16.8, 29, 1, 0.56], [3.2, 9.1, -21, 29, 1, 0.05], [3.5, -8, -47.1, 24, 0.2, 0.34],
+             [4, -22.8, -31, 43.3, 0, 0], [4.5, 0, -17.1, 32, 0, 0.4], [4.8, -5.7, -15, 28.7, 0, 0], [5, -37.5, -20.5, 34, 0, 0.01],
+             [5.5, -16, -53, 13, 0, 0]]
     },
     weaveSebs: {
-      period: 6, turn: 43, turnAt: 4.8, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
-      keys: [[0, -30, -18, 29, 0, 0], [0.4, -7, -25, 27, 0, 0], [0.8, 31, -29, 6, 1, 0], [1.05, 34, -23, 8, 1, 0],
-             [1.4, 20, -23, 24, 0.4, 0], [1.8, 14, -23, 42, 0, 0], [2, 10, -26, 43, 0, 0], [2.3, -11, -18, 31, 0, 0],
-             [2.8, -32, -30, 8, 0, 0], [3.3, -21, -44, 15, 0, 0.6], [3.8, -13, -36, 33, 0, 1], [4, -5, -25, 41, 0, 0],
-             [4.4, -2, -33, 26, 0, 0], [4.8, 19, -34, 22, 1, 0], [5.3, -4, -37, 22, 0, 0], [5.8, -26, -24, 28, 0, 0]]
+      period: 6, turn: 32, turnAt: 5.2, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -29.8, -18, 29.9, 0, 0.04], [0.4, -5.1, -25.5, 27.1, 0, 0], [0.8, 37.5, -27.2, 16.7, 1, 0.29], [1.05, 32.6, -21, 6.9, 1, 0],
+             [1.4, 20.5, -23.2, 24, 0.4, 0.09], [1.8, 13.5, -22.8, 42, 0, 0.22], [2, 11, -26, 46.6, 0, 0.42], [2.3, -11, -18, 31, 0, 0.65],
+             [2.8, -32, -30, 24.2, 0, 0.54], [3.3, -20.8, -44, 15, 0, 0.9], [3.8, -13, -36, 33.1, 0, 1], [4, 0.4, -25.1, 47.5, 0, 0.07],
+             [4.4, -2, -32.9, 26, 0, 0], [4.8, 22.8, -34, 29.5, 1, 0.55], [5.3, -4, -37, 22, 0, 0.13], [5.8, -26, -24, 28, 0, 0.1]]
     },
     flippedFlosSebs: {
       period: 6, turn: 35, turnAt: 4.7, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8],
@@ -1563,6 +1584,48 @@
              [2.8, -16, -30, 28, 0], [3.3, -12, -50, 25, 0.2], [3.6, 11, -22, 29, 1], [3.8, 20, -19, 28, 1],
              [4, 36, -14, 19, 1], [4.3, 25, -15, 26, 1], [4.8, -1, -18, 34, 0.5], [5.3, -10, -44, 16, 0],
              [5.8, -34, -28, 3, 0]]
+    },
+    weaveSebs4: {
+      period: 6, turn: 48, turnAt: 5.6, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -29.3, -23.1, 30.1, 0, 0], [0.4, -4.8, -25.1, 27.2, 0, 0], [0.8, 38, -26.4, 16.1, 1, 0.29], [1.05, 33.1, -17.3, 8.1, 1, 0],
+             [1.4, 20.5, -23.8, 25.2, 0.4, 0], [1.8, 14.1, -23, 42.1, 0, 0.66], [2, 20, -26.6, 31.8, 0, 0.1], [2.3, -11, -17.9, 31.1, 0, 0.06],
+             [2.8, -24.2, -30, 29.4, 0, 0.49], [3.3, -21.1, -43.9, 15, 0, 0.6], [3.8, -11.9, -38.2, 38.1, 0, 0.59], [4, 0.2, -23, 46.4, 0, 0.79],
+             [4.4, -10.1, -56.5, 21.9, 0, 0.21], [4.8, -28.1, -57.5, -10.9, 1, 0.96], [5.3, -12.7, -48.4, 20.6, 0, 0.7], [5.8, -24.9, -20.7, 28.2, 0, 0]]
+    },
+    weaveSebs5: {
+      period: 6, turn: 29, turnAt: 5, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -21.5, -23.1, 37.1, 0, 0.02], [0.4, -4.8, -25.1, 27.3, 0, 0.24], [0.8, 15.9, -25.3, 16.7, 1, 0.42], [1.05, 33, -17.3, 17, 1, 0.37],
+             [1.4, 20.5, -23.8, 25.2, 0.4, 0.19], [1.8, 14.2, -23, 42.1, 0, 0.42], [2, 15.1, -26.6, 41.9, 0, 0], [2.3, -9.2, -18.3, 31.1, 0, 0.56],
+             [2.8, 15.1, 4.5, 17.9, 0, 0], [3.3, -21.4, -42.6, 27.6, 0, 0.57], [3.8, -11.9, -38.2, 37.7, 0, 0.4], [4, 0.8, -23, 39, 0, 0],
+             [4.4, -10.3, -55.7, 21.7, 0, 0.57], [4.8, -18.7, -52.9, 3.5, 1, 1], [5.3, -12.6, -48.4, 20.6, 0, 0.6], [5.8, -24.9, -20.7, 28.1, 0, 0.1]]
+    },
+    flippedFlosSebs4: {
+      period: 6, turn: 28, turnAt: 4.55, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8],
+      keys: [[0, -36, -30, 2, 0], [0.3, -27, -27, 8, 0], [0.55, -1, -30, 18, 0], [0.8, 20, -28, 31, 0],
+             [1.3, -16, -52, 14, 0], [1.8, -40, -26, 14, 0], [2, -42, -16, 15, 0], [2.3, -38, -16, 16, 0],
+             [2.8, -14, -30, 27, 0], [3.3, -12, -50, 25, 0.2], [3.6, 11, -22, 29, 1], [3.8, 20, -19, 28, 1],
+             [4, 37, -14, 19, 1], [4.3, 25, -15, 26, 1], [4.8, -20, -18, 22, 0.5], [5.3, -11, -44, 16, 0],
+             [5.8, -34, -28, 1, 0]]
+    },
+    flippedFlosSebs5: {
+      period: 6, turn: 20, turnAt: 3.8, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8],
+      keys: [[0, -37, -30, 4, 0], [0.3, -28, -28, 8, 0], [0.55, -1, -32, 18, 0], [0.8, 18, -19, 26, 0],
+             [1.3, -19, -52, 15, 0], [1.8, -40, -26, 14, 0], [2, -33, -17, 11, 0], [2.3, -38, -16, 17, 0],
+             [2.8, 2, -30, 33, 0], [3.3, -10, -51, 26, 0.2], [3.6, 20, -22, 29, 1], [3.8, 28, -18, 28, 1],
+             [4, 35, -14, 14, 1], [4.3, 25, -15, 26, 1], [4.8, -14, -18, 32, 0.5], [5.3, -10, -43, 16, 0],
+             [5.8, -34, -28, 1, 0]]
+    },
+    // Side plane (the author, 2026-11-26): the cascade at the sides. The middle of the front
+    // pattern becomes the front of a side and the outside the back, so each throw goes across the
+    // body diagonally, from the front of the thrower's side to the back of the other (the reverse
+    // cascade: back to front), and the body turns towards each throw.
+    cascadeSide: {
+      period: 2, turn: 41, turnAt: 1.25, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8], poleTuck: [0.2, -1, -0.6], reachShoulder: [2, 5],
+      keys: [[0, -10, -25, 40, 0, 0], [0.4, -25, -15, 25, 0, 0], [0.8, -35, -15, 6, 0, 0], [1.4, -22, -35, 20, 0, 0]]
+    },
+    reverseCascadeSide: {
+      period: 2, turn: 45, turnAt: 1.35, pole: [0.7, -1, -0.15], poleFar: [0.1, -0.8, 0.8], poleTuck: [0.2, -1, -0.6], reachShoulder: [2, 5],
+      keys: [[0, -35, -25, 5, 0, 0], [0.4, -25, -15, 25, 0, 0], [0.8, -10, -15, 40, 0, 0], [1.4, -22, -35, 22, 0, 0]]
     }
   };
 
@@ -1586,10 +1649,10 @@
     { group: 'Hectic messes', name: 'TR hectic flipped mess', src: '3 i\\ Ur Rl Lu : Ul Lr Ru' },
     { group: 'Hectic messes', name: 'TR hectic flos mess', src: '3 i/ Lu Uu Ul : Ru Uu Ur' },
     { group: 'Hectic messes', name: 'TR hectic flipped flos mess', src: '3 i/ Ru Uu Ur : Lu Uu Ul' },
-    { group: 'Sebs messes', name: 'Forwards sebs mess', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 45, path: 'forwardsSebs' },
-    { group: 'Sebs messes', name: 'Flipped flos sebs mess', src: 'o/ Ul Lu Uu : Ur Ru Uu', turn: 45, path: 'flippedFlosSebs' },   // (the flipped flos mess at the sides: backwards sebs played backwards)
-    { group: 'Sebs messes', name: 'TR mills sebs mess (Weave)', src: '3 i/ Ur Rr Ru : Ul Ll Lu', turn: 45, path: 'weaveSebs' },   // (the TR mills mess at the sides, the author's Weave: forwards sebs played backwards)
-    { group: 'Sebs messes', name: 'Backwards sebs mess', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 45, path: 'backwardsSebs' },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
+    { group: 'Side plane messes', name: 'Mills sebs mess (Forwards sebs)', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 45, path: 'forwardsSebs' },
+    { group: 'Side plane messes', name: 'Flipped flos sebs mess', src: 'o/ Ul Lu Uu : Ur Ru Uu', turn: 45, path: 'flippedFlosSebs' },   // (the flipped flos mess at the sides: backwards sebs played backwards)
+    { group: 'Side plane messes', name: 'TR mills sebs mess (Weave)', src: '3 i/ Ur Rr Ru : Ul Ll Lu', turn: 45, path: 'weaveSebs' },   // (the TR mills mess at the sides, the author's Weave: forwards sebs played backwards)
+    { group: 'Side plane messes', name: 'TR flipped flos sebs mess (Backwards sebs)', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 45, path: 'backwardsSebs' },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
     { group: "Rubenstein's Revenges", name: "Rubenstein's Revenge", src: '22335 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
     { group: "Rubenstein's Revenges", name: "TR Rubenstein's Revenge", src: '52233 i\\ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
     { group: "Rubenstein's Revenges", name: "Flos Rubenstein's Revenge", src: '52233 o\\ Ul Lu. Ur. Ru Uu : Ur Ru. Ul. Lu Uu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
@@ -1634,8 +1697,8 @@
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp2', src: '3 ioi\\ Ul - Ll - Lu : Ur - Rr - Ru' },
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp2,3', src: '3 ioo\\ Ul - Ll Lu : Ur - Rr Ru' },
     { group: 'Butterfly messes', name: 'Butterfly TR flipped mess Opp3', src: '3 iio\\ Ul Ll - Lu : Ur Rr - Ru' },
-    { group: 'Basic cascades', name: 'Cascade', src: 'i/ Uu : Uu' },
-    { group: 'Basic cascades', name: 'Reverse cascade', src: 'o\\ Uu : Uu' },
+    { group: 'Basic cascades', name: 'Cascade', src: 'i/ Uu : Uu', side: 'cascadeSide' },
+    { group: 'Basic cascades', name: 'Reverse cascade', src: 'o\\ Uu : Uu', side: 'reverseCascadeSide' },
     { group: 'Basic cascades', name: 'Half shower', src: 'Oi\\ Uu Uu', fixedBalls: "Half shower is juggled with 3 balls only: with 4 it is a different siteswap." },
     { group: 'Basic cascades', name: 'Tennis', src: 'Oii\\ Uu : Uu', fixedBalls: "Tennis is juggled with 3 balls only: it doesn't work with 4." },
     { group: 'Basic cascades', name: 'Crossed arm cascade', src: 'Rr : Rr' },
@@ -1968,7 +2031,7 @@
     return null;
   }
 
-  var PH = { G: G, parse: parse, build: build, ik: ik, PATTERNS: PATTERNS, PATHS: PATHS,
+  var PH = { G: G, parse: parse, build: build, ik: ik, PATTERNS: PATTERNS, PATHS: PATHS, sameMoves: sameMoves,
              timeReverse: timeReverse, flip: flip, millsFlos: millsFlos, sameKey: sameKey, findPattern: findPattern,
              cycleSiteswap: cycleSiteswap, addBalls: addBalls, compose: compose, mirror: mirror, family: family };
   if (typeof module !== 'undefined' && module.exports) module.exports = PH;

@@ -15,7 +15,7 @@ to load three.js). Pick a pattern, then:
   shows which hand makes it: red is the right hand, blue the left.
 - Right sleeve red, left sleeve blue. From the front the juggler's right arm is
   on your left, as in the article.
-- The Mouse button (bottom left of the picture, or the M key) picks what dragging
+- The Move | Scrub switch (bottom left of the picture, or the M key) picks what dragging
   does: turn the juggler, or scrub back and forth through time (dragging pauses it).
   A click or tap pauses and plays. Pinch or scroll to zoom. The view buttons jump to
   front, above, side, or the juggler's own eyes.
@@ -63,7 +63,9 @@ to load three.js). Pick a pattern, then:
 The list has every pattern in the article: all of Appendix A (with the confirmed typos
 fixed), the main article's sebs and siteswap patterns, Appendix B, and Appendix C's
 butterfly loop Rubenstein's Revenges. The menu is in the author's order (2026-11-25):
-mills messes (3:3), hectic messes, sebs messes, Rubenstein's Revenges, Mike's messes (added
+mills messes (3:3), hectic messes, side plane messes (the sebs: each named after its front
+mess with "sebs" before "mess", and its everyday name in brackets, as in Mills sebs mess
+(Forwards sebs); 2026-11-26), Rubenstein's Revenges, Mike's messes (added
 2026-11-25: Mike's mess, moved from Appendix B, the 4 ball 228 one, and the flipped
 versions of both), other mills mess
 extensions and variations, siteswap messes, butterfly messes, then the cascades and half
@@ -313,6 +315,30 @@ seen from above, close to one line for that side (the author: "we're trying to g
 ball arc as much as possible on one plane"); the 4-ball forwards sebs was redone this way. Elbows follow one path back, without going
 out and in again on the way (the author): flipped flos sebs mess's search scores that too, and backwards sebs
 (3, 4 and 5 balls) was smoothed the same way, staying close to the filmed path.
+
+Side plane / wall plane (the author, 2026-11-26): the Side plane button juggles a pattern at
+the sides of the body instead of in front. It works only where the list gives a pattern a
+side-plane path (`side`), so far the 3 ball cascade (`cascadeSide`) and reverse cascade
+(`reverseCascadeSide`), and is greyed out everywhere else. The cascades use the sebs rule (the
+middle of the front pattern becomes the front of a side, the outside its back), so every throw
+crosses the body diagonally: in the cascade from the front of the thrower's side to the back of
+the other, in the reverse cascade from the back to the front, with the body turning towards
+each throw. The messes that have a sebs (mills, flipped flos, TR mills, TR flipped flos) and
+their sebs are each other's wall and side plane versions, the same letters with the slash the
+other way round, so on any of them the button swaps to the other, with any ball count the sebs
+has. Side plane is a switch like the others: the tools (time reverse, flip, mills/flos, the ball
+count) work on the pattern in front, and while it is on, whatever they give is shown at the
+sides if it can be, so mills, Side plane, then Flos gives the flipped flos sebs mess. Choosing a
+sebs turns it on, choosing anything else turns it off, and a pattern with no side-plane
+version goes back to the wall plane; share links keep it (`&side=1`). Weave and flipped flos
+sebs mess have their own 4 and 5 ball paths, like the other two, so each side's three balls
+stay at that side. Two more rules from the author (2026-11-26), used in those searches: a catch
+is made with the hand in front of its elbow (a hand pointing back is a special reverse-hand
+catch, so the elbow moves back instead: the paths may tuck it, `poleTuck`), and from above
+each side's three balls follow one arc, thrown from about one spot and caught at about one spot
+(within about 5 cm), so the three-ball arc is clear; the Weave (3, 4 and 5 balls), 4 and 5 ball
+backwards sebs and 5 ball forwards sebs were searched again with them. The mouse switch shows both its states, Move (drag to turn the view) and Scrub
+(drag through time), with the one in use in yellow.
 
 The turning patterns' check looks at them in the body's own frame, and doesn't test their
 slash. Each sebs is written with the opposite slash to its front-facing pattern, which is
