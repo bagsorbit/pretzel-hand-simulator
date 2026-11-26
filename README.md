@@ -63,9 +63,10 @@ to load three.js). Pick a pattern, then:
 The list has every pattern in the article: all of Appendix A (with the confirmed typos
 fixed), the main article's sebs and siteswap patterns, Appendix B, and Appendix C's
 butterfly loop Rubenstein's Revenges. The menu is in the author's order (2026-11-25):
-mills messes (3:3), hectic messes, side plane messes (the sebs: each named after its front
-mess with "sebs" before "mess", and its everyday name in brackets, as in Mills sebs mess
-(Forwards sebs); 2026-11-26), Rubenstein's Revenges, Mike's messes (added
+mills messes (3:3), hectic messes, side plane messes (the eight sebs of the mills family, each
+named as its front mess with any everyday sebs name in brackets: Mills mess (Forwards sebs),
+TR mills mess (Weave), TR flipped flos mess (Backwards sebs); the hectic messes at the sides
+are left out of the menu and reached with the Side plane button; 2026-11-26), Rubenstein's Revenges, Mike's messes (added
 2026-11-25: Mike's mess, moved from Appendix B, the 4 ball 228 one, and the flipped
 versions of both), other mills mess
 extensions and variations, siteswap messes, butterfly messes, then the cascades and half

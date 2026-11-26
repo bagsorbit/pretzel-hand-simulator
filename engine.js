@@ -1752,22 +1752,24 @@
     { group: 'Hectic messes', name: 'TR hectic flipped mess', src: '3 i\\ Ur Rl Lu : Ul Lr Ru' },
     { group: 'Hectic messes', name: 'TR hectic flos mess', src: '3 i/ Lu Uu Ul : Ru Uu Ur' },
     { group: 'Hectic messes', name: 'TR hectic flipped flos mess', src: '3 i/ Ru Uu Ur : Lu Uu Ul' },
-    { group: 'Side plane messes', name: 'Mills sebs mess (Forwards sebs)', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 45, path: 'forwardsSebs' },
-    { group: 'Side plane messes', name: 'Flipped sebs mess', src: 'o\\ Lu Ur Rr : Ru Ul Ll', turn: 45, path: 'flippedSebs', fixedBalls: "The flipped sebs mess is built for 3 balls so far." },
-    { group: 'Side plane messes', name: "Flos sebs mess", src: 'o/ Ur Ru Uu : Ul Lu Uu', turn: 45, path: 'flosSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: 'Flipped flos sebs mess', src: 'o/ Ul Lu Uu : Ur Ru Uu', turn: 45, path: 'flippedFlosSebs' },   // (the flipped flos mess at the sides: backwards sebs played backwards)
-    { group: 'Side plane messes', name: 'TR mills sebs mess (Weave)', src: '3 i/ Ur Rr Ru : Ul Ll Lu', turn: 45, path: 'weaveSebs' },   // (the TR mills mess at the sides, the author's Weave: forwards sebs played backwards)
-    { group: 'Side plane messes', name: "TR flipped sebs mess", src: '3 i/ Ul Ll Lu : Ur Rr Ru', turn: 45, path: 'trFlippedSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: "TR flos sebs mess", src: '3 i\\ Ru Uu Ul : Lu Uu Ur', turn: 45, path: 'trFlosSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: 'TR flipped flos sebs mess (Backwards sebs)', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 45, path: 'backwardsSebs' },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
-    { group: 'Side plane messes', name: "Hectic mills sebs mess", src: 'o\\ Lu Ul Lr : Ru Ur Rl', turn: 45, path: 'hecticMillsSebs', fixedBalls: "Built for 3 balls so far." },   // (best guesses, 2026-11-26: each searched with all the side plane rules, from its front mess turned to each side or a time reversed relative)
-    { group: 'Side plane messes', name: "Hectic flipped sebs mess", src: 'o\\ Ru Ur Rl : Lu Ul Lr', turn: 45, path: 'hecticFlippedSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: "Hectic flos sebs mess", src: 'o/ Ul Ru Uu : Ur Lu Uu', turn: 45, path: 'hecticFlosSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: "Hectic flipped flos sebs mess", src: 'o/ Ur Lu Uu : Ul Ru Uu', turn: 45, path: 'hecticFlippedFlosSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: "TR hectic mills sebs mess", src: '3 i/ Ul Lr Ru : Ur Rl Lu', turn: 45, path: 'trHecticMillsSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: "TR hectic flipped sebs mess", src: '3 i/ Ur Rl Lu : Ul Lr Ru', turn: 45, path: 'trHecticFlippedSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: "TR hectic flos sebs mess", src: '3 i\\ Lu Uu Ul : Ru Uu Ur', turn: 45, path: 'trHecticFlosSebs', fixedBalls: "Built for 3 balls so far." },
-    { group: 'Side plane messes', name: "TR hectic flipped flos sebs mess", src: '3 i\\ Ru Uu Ur : Lu Uu Ul', turn: 45, path: 'trHecticFlippedFlosSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "Mills mess (Forwards sebs)", src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 45, path: 'forwardsSebs' },
+    { group: 'Side plane messes', name: "Flipped mess", src: 'o\\ Lu Ur Rr : Ru Ul Ll', turn: 45, path: 'flippedSebs', fixedBalls: "The flipped sebs mess is built for 3 balls so far." },
+    { group: 'Side plane messes', name: "Flos mess", src: 'o/ Ur Ru Uu : Ul Lu Uu', turn: 45, path: 'flosSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "Flipped flos mess", src: 'o/ Ul Lu Uu : Ur Ru Uu', turn: 45, path: 'flippedFlosSebs' },   // (the flipped flos mess at the sides: backwards sebs played backwards)
+    { group: 'Side plane messes', name: "TR mills mess (Weave)", src: '3 i/ Ur Rr Ru : Ul Ll Lu', turn: 45, path: 'weaveSebs' },   // (the TR mills mess at the sides, the author's Weave: forwards sebs played backwards)
+    { group: 'Side plane messes', name: "TR flipped mess", src: '3 i/ Ul Ll Lu : Ur Rr Ru', turn: 45, path: 'trFlippedSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "TR flos mess", src: '3 i\\ Ru Uu Ul : Lu Uu Ur', turn: 45, path: 'trFlosSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "TR flipped flos mess (Backwards sebs)", src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 45, path: 'backwardsSebs' },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
+    // (the hectic messes at the sides: not in the menu, reached with the Side plane button from a
+    // hectic mess; the author, 2026-11-26)
+    { group: 'Side plane messes', name: "Hectic mills", src: 'o\\ Lu Ul Lr : Ru Ur Rl', turn: 45, path: 'hecticMillsSebs', fixedBalls: "Built for 3 balls so far.", hidden: true },   // (best guesses, 2026-11-26: each searched with all the side plane rules, from its front mess turned to each side or a time reversed relative)
+    { group: 'Side plane messes', name: "Hectic flipped mess", src: 'o\\ Ru Ur Rl : Lu Ul Lr', turn: 45, path: 'hecticFlippedSebs', fixedBalls: "Built for 3 balls so far.", hidden: true },
+    { group: 'Side plane messes', name: "Hectic flos mess", src: 'o/ Ul Ru Uu : Ur Lu Uu', turn: 45, path: 'hecticFlosSebs', fixedBalls: "Built for 3 balls so far.", hidden: true },
+    { group: 'Side plane messes', name: "Hectic flipped flos mess", src: 'o/ Ur Lu Uu : Ul Ru Uu', turn: 45, path: 'hecticFlippedFlosSebs', fixedBalls: "Built for 3 balls so far.", hidden: true },
+    { group: 'Side plane messes', name: "TR hectic mills", src: '3 i/ Ul Lr Ru : Ur Rl Lu', turn: 45, path: 'trHecticMillsSebs', fixedBalls: "Built for 3 balls so far.", hidden: true },
+    { group: 'Side plane messes', name: "TR hectic flipped mess", src: '3 i/ Ur Rl Lu : Ul Lr Ru', turn: 45, path: 'trHecticFlippedSebs', fixedBalls: "Built for 3 balls so far.", hidden: true },
+    { group: 'Side plane messes', name: "TR hectic flos mess", src: '3 i\\ Lu Uu Ul : Ru Uu Ur', turn: 45, path: 'trHecticFlosSebs', fixedBalls: "Built for 3 balls so far.", hidden: true },
+    { group: 'Side plane messes', name: "TR hectic flipped flos mess", src: '3 i\\ Ru Uu Ur : Lu Uu Ul', turn: 45, path: 'trHecticFlippedFlosSebs', fixedBalls: "Built for 3 balls so far.", hidden: true },
     { group: 'Turns', name: 'Full Turn 4:4', src: 'Ru Uu Ur Rr : Lu Uu Ul Ll', spin: -360, spinAt: 0, fixedBalls: "Full Turn 4:4 is built for 3 balls so far." },   // (the author, 2026-11-26: a windmill on one side for 4 beats, then the other, turning right round once a cycle; first throw, right hand, turning to the front)
     { group: "Rubenstein's Revenges", name: "Rubenstein's Revenge", src: '22335 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
     { group: "Rubenstein's Revenges", name: "TR Rubenstein's Revenge", src: '52233 i\\ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },

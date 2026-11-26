@@ -557,6 +557,7 @@ function showProblem(msg) {
   var customOpt = document.createElement('option'); customOpt.value = 'custom'; customOpt.textContent = 'Your pattern'; customOpt.hidden = true;
   sel.appendChild(customOpt);
   PH.PATTERNS.forEach(function (pt, i) {
+    if (pt.hidden) return;   // (reached another way, as the hectic messes at the sides are with the Side plane button)
     if (!groups[pt.group]) { groups[pt.group] = document.createElement('optgroup'); groups[pt.group].label = pt.group; sel.appendChild(groups[pt.group]); }
     var o = document.createElement('option'); o.value = i; o.textContent = pt.name; groups[pt.group].appendChild(o);
   });
@@ -712,7 +713,10 @@ function showProblem(msg) {
     model = m; beat = 0; lastEvent = -1; lastPass = -1;
     makeLearn(m.balls);
     sel.value = idx >= 0 ? String(idx) : 'custom';
-    customOpt.hidden = idx >= 0;
+    var hid = idx >= 0 && PH.PATTERNS[idx].hidden;   // (a pattern kept out of the menu shows its name in the 'your pattern' slot)
+    if (hid) sel.value = 'custom';
+    customOpt.textContent = hid ? PH.PATTERNS[idx].name : 'Your pattern';
+    customOpt.hidden = idx >= 0 && !hid;
     typed.value = m.parsed.src;
     strip.innerHTML = ''; letters = []; tiles = [];
     var chip = document.createElement('span'); chip.className = 'chip';
