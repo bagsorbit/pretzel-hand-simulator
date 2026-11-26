@@ -334,8 +334,11 @@ the paths). A new side plane pattern has to pass every one before it is shown.
    each ball within 6 degrees of its line).
 4. Each side's three balls follow one arc from above (throw spots within 6 cm of each other,
    catch spots likewise).
-5. No throw goes up between an arm and the body: a crossed throw is made outside the other
-   arm's elbow.
+5. No throw, catch or ball's flight goes between an arm and the body. Seen from above, on the
+   line from the middle of the body out through the hand or the ball, no arm lies further out at
+   or above its height. The whole flight counts, not only the ends: a ball can be caught outside
+   the arm and still pass between the arm and the body on the way (the r in Ur of the TR flos
+   sebs mess; the author, 2026-11-26).
 6. The hand is in front of its elbow at every catch (no reverse-hand catches; move the elbow
    back instead).
 7. Elbows follow one path back and forth, never out and in again on the way.

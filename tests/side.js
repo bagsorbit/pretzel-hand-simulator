@@ -13,7 +13,7 @@ var RULES = [
   ['way',     'Outside patterns arc forwards along the side, inside ones backwards'],
   ['plane',   'Each side\'s arc is in one plane: throw and catch spots within 2.5 cm of one vertical plane, each ball within 6 degrees of its line'],
   ['arc',     'Each side\'s three balls follow one arc from above: throw spots within 6 cm of each other, catch spots likewise'],
-  ['outside', 'No throw goes up between an arm and the body: a crossed throw is made outside the other arm\'s elbow'],
+  ['outside', 'No throw, catch or ball\'s flight goes between an arm and the body'],
   ['forward', 'The hand is in front of its elbow at every catch (no reverse-hand catches)'],
   ['elbows',  'Elbows follow one path back and forth, never out and in again on the way'],
   ['mirror',  'Both sides are the same: every ball\'s flight mirrors its partner\'s on the other side'],
@@ -44,6 +44,41 @@ function lineFit(pts) {
   return { rms: Math.sqrt(ss / n), ux: ux, uz: uz };
 }
 
+// how far an arm lies outside a point, on the point's line out from the body (0 if it doesn't):
+// the point is between that arm and the body. armOf: which arm (the other hand's, for a hand)
+function betweenPt(p, P0, arm) {
+  var un = yawUn(p), H = un(P0), S = un(p.shoulders[arm]), E = un(p.elbows[arm]), Q = un(p.hands[arm]);
+  var rh = Math.hypot(H[0], H[2]); if (rh < 1) return 0;
+  var ux = H[0] / rh, uz = H[2] / rh, worst = 0;
+  [[S, E], [E, Q]].forEach(function (seg) {
+    for (var f = 0; f <= 1.001; f += 0.1) {
+      var x = seg[0][0] + (seg[1][0] - seg[0][0]) * f, y = seg[0][1] + (seg[1][1] - seg[0][1]) * f, z = seg[0][2] + (seg[1][2] - seg[0][2]) * f;
+      var along = x * ux + z * uz, off = Math.abs(-x * uz + z * ux);
+      if (off < 7 && along > rh + 3 && y > H[1] - 5) worst = Math.max(worst, along - rh);
+    }
+  });
+  return worst;
+}
+function between(p, h) { return betweenPt(p, p.hands[h], 1 - h); }
+// every ball's flight, not only where it is thrown and caught: the worst arm-and-body gap it goes through
+function flightBetween(m) {
+  var out = [];
+  for (var j = 0; j < m.period; j++) {
+    var kc = j + m.digit(j) - 2, t1 = m.catchTime(kc); if (t1 < j) t1 += m.period;
+    var from = j % 2, to = kc % 2, worst = 0, at = 0;
+    for (var f = 0.1; f < 0.95; f += 0.05) {
+      var t = j + (t1 - j) * f, p = m.at(t), Q = null;
+      p.balls.forEach(function (bb) { if (bb.fly && bb.t0 === j) Q = bb.pos; });
+      if (!Q) continue;
+      [0, 1].forEach(function (arm) {
+        if ((arm === from && f < 0.3) || (arm === to && f > 0.7)) return;   // (its own throwing or catching arm, at the ends)
+        var b = betweenPt(p, Q, arm); if (b > worst) { worst = b; at = t; }
+      });
+    }
+    if (worst) out.push({ j: j, worst: worst, at: at });
+  }
+  return out;
+}
 function checkSide(src, outsideDir) {
   var m = PH.build(src), fails = [], r = measure({ src: src, name: src }, 60);
   var sides = sidesOf(m), dir = outsideDir;
@@ -67,13 +102,18 @@ function checkSide(src, outsideDir) {
   var NT = m.parsed.tokens.length;
   for (var j = 0; j < m.period; j++) {
     var tk = m.parsed.tokens[j % NT].t, h = j % 2;
-    if (tk !== 'U') {
-      var p = m.at(j), un = yawUn(p), H = un(p.hands[h]), E = un(p.elbows[1 - h]), so = E[0] >= 0 ? 1 : -1;
-      if (so * (H[0] - E[0]) < 3) fails.push(['outside', 'throw ' + j + ' (' + tk + ') is ' + (so * (E[0] - H[0])).toFixed(0) + ' cm inside the other elbow']);
-    }
+    // (throws and catches alike: wherever the hand is on the same side as the other arm's elbow, it is further out than the elbow)
+    // (seen from above: on the line from the middle of the body out through the hand, the other
+    // arm must not lie further out, at or above the hand's height, or the ball goes up or comes
+    // down between that arm and the body)
+    [[j, h, 'throw ' + j + ' (' + tk + ')'], [m.catchTime(j + m.digit(j) - 2), (j + m.digit(j) - 2) % 2, 'the catch at beat ' + m.catchTime(j + m.digit(j) - 2).toFixed(1)]].forEach(function (ev) {
+      var b = between(m.at(ev[0]), ev[1]);
+      if (b) fails.push(['outside', ev[2] + ' is between the other arm and the body (that arm is ' + b.toFixed(0) + ' cm further out)']);
+    });
     var kc = j + m.digit(j) - 2, tc = m.catchTime(kc), hc = kc % 2, pc = m.at(tc), uc = yawUn(pc), Hc = uc(pc.hands[hc]), Ec = uc(pc.elbows[hc]);
     if (Ec[2] - Hc[2] > 0) fails.push(['forward', 'the catch at beat ' + tc.toFixed(1) + ' has the hand ' + (Ec[2] - Hc[2]).toFixed(0) + ' cm behind its elbow']);
   }
+  flightBetween(m).forEach(function (fb) { fails.push(['outside', 'ball ' + fb.j + '\'s flight goes between an arm and the body (beat ' + fb.at.toFixed(1) + ', the arm ' + fb.worst.toFixed(0) + ' cm further out)']); });
   // elbows: one path (no extra side-to-side travel beyond two swings a cycle)
   var NS = m.period * 16, xs = [[], []];
   for (var i = 0; i < NS; i++) { var pe = m.at(i / 16), ue = yawUn(pe); xs[0].push(ue(pe.elbows[0])[0]); xs[1].push(ue(pe.elbows[1])[0]); }
