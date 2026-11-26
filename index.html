@@ -636,7 +636,7 @@ function showProblem(msg) {
   function slashSwap(src) { return src.replace(/[\/\\]/, function (c) { return c === '/' ? '\\' : '/'; }); }
   function isSebs(src) {
     var pp = PH.parse(src); if (!pp.ok) return false;
-    return PH.PATTERNS.some(function (pt) { return pt.group === 'Side plane messes' && pt.path && PH.sameMoves(PH.parse(pt.src), pp); });
+    return PH.PATTERNS.some(function (pt) { return pt.group === 'Side plane messes' && pt.path && (pt.fixedBalls ? PH.parse(pt.src).src === pp.src : PH.sameMoves(PH.parse(pt.src), pp)); });   // (one built for 3 balls only isn't used for more)
   }
   function sebsTwin(src) {
     if (!/[\/\\]/.test(src)) return null;

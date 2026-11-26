@@ -316,6 +316,42 @@ ball arc as much as possible on one plane"); the 4-ball forwards sebs was redone
 out and in again on the way (the author): flipped flos sebs mess's search scores that too, and backwards sebs
 (3, 4 and 5 balls) was smoothed the same way, staying close to the filmed path.
 
+Flipped sebs mess (2026-11-26) is the first of the flipped four at the sides, a best guess
+for the author to correct: searched from the front flipped mess turned to each side, so the
+right arm is on top where the letters say, with all the rules above, and every crossed throw
+made outside the other arm's elbow so none goes up between an arm and the body. It is built
+for 3 balls so far.
+
+### Side plane rules
+
+The author's rules for patterns juggled at the sides, all checked by `tests/side.js` on every
+side plane pattern at every ball count it has a path for (and used by the searches that make
+the paths). A new side plane pattern has to pass every one before it is shown.
+
+1. Each side's three balls stay at that side: caught on the side they were thrown from.
+2. Outside patterns arc forwards along the side, inside ones backwards.
+3. Each side's arc is in one plane (throw and catch spots within 2.5 cm of one vertical plane,
+   each ball within 6 degrees of its line).
+4. Each side's three balls follow one arc from above (throw spots within 6 cm of each other,
+   catch spots likewise).
+5. No throw goes up between an arm and the body: a crossed throw is made outside the other
+   arm's elbow.
+6. The hand is in front of its elbow at every catch (no reverse-hand catches; move the elbow
+   back instead).
+7. Elbows follow one path back and forth, never out and in again on the way.
+8. Both sides are the same (the right side mirrors the left).
+9. No part of one arm goes through the other: forearms, hands and upper arms (a 1 cm brush is
+   allowed).
+10. The arm on top where the arms cross is the one the letters say.
+11. Hands, forearms and elbows stay out of the body.
+12. Balls never collide or pass through an arm.
+13. Every hand position can be reached.
+
+For forwards sebs, also the author's first and third throws (see above). Every side plane path was searched again with all thirteen rules on 2026-11-26 (the upper arm
+rule was new), and all of them pass. Wishes, not yet rules:
+a bigger turn and a longer arc where the pattern allows (the flipped sebs mess turns about 48
+degrees with arcs of about 34 cm).
+
 Side plane / wall plane (the author, 2026-11-26): the Side plane button juggles a pattern at
 the sides of the body instead of in front. It works only where the list gives a pattern a
 side-plane path (`side`), so far the 3 ball cascade (`cascadeSide`) and reverse cascade
@@ -337,7 +373,9 @@ is made with the hand in front of its elbow (a hand pointing back is a special r
 catch, so the elbow moves back instead: the paths may tuck it, `poleTuck`), and from above
 each side's three balls follow one arc, thrown from about one spot and caught at about one spot
 (within about 5 cm), so the three-ball arc is clear; the Weave (3, 4 and 5 balls), 4 and 5 ball
-backwards sebs and 5 ball forwards sebs were searched again with them. The mouse switch shows both its states, Move (drag to turn the view) and Scrub
+backwards sebs and 5 ball forwards sebs were searched again with them. With more balls, arcs that would meet lean a little forward or back; on a
+side plane path the left side's leans are copied onto the right, so both sides look the same
+(the author liked the left side of the 5 ball backwards sebs; the right had come out different). The mouse switch shows both its states, Move (drag to turn the view) and Scrub
 (drag through time), with the one in use in yellow.
 
 The turning patterns' check looks at them in the body's own frame, and doesn't test their

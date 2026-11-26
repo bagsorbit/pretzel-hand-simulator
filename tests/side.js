@@ -1,0 +1,125 @@
+// Run with macOS jsc from the project folder:
+//   /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc tests/side.js
+// The rules for patterns juggled at the sides (side plane), each from the author, checked on
+// every side plane pattern in the list, at every ball count it has a path for. The README's
+// "Side plane rules" lists the same rules in words. Any new side plane pattern must pass all
+// of them before it is shown to the author.
+load('engine.js');
+var PH = this.PH, G = PH.G;
+load('tests/measure.js');
+
+var RULES = [
+  ['side',    'Each side\'s three balls stay at that side: caught on the side they were thrown from'],
+  ['way',     'Outside patterns arc forwards along the side, inside ones backwards'],
+  ['plane',   'Each side\'s arc is in one plane: throw and catch spots within 2.5 cm of one vertical plane, each ball within 6 degrees of its line'],
+  ['arc',     'Each side\'s three balls follow one arc from above: throw spots within 6 cm of each other, catch spots likewise'],
+  ['outside', 'No throw goes up between an arm and the body: a crossed throw is made outside the other arm\'s elbow'],
+  ['forward', 'The hand is in front of its elbow at every catch (no reverse-hand catches)'],
+  ['elbows',  'Elbows follow one path back and forth, never out and in again on the way'],
+  ['mirror',  'Both sides are the same: every ball\'s flight mirrors its partner\'s on the other side'],
+  ['arms',    'No part of one arm goes through the other: forearms, hands and upper arms all clear (1 cm brush allowed)'],
+  ['top',     'The arm on top where the arms cross is the one the letters say'],
+  ['body',    'Hands, forearms and elbows stay out of the body'],
+  ['balls',   'Balls never collide, or pass through an arm'],
+  ['reach',   'Every hand position can be reached']
+];
+
+function yawUn(p) { var y = p.yaw || 0, c = Math.cos(-y), s = Math.sin(-y); return function (q) { return [q[0] * c + q[2] * s, q[1], -q[0] * s + q[2] * c]; }; }
+function sidesOf(m) {
+  var out = {};
+  for (var j = 0; j < m.period; j++) {
+    var kc = j + m.digit(j) - 2, A = m.at(j).hands[j % 2], B = m.at(m.catchTime(kc)).hands[kc % 2];
+    var g = m.parsed.tokens[j % m.parsed.tokens.length].group + ':' + Math.floor(j / m.parsed.tokens.length);
+    (out[g] = out[g] || []).push({ j: j, A: A, B: B, kc: kc });
+  }
+  return out;
+}
+function lineFit(pts) {
+  var n = pts.length, mx = 0, mz = 0, sxx = 0, szz = 0, sxz = 0;
+  pts.forEach(function (p) { mx += p[0] / n; mz += p[1] / n; });
+  pts.forEach(function (p) { var dx = p[0] - mx, dz = p[1] - mz; sxx += dx * dx; szz += dz * dz; sxz += dx * dz; });
+  var th = 0.5 * Math.atan2(2 * sxz, sxx - szz), ux = Math.cos(th), uz = Math.sin(th), ss = 0;
+  pts.forEach(function (p) { var d = -(p[0] - mx) * uz + (p[1] - mz) * ux; ss += d * d; });
+  return { rms: Math.sqrt(ss / n), ux: ux, uz: uz };
+}
+
+function checkSide(src, outsideDir) {
+  var m = PH.build(src), fails = [], r = measure({ src: src, name: src }, 60);
+  var sides = sidesOf(m), dir = outsideDir;
+  Object.keys(sides).forEach(function (g) {
+    var b = sides[g], sx = 0; b.forEach(function (q) { sx += q.A[0] + q.B[0]; }); var s = sx >= 0 ? 1 : -1;
+    b.forEach(function (q) {
+      if (s * q.B[0] < 0) fails.push(['side', 'ball ' + q.j + ' is caught on the other side']);
+      if (dir * (q.B[2] - q.A[2]) < 15) fails.push(['way', 'ball ' + q.j + ' travels ' + Math.round(q.B[2] - q.A[2]) + ' cm along the side']);
+    });
+    var pts = []; b.forEach(function (q) { pts.push([q.A[0], q.A[2]], [q.B[0], q.B[2]]); });
+    var f = lineFit(pts);
+    if (f.rms > 2.5) fails.push(['plane', 'side ' + g + ' is ' + f.rms.toFixed(1) + ' cm off one plane']);
+    b.forEach(function (q) { var dx = q.B[0] - q.A[0], dz = q.B[2] - q.A[2], L = Math.hypot(dx, dz) || 1, a = Math.acos(Math.min(1, Math.abs(dx * f.ux + dz * f.uz) / L)) * 180 / Math.PI; if (a > 6) fails.push(['plane', 'ball ' + q.j + ' is ' + Math.round(a) + ' degrees off its side\'s line']); });
+    var n = b.length, ax = 0, az = 0, bx = 0, bz = 0, st = 0, sc = 0;
+    b.forEach(function (q) { ax += q.A[0] / n; az += q.A[2] / n; bx += q.B[0] / n; bz += q.B[2] / n; });
+    b.forEach(function (q) { st += (Math.pow(q.A[0] - ax, 2) + Math.pow(q.A[2] - az, 2)) / n; sc += (Math.pow(q.B[0] - bx, 2) + Math.pow(q.B[2] - bz, 2)) / n; });
+    if (Math.sqrt(st) > 6) fails.push(['arc', 'side ' + g + ' throws spread ' + Math.sqrt(st).toFixed(1) + ' cm']);
+    if (Math.sqrt(sc) > 6) fails.push(['arc', 'side ' + g + ' catches spread ' + Math.sqrt(sc).toFixed(1) + ' cm']);
+  });
+  // crossed throws outside the other arm's elbow; hands in front of the elbows at catches
+  var NT = m.parsed.tokens.length;
+  for (var j = 0; j < m.period; j++) {
+    var tk = m.parsed.tokens[j % NT].t, h = j % 2;
+    if (tk !== 'U') {
+      var p = m.at(j), un = yawUn(p), H = un(p.hands[h]), E = un(p.elbows[1 - h]), so = E[0] >= 0 ? 1 : -1;
+      if (so * (H[0] - E[0]) < 3) fails.push(['outside', 'throw ' + j + ' (' + tk + ') is ' + (so * (E[0] - H[0])).toFixed(0) + ' cm inside the other elbow']);
+    }
+    var kc = j + m.digit(j) - 2, tc = m.catchTime(kc), hc = kc % 2, pc = m.at(tc), uc = yawUn(pc), Hc = uc(pc.hands[hc]), Ec = uc(pc.elbows[hc]);
+    if (Ec[2] - Hc[2] > 0) fails.push(['forward', 'the catch at beat ' + tc.toFixed(1) + ' has the hand ' + (Ec[2] - Hc[2]).toFixed(0) + ' cm behind its elbow']);
+  }
+  // elbows: one path (no extra side-to-side travel beyond two swings a cycle)
+  var NS = m.period * 16, xs = [[], []];
+  for (var i = 0; i < NS; i++) { var pe = m.at(i / 16), ue = yawUn(pe); xs[0].push(ue(pe.elbows[0])[0]); xs[1].push(ue(pe.elbows[1])[0]); }
+  [0, 1].forEach(function (hh) { var tv = 0, mx = -1e9, mn = 1e9; for (var q = 0; q < NS; q++) { tv += Math.abs(xs[hh][(q + 1) % NS] - xs[hh][q]); mx = Math.max(mx, xs[hh][q]); mn = Math.min(mn, xs[hh][q]); } var extra = tv - 4 * (mx - mn); if (extra > 5) fails.push(['elbows', (hh ? 'left' : 'right') + ' elbow goes out and in again (' + extra.toFixed(0) + ' cm extra)']); });
+  // mirror: each ball and its partner half a cycle later
+  var half = m.period / 2, worstM = 0;
+  for (var jm = 0; jm < half; jm++) {
+    var kq = jm + m.digit(jm) - 2, t1 = m.catchTime(kq); if (t1 < jm) t1 += m.period;
+    [0.25, 0.5, 0.75].forEach(function (fr) { var t = jm + (t1 - jm) * fr, c1 = null, c2 = null; m.at(t).balls.forEach(function (bb) { if (bb.fly && bb.t0 === jm) c1 = bb.pos; }); m.at(t + half).balls.forEach(function (bb) { if (bb.fly && bb.t0 === jm + half) c2 = bb.pos; }); if (c1 && c2) worstM = Math.max(worstM, Math.hypot(c1[0] + c2[0], c1[1] - c2[1], c1[2] - c2[2])); });
+  }
+  if (worstM > 1) fails.push(['mirror', 'the two sides differ by up to ' + worstM.toFixed(1) + ' cm']);
+  // arms: every part against every part of the other arm
+  var uu = 1e9, uf = 1e9;
+  for (var ia = 0; ia < m.period * 40; ia++) {
+    var pa = m.at(ia / 40), S = pa.shoulders, Ea = pa.elbows, Ha = pa.hands;
+    uu = Math.min(uu, segDist(S[0], Ea[0], S[1], Ea[1]).d - 2 * G.upperR);
+    uf = Math.min(uf, segDist(S[0], Ea[0], Ea[1], Ha[1]).d - G.upperR - G.foreR, segDist(S[1], Ea[1], Ea[0], Ha[0]).d - G.upperR - G.foreR);
+  }
+  if (r.minFore < G.foreR * 2 - G.graze) fails.push(['arms', 'the forearms go ' + (G.foreR * 2 - r.minFore).toFixed(1) + ' cm into each other']);
+  if (r.minHandFore < G.handR + G.foreR - G.graze) fails.push(['arms', 'a hand goes into the other forearm']);
+  if (r.minHand < G.handR * 2 - G.graze) fails.push(['arms', 'the hands go into each other']);
+  if (uf < -G.graze) fails.push(['arms', 'an upper arm goes ' + (-uf).toFixed(1) + ' cm into the other forearm']);
+  if (uu < -G.graze) fails.push(['arms', 'the upper arms go ' + (-uu).toFixed(1) + ' cm into each other']);
+  if (r.wrongTop > 8) fails.push(['top', 'the wrong arm is on top at ' + r.wrongTop + ' samples']);
+  if (r.inBody > 1) fails.push(['body', 'a hand or forearm goes ' + r.inBody.toFixed(1) + ' cm into the body']);
+  if (r.minElbowBody < 0) fails.push(['body', 'an elbow goes into the body']);
+  if (r.minBB < 0) fails.push(['balls', 'balls collide']);
+  if (r.minBall < -G.graze) fails.push(['balls', 'a ball goes ' + (-r.minBall).toFixed(1) + ' cm through an arm']);
+  if (r.maxReach > 0.995) fails.push(['reach', 'an arm can\'t reach']);
+  return fails;
+}
+
+print('Side plane rules:');
+RULES.forEach(function (x, i) { print('  ' + (i + 1) + '. ' + x[1]); });
+print('');
+var bad = 0, done = 0;
+PH.PATTERNS.forEach(function (pt) {
+  if (pt.group !== 'Side plane messes' || !pt.path) return;
+  var dir = /^[0-9T]*\s*o/.test(pt.src) ? 1 : -1, counts = pt.fixedBalls ? [0] : [0, 1, 2];
+  counts.forEach(function (k) {
+    var src = k ? PH.addBalls(pt.src, k).src : pt.src, m = PH.build(src);
+    var fails = checkSide(src, dir);
+    done++;
+    if (!fails.length) { print('ok   ' + pt.name + ', ' + m.balls + ' balls'); return; }
+    bad++;
+    print('FAIL ' + pt.name + ', ' + m.balls + ' balls');
+    fails.forEach(function (f) { print('       ' + f[0] + ': ' + f[1]); });
+  });
+});
+print(bad ? bad + ' of ' + done + ' break a rule' : 'all ' + done + ' keep every rule');
