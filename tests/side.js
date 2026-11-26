@@ -19,6 +19,7 @@ var RULES = [
   ['mirror',  'Both sides are the same: every ball\'s flight mirrors its partner\'s on the other side'],
   ['arms',    'No part of one arm goes through the other: forearms, hands and upper arms all clear (1 cm brush allowed)'],
   ['top',     'The arm on top where the arms cross is the one the letters say'],
+  ['cross',   'The arms really cross where the letters say they are crossed: the forearms come together, not kept apart'],
   ['body',    'Hands, forearms and elbows stay out of the body'],
   ['balls',   'Balls never collide, or pass through an arm'],
   ['reach',   'Every hand position can be reached']
@@ -97,6 +98,14 @@ function checkSide(src, outsideDir) {
   if (uf < -G.graze) fails.push(['arms', 'an upper arm goes ' + (-uf).toFixed(1) + ' cm into the other forearm']);
   if (uu < -G.graze) fails.push(['arms', 'the upper arms go ' + (-uu).toFixed(1) + ' cm into each other']);
   if (r.wrongTop > 8) fails.push(['top', 'the wrong arm is on top at ' + r.wrongTop + ' samples']);
+  // (wherever the letters have the arms crossed, the forearms must come within 9 cm of each other at least once in that stretch)
+  var stretch = null, apart = 0;
+  for (var ic = 0; ic <= m.period * 20; ic++) {
+    var pc2 = m.at(ic / 20), crossed = Math.abs(pc2.w) > 0.7, dd = segDist(pc2.elbows[0], pc2.hands[0], pc2.elbows[1], pc2.hands[1]).d;
+    if (crossed) { if (stretch === null) stretch = 1e9; stretch = Math.min(stretch, dd); }
+    else if (stretch !== null) { if (stretch > 9) apart++; stretch = null; }
+  }
+  if (apart) fails.push(['cross', 'the arms stay apart at ' + apart + ' crossing(s) the letters call for']);
   if (r.inBody > 1) fails.push(['body', 'a hand or forearm goes ' + r.inBody.toFixed(1) + ' cm into the body']);
   if (r.minElbowBody < 0) fails.push(['body', 'an elbow goes into the body']);
   if (r.minBB < 0) fails.push(['balls', 'balls collide']);

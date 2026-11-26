@@ -343,14 +343,27 @@ the paths). A new side plane pattern has to pass every one before it is shown.
 9. No part of one arm goes through the other: forearms, hands and upper arms (a 1 cm brush is
    allowed).
 10. The arm on top where the arms cross is the one the letters say.
-11. Hands, forearms and elbows stay out of the body.
-12. Balls never collide or pass through an arm.
-13. Every hand position can be reached.
+11. The arms really cross where the letters say they are crossed (the forearms come together; a
+    path that keeps them apart to dodge rule 10 fails).
+12. Hands, forearms and elbows stay out of the body.
+13. Balls never collide or pass through an arm.
+14. Every hand position can be reached.
 
-For forwards sebs, also the author's first and third throws (see above). Every side plane path was searched again with all thirteen rules on 2026-11-26 (the upper arm
+For forwards sebs, also the author's first and third throws (see above). Every side plane path was searched again with all the rules on 2026-11-26 (the upper arm
 rule was new), and all of them pass. Wishes, not yet rules:
 a bigger turn and a longer arc where the pattern allows (the flipped sebs mess turns about 48
 degrees with arcs of about 34 cm).
+
+The rest of the family and the hectic messes at the sides (best guesses, 2026-11-26, for the
+author to troubleshoot, all 3 balls): flos, TR flipped and TR flos sebs messes, and the eight
+hectic sebs messes (hectic mills, hectic flipped, hectic flos, hectic flipped flos, and their
+time reverses), each searched with all the side plane rules from its front mess turned to each
+side, or from a time reversed relative played backwards. A path now always sets the movement,
+even for a hectic pattern that is otherwise shown as its time reverse played backwards. Three
+of the hectic flos family (hectic flos, TR hectic flos, TR hectic flipped flos) still break
+rule 11: their arms stay apart where the letters cross them, because the hectic flos
+change-over (the hand going round the other forearm) is the one move the search can't find;
+it needs the author's description of that change-over at the side.
 
 Side plane / wall plane (the author, 2026-11-26): the Side plane button juggles a pattern at
 the sides of the body instead of in front. It works only where the list gives a pattern a

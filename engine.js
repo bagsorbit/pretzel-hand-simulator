@@ -1131,6 +1131,11 @@
     var PIVOT = opts.pivot !== undefined ? opts.pivot : null;
     if (opts.pivot === undefined) PATTERNS.forEach(function (pt) { if (pt.pivot && sameMoves(parse(pt.src), p)) PIVOT = pt.pivot; });
     var pivotPos = PIVOT ? PIVOT.split(':') : null;
+    // A turn (the author, 2026-11-26): the juggler spins right round, SPIN degrees each cycle
+    // (negative: to the right), always the same way, facing the front at beat SPINAT. A pivot
+    // turns to one side and back; a turn keeps going.
+    var SPIN = opts.spin !== undefined ? opts.spin : 0, SPINAT = opts.spinAt || 0;
+    if (opts.spin === undefined) PATTERNS.forEach(function (pt) { if (pt.spin && sameMoves(parse(pt.src), p)) { SPIN = pt.spin; SPINAT = pt.spinAt || 0; } });
     var PATH = opts.path !== undefined ? opts.path : null;
     if (opts.path === undefined) PATTERNS.forEach(function (pt) { if (pt.path && sameMoves(parse(pt.src), p)) PATH = pt.path; });
     // a path may have its own version for a ball count (forwardsSebs4 ...): with more balls each
@@ -1150,15 +1155,18 @@
         // (eased from one key to the next, so it holds still at each and never overshoots)
         var ks = pathDef.yawKeys, t = mod(tb, P), n = ks.length, i = n - 1;
         for (var q = 0; q < n; q++) if (ks[q][0] <= t) i = q;
-        var a = ks[i], b = ks[(i + 1) % n], ta = a[0], tb2 = b[0];
+        var a = ks[i], b = ks[(i + 1) % n], ta = a[0], tb2 = b[0], av = a[1], bv = b[1];
         if (t < ta) ta -= P;
         if (tb2 <= ta) tb2 += P;
-        return pathDef.turn * Math.PI / 180 * (a[1] + (b[1] - a[1]) * smoother(ta, tb2, t));
+        // (a turn keeps going round: from the last key to the first, yawWrap turns more is added)
+        if (pathDef.yawWrap) { if (i === n - 1) bv += pathDef.yawWrap; if (t < a[0] && i === n - 1) { av -= pathDef.yawWrap; bv -= pathDef.yawWrap; } }
+        return pathDef.turn * Math.PI / 180 * (av + (bv - av) * smoother(ta, tb2, t));
       }
       return pathDef.turn * Math.PI / 180 * Math.cos(2 * Math.PI * (tb - pathDef.turnAt) / P);
     }
     var turnKeys = null;
     function yawAt(tb) {
+      if (SPIN) return SPIN * Math.PI / 180 * (tb - SPINAT) / P;
       if (!TURN) return 0;
       if (!turnKeys) {
         // each half's middle throw time, and the side its throws are made on
@@ -1386,7 +1394,7 @@
     // time reverse played backwards, as the author describes it: the same movement as the
     // hectic mess with time flowing the other way. Played backwards each throw is a catch and
     // each catch a throw, and beat tb here is beat (catchLag - tb) there.
-    if (!opts.noReverse) {
+    if (!opts.noReverse && !pathDef) {   // (a pattern on a path moves as its path says)
       swapAt(0);
       var descending = swaps.some(function (sw) { return sw.kind === 'hectic' ? sw.from === (sw.mover === 0 ? 1 : -1) : sw.dir === 'i'; });
       if (descending) {
@@ -1633,6 +1641,83 @@
              [3.2, 7.3, -11.6, 45.5, 1, 0.4], [3.6, 7, -19.1, 31.5, 0, 0.47], [4, -20.2, -46.6, 29.2, 0, 0.77], [4.4, -2.1, -24.3, 38.6, 0, 0.57],
              [4.8, 14.9, -29.1, 42.2, 1, 0.62], [5.2, 5.1, -23.2, 38.7, 1, 0.54], [5.6, 19.3, -24.6, 42.1, 1, 0.29]]
     },
+    trFlippedSebs: {
+      period: 6, turn: 31, turnAt: 4.25, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -0.8, -6.6, 56.8, 0, 0.97], [0.4, 5.1, -40.3, 45, 1, 0.86], [0.8, 30.3, -38.5, 16.5, 1, 0.22], [1.2, 22.5, -33.4, 28.3, 1, 0.25],
+             [1.6, 11.8, -29, 33.1, 1, 0.6], [2, 13.7, -12.6, 57.4, 1, 0], [2.4, -12.9, -21.9, 37.5, 0, 0], [2.8, -27.8, -33.1, 20.7, 0, 0.12],
+             [3.2, -3.7, -18.5, 46.4, 0, 0.98], [3.6, 9.5, -23.3, 36.3, 1, 0.6], [4, -15.5, -12.2, 54.7, 1, 0.1], [4.4, -6.9, -19.8, 38.9, 1, 0.7],
+             [4.8, 11.6, 3.7, 34.6, 1, 0.32], [5.2, -4.8, -5.9, 52.6, 1, 1], [5.6, 9, -26.2, 27.2, 0, 0.27]]
+    },
+    flosSebs: {
+      period: 6, turn: 38, turnAt: 4.3, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -29.7, -25.8, 16.5, 0, 0.83], [0.4, -10.9, -17.2, 35.5, 0, 0.67], [0.8, 26.4, -16.6, 26.1, 1, 0.23], [1.2, 4, -3, 41.7, 1, 0.04],
+             [1.6, -12.5, -17.4, 40.2, 0, 0.29], [2, -29, -28.8, 22.7, 0, 0], [2.4, -13.9, -15.9, 34, 0, 0.51], [2.8, -8.2, -25.5, 39.7, 0, 0.34],
+             [3.2, -6.4, -25.8, 33.9, 0, 0.72], [3.6, 8.7, -30, 33.2, 1, 0.55], [4, 24.1, -31, 29.6, 1, 0.21], [4.4, 21.8, -28.5, 32.9, 1, 0.58],
+             [4.8, -14.6, -15.4, 40.9, 0, 0], [5.2, -18.4, -29.7, 32.5, 0, 0], [5.6, -13.4, -25.5, 34.4, 0, 0.72]]
+    },
+    trFlosSebs: {
+      period: 6, turn: 36, turnAt: 2.1, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, 25.4, -25.3, 36.4, 1, 0.61], [0.4, -13, -11.4, 37.8, 0, 0], [0.8, -26.2, -25.7, 15.8, 0, 0.37], [1.2, -18.1, -27.3, 32.4, 0, 0.18],
+             [1.6, -19.1, -28.9, 39.3, 0, 0], [2, -17.3, -27.2, 48, 0, 0.11], [2.4, 22.5, -29.3, 39.5, 1, 0], [2.8, 18.3, -47.1, 21.5, 1, 0.13],
+             [3.2, 17, -35.7, 29, 1, 0.24], [3.6, 6.9, -18.1, 40.1, 0, 0], [4, -0.1, -30.6, 42.4, 0, 0.71], [4.4, -10.2, -14.9, 35.3, 0, 0],
+             [4.8, -16.8, -26.4, 23.8, 0, 1], [5.2, -8.1, -18.6, 44.6, 0, 0], [5.6, -3.4, -20.3, 42.8, 1, 0.04]]
+    },
+    hecticMillsSebs: {
+      period: 6, turn: 27, turnAt: 1.65, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, 29.9, -34.9, 17.9, 1, 0], [0.4, 16.3, -32.4, 31.5, 1, 0.4], [0.8, -20.6, -22.4, 39.8, 0, 0.85], [1.2, -5.3, -25.3, 34.1, 0, 0.72],
+             [1.6, 8.6, -27.9, 32.9, 1, 0.46], [2, 23, -32.2, 26.4, 1, 0.11], [2.4, 6.1, -20.8, 21.9, 1, 0], [2.8, 4.3, -15, 46.4, 1, 0.16],
+             [3.2, 5.1, -15.5, 37, 1, 0.05], [3.6, -0.8, -20.2, 37.1, 0, 0], [4, -24.6, -25.9, 25.5, 0, 0], [4.4, -9.7, -15.4, 35, 0, 0.22],
+             [4.8, 11.6, -16.3, 50.2, 1, 0.38], [5.2, 14, -16, 37, 1, 0], [5.6, 11.1, -26.4, 36.1, 1, 0.41]]
+    },
+    hecticFlippedSebs: {
+      period: 6, turn: 31, turnAt: 1.3, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, 26.7, -17.3, 24, 1, 0.28], [0.4, 13, -16.3, 35.6, 1, 0.59], [0.8, -30, -26.5, 41.5, 0, 1], [1.2, -4, -25.9, 35.7, 0, 0.1],
+             [1.6, 12.7, -14.4, 38.7, 1, 0.17], [2, 16.1, -6, 29.2, 1, 0], [2.4, -13.4, -19.2, 18.6, 0, 0], [2.8, 8, -21.8, 42.9, 1, 0.26],
+             [3.2, 4.8, -31.7, 38.1, 1, 0.74], [3.6, 6, -28, 34.5, 0, 0.23], [4, -21.4, -24.8, 26.9, 0, 1], [4.4, -10.7, -27.8, 33.5, 0, 0.68],
+             [4.8, 15.2, -25.3, 49.3, 1, 0.46], [5.2, 13.3, -16.5, 36.9, 1, 0.54], [5.6, 30.5, -9.7, 36.6, 1, 0.08]]
+    },
+    hecticFlosSebs: {
+      period: 6, turn: 41, turnAt: 4.25, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -23.1, -31.1, 12.5, 0, 0], [0.4, 24.8, -1.1, 33.4, 0, 0.32], [0.8, 16.7, -15.7, 41.9, 1, 0], [1.2, 1.6, -30.8, 46.9, 0, 1],
+             [1.6, -9.3, -19.5, 40.3, 0, 0.86], [2, -19.7, -26.8, 18.3, 0, 1], [2.4, -8.1, -5.3, 31.4, 0, 0.77], [2.8, -12.8, -30.5, 43.1, 0, 0.19],
+             [3.2, -2.6, -25.8, 40.2, 0, 0.18], [3.6, -9.5, -20, 17.7, 0, 0.11], [4, 18.2, -0.4, 24.1, 1, 0], [4.4, 3.1, -10.3, 31.6, 1, 0.61],
+             [4.8, -9.1, -25.6, 39.6, 0, 0.21], [5.2, -27.6, -17.5, 31.1, 0, 1], [5.6, -29.8, -16.4, 5, 0, 0]]
+    },
+    hecticFlippedFlosSebs: {
+      period: 6, turn: 44, turnAt: 4.3, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -25.5, -30.4, 12.3, 0, 0], [0.4, 25.7, -5.7, 37, 0, 0.39], [0.8, 19.3, -15.1, 31.4, 1, 0.02], [1.2, 1.6, -23.7, 46.9, 0, 1],
+             [1.6, -6.7, -21.3, 33, 0, 0.68], [2, -17.7, -22.4, 26.7, 0, 0.71], [2.4, -13, -10.3, 32.7, 0, 0.5], [2.8, -11.3, -21.3, 37.9, 0, 0.65],
+             [3.2, -2.6, -18.4, 39.7, 0, 0.14], [3.6, -4.5, -20.6, 19.1, 0, 0.29], [4, 18.2, -7.1, 26.8, 1, 0], [4.4, 8.4, -15.1, 27.4, 1, 0.61],
+             [4.8, -13.2, -21.3, 38, 0, 0], [5.2, -27.4, -21.2, 42.1, 0, 1], [5.6, -31.9, -21.5, 14.6, 0, 0]]
+    },
+    trHecticMillsSebs: {
+      period: 6, turn: 45, turnAt: 6.05, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -29.7, -19.3, 36.2, 0, 0.04], [0.4, 5.4, -34.3, 26, 1, 0.26], [0.8, 19.7, -37.2, 29.4, 1, 0.29], [1.2, 17.6, -24.2, 37.3, 1, 0],
+             [1.6, 7.4, -15.9, 37, 1, 0.07], [2, 11.6, -16.1, 43.3, 1, 0.17], [2.4, -3.5, -20.9, 34.3, 0, 0.45], [2.8, -22.1, -26.5, 31.9, 0, 0.91],
+             [3.2, 7.1, -20.6, 34.5, 0, 0.25], [3.6, 6.2, -19.6, 37.1, 1, 0.6], [4, 15.3, -14.7, 39, 1, 0], [4.4, 7.1, -19.2, 22.1, 1, 0],
+             [4.8, 27.7, -36.7, 22.7, 1, 0.12], [5.2, 10.5, -28.6, 34, 1, 0.62], [5.6, -13, -28.5, 31.1, 0, 0]]
+    },
+    trHecticFlippedSebs: {
+      period: 6, turn: 33, turnAt: 5.5, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, -27, -26.5, 44.7, 0, 1], [0.4, 12.3, -16.4, 35.5, 1, 0.52], [0.8, 27.6, -16.9, 24.3, 1, 0.3], [1.2, 26.9, -8.4, 35.7, 1, 0],
+             [1.6, 11.8, -17, 36.7, 1, 0.77], [2, 15.7, -25.7, 49.3, 1, 0.23], [2.4, -10.8, -28.1, 33.5, 0, 0.69], [2.8, -21, -24.7, 28.6, 0, 0.98],
+             [3.2, 5, -28.1, 34.5, 0, 0.26], [3.6, 4.8, -31.3, 38.7, 1, 0.61], [4, 7.9, -22.6, 43.5, 1, 0.46], [4.4, -13, -18.3, 20.6, 0, 0],
+             [4.8, 15, -5.7, 31.2, 1, 0.09], [5.2, 12.6, -14.5, 38.7, 1, 0.17], [5.6, -4.3, -25.9, 35.7, 0, 0.48]]
+    },
+    trHecticFlosSebs: {
+      period: 6, turn: 39, turnAt: 2.9, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, 22.9, -30.6, 38, 1, 0.51], [0.4, 4.1, -4.9, 45.3, 0, 0.05], [0.8, -41.8, -25.1, 24.4, 0, 0.06], [1.2, -24, -12.9, 25.3, 0, 0.45],
+             [1.6, -32.8, -21.8, 43.3, 0, 0.47], [2, -20.6, -29.6, 38.7, 0, 0.01], [2.4, 24.6, -2.6, 27.8, 1, 0.21], [2.8, 21.6, -3.7, 32.3, 1, 0.84],
+             [3.2, -1.5, -7.6, 24.6, 0, 0], [3.6, -3.1, -35.8, 25.2, 0, 0.58], [4, -8.3, -30.1, 43, 0, 0], [4.4, -14.9, -8.1, 20.2, 0, 0.66],
+             [4.8, -46.9, -27.1, 20.1, 0, 0.15], [5.2, -11.2, -26, 30.9, 0, 0.86], [5.6, -0.8, -34.1, 28.5, 0, 0.55]]
+    },
+    trHecticFlippedFlosSebs: {
+      period: 6, turn: 37, turnAt: 2.9, pole: [0.7,  -1,  -0.15], poleFar: [0.1,  -0.8,  0.8], poleTuck: [0.2,  -1,  -0.6], reachShoulder: [2,  5],
+      keys: [[0, 17.1, -30.3, 33.4, 1, 0.05], [0.4, 3.9, -5.5, 44.7, 0, 0], [0.8, -40.1, -15.9, 27.8, 0, 0], [1.2, -14.6, -8.4, 22.4, 0, 1],
+             [1.6, -27.9, -23.2, 32.7, 0, 1], [2, -19.5, -33.8, 36.8, 0, 0.26], [2.4, 22.8, -5.4, 34.2, 1, 0.07], [2.8, 24.6, -0.3, 33, 1, 0.84],
+             [3.2, -2.2, -7.2, 24.7, 0, 0.34], [3.6, -4.7, -29.9, 22.4, 0, 0.45], [4, -5.8, -23.6, 44.9, 0, 0], [4.4, -10.9, -9, 31.4, 0, 0.6],
+             [4.8, -47.2, -31.2, 19.9, 0, 0.2], [5.2, -7.1, -26.4, 30.8, 0, 0.82], [5.6, 3, -24.2, 35.1, 0, 0]]
+    },
     // Side plane (the author, 2026-11-26): the cascade at the sides. The middle of the front
     // pattern becomes the front of a side and the outside the back, so each throw goes across the
     // body diagonally, from the front of the thrower's side to the back of the other (the reverse
@@ -1669,9 +1754,21 @@
     { group: 'Hectic messes', name: 'TR hectic flipped flos mess', src: '3 i/ Ru Uu Ur : Lu Uu Ul' },
     { group: 'Side plane messes', name: 'Mills sebs mess (Forwards sebs)', src: 'o\\ Ru Ul Ll : Lu Ur Rr', turn: 45, path: 'forwardsSebs' },
     { group: 'Side plane messes', name: 'Flipped sebs mess', src: 'o\\ Lu Ur Rr : Ru Ul Ll', turn: 45, path: 'flippedSebs', fixedBalls: "The flipped sebs mess is built for 3 balls so far." },
+    { group: 'Side plane messes', name: "Flos sebs mess", src: 'o/ Ur Ru Uu : Ul Lu Uu', turn: 45, path: 'flosSebs', fixedBalls: "Built for 3 balls so far." },
     { group: 'Side plane messes', name: 'Flipped flos sebs mess', src: 'o/ Ul Lu Uu : Ur Ru Uu', turn: 45, path: 'flippedFlosSebs' },   // (the flipped flos mess at the sides: backwards sebs played backwards)
     { group: 'Side plane messes', name: 'TR mills sebs mess (Weave)', src: '3 i/ Ur Rr Ru : Ul Ll Lu', turn: 45, path: 'weaveSebs' },   // (the TR mills mess at the sides, the author's Weave: forwards sebs played backwards)
+    { group: 'Side plane messes', name: "TR flipped sebs mess", src: '3 i/ Ul Ll Lu : Ur Rr Ru', turn: 45, path: 'trFlippedSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "TR flos sebs mess", src: '3 i\\ Ru Uu Ul : Lu Uu Ur', turn: 45, path: 'trFlosSebs', fixedBalls: "Built for 3 balls so far." },
     { group: 'Side plane messes', name: 'TR flipped flos sebs mess (Backwards sebs)', src: '3 i\\ Lu Uu Ur : Ru Uu Ul', turn: 45, path: 'backwardsSebs' },   // (TR flipped flos mess at the sides; like forwards sebs, the opposite slash tells it apart)
+    { group: 'Side plane messes', name: "Hectic mills sebs mess", src: 'o\\ Lu Ul Lr : Ru Ur Rl', turn: 45, path: 'hecticMillsSebs', fixedBalls: "Built for 3 balls so far." },   // (best guesses, 2026-11-26: each searched with all the side plane rules, from its front mess turned to each side or a time reversed relative)
+    { group: 'Side plane messes', name: "Hectic flipped sebs mess", src: 'o\\ Ru Ur Rl : Lu Ul Lr', turn: 45, path: 'hecticFlippedSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "Hectic flos sebs mess", src: 'o/ Ul Ru Uu : Ur Lu Uu', turn: 45, path: 'hecticFlosSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "Hectic flipped flos sebs mess", src: 'o/ Ur Lu Uu : Ul Ru Uu', turn: 45, path: 'hecticFlippedFlosSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "TR hectic mills sebs mess", src: '3 i/ Ul Lr Ru : Ur Rl Lu', turn: 45, path: 'trHecticMillsSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "TR hectic flipped sebs mess", src: '3 i/ Ur Rl Lu : Ul Lr Ru', turn: 45, path: 'trHecticFlippedSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "TR hectic flos sebs mess", src: '3 i\\ Lu Uu Ul : Ru Uu Ur', turn: 45, path: 'trHecticFlosSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Side plane messes', name: "TR hectic flipped flos sebs mess", src: '3 i\\ Ru Uu Ur : Lu Uu Ul', turn: 45, path: 'trHecticFlippedFlosSebs', fixedBalls: "Built for 3 balls so far." },
+    { group: 'Turns', name: 'Full Turn 4:4', src: 'Ru Uu Ur Rr : Lu Uu Ul Ll', spin: -360, spinAt: 0, fixedBalls: "Full Turn 4:4 is built for 3 balls so far." },   // (the author, 2026-11-26: a windmill on one side for 4 beats, then the other, turning right round once a cycle; first throw, right hand, turning to the front)
     { group: "Rubenstein's Revenges", name: "Rubenstein's Revenge", src: '22335 o/ Ru. Ul. Lu Ul Ll : Lu. Ur. Ru Ur Rr', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
     { group: "Rubenstein's Revenges", name: "TR Rubenstein's Revenge", src: '52233 i\\ Ul Lu. Ur. Rr Ru : Ur Ru. Ul. Ll Lu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
     { group: "Rubenstein's Revenges", name: "Flos Rubenstein's Revenge", src: '52233 o\\ Ul Lu. Ur. Ru Uu : Ur Ru. Ul. Lu Uu', fixedBalls: "Rubenstein's Revenge works with its own siteswap only, so the ball count can't be changed.", fixedCycle: "Rubenstein's Revenge keeps its siteswap where it is: the 2 2 3 double loop sits on an R U L." },
